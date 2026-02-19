@@ -274,6 +274,7 @@ should stay well under 1000 lines to avoid crowding out working context.
 CLAUDE.local.md
 AGENTS.local.md
 conversations/
+drafts/
 *.credentials.json
 .sync-state.json
 .venv/

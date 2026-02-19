@@ -2,6 +2,7 @@
 AGENTS.local.md
 CLAUDE.local.md
 conversations/
+drafts/
 *.credentials.json
 credentials.json
 .venv/
