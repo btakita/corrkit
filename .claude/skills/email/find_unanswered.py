@@ -34,7 +34,10 @@ def last_sender(text: str) -> str:
 
 unanswered: list[tuple[str, str, str]] = []  # (label, filename, last_sender)
 
-for thread_file in sorted(CONVERSATIONS.rglob("*.md"), key=lambda p: p.name, reverse=True):
+thread_files = sorted(
+    CONVERSATIONS.rglob("*.md"), key=lambda p: p.name, reverse=True
+)
+for thread_file in thread_files:
     text = thread_file.read_text(encoding="utf-8")
     sender = last_sender(text)
     # Consider it unanswered if the last sender doesn't contain the user's email or name

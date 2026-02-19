@@ -19,7 +19,8 @@ def main() -> None:
     if not CREDENTIALS_FILE.exists():
         raise SystemExit(
             "credentials.json not found.\n"
-            "Download it from Google Cloud Console → Clients → your Desktop app → Download JSON\n"
+            "Download it from Google Cloud Console → Clients →"
+            " your Desktop app → Download JSON\n"
             "and save it as credentials.json in the project root."
         )
 
@@ -28,7 +29,10 @@ def main() -> None:
     print(f"Using redirect URI: {flow.redirect_uri}")
     creds = flow.run_local_server(
         port=3000,
-        authorization_prompt_message="Please visit this URL to authorize this application:\n{url}\n",
+        authorization_prompt_message=(
+            "Please visit this URL to authorize this application:"
+            "\n{url}\n"
+        ),
     )
 
     if not creds.refresh_token:

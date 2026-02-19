@@ -25,6 +25,8 @@ A personal workspace for drafting emails and syncing conversation threads from G
 correspondence/
   AGENTS.md                      # Project instructions (CLAUDE.md symlinks here)
   pyproject.toml
+  voice.md                       # Writing voice guidelines (committed)
+  collaborators.toml             # Collaborator config (committed)
   .env                          # OAuth credentials and config (gitignored)
   .gitignore
   .claude/
@@ -40,7 +42,12 @@ correspondence/
       auth.py                   # One-time OAuth flow
     draft/
       __init__.py
-      helpers.py                # Utilities for composing drafts
+      push.py                   # Push draft to Gmail (draft or send)
+    collab/
+      __init__.py               # Collaborator config parser (collaborators.toml)
+      add.py                    # collab-add command
+      sync.py                   # collab-sync / collab-status commands
+      remove.py                 # collab-remove command
     cloudflare/
       __init__.py
       push.py                   # Push intelligence to Cloudflare D1/KV
@@ -49,11 +56,17 @@ correspondence/
       [YYYY-MM-DD]-[subject].md
   drafts/                       # Outgoing email drafts
     [YYYY-MM-DD]-[subject].md
+  shared/                       # Collaborator submodules (tracked by git)
+    [name]/                     # submodule → btakita/correspondence-shared-[name]
+      conversations/[label]/*.md
+      drafts/*.md
+      AGENTS.md
+      voice.md
 ```
 
 ## Writing Voice
 
-See `CLAUDE.local.md` / `AGENTS.local.md` for personal voice guidelines (gitignored).
+See `voice.md` (committed) for tone, style, and formatting guidelines.
 
 ## Safety Rules
 
@@ -78,7 +91,7 @@ GMAIL_CLIENT_SECRET=
 GMAIL_REDIRECT_URI=http://localhost:3000/oauth/callback
 GMAIL_REFRESH_TOKEN=
 GMAIL_USER_EMAIL=                # Your Gmail address (used to detect unanswered threads)
-GMAIL_SYNC_LABELS=correspondence,follow-up   # comma-separated Gmail labels to sync
+GMAIL_SYNC_LABELS=correspondence   # comma-separated Gmail labels to sync (your private labels)
 
 # Cloudflare (optional — for routing intelligence)
 CLOUDFLARE_ACCOUNT_ID=
@@ -105,10 +118,18 @@ uv run sync-auth                                # One-time Gmail OAuth setup
 uv run sync-gmail                               # Incremental sync (only new messages)
 uv run sync-gmail --full                        # Full re-sync (ignores saved state)
 uv run .claude/skills/email/find_unanswered.py  # List threads needing a reply
-uv run src/cloudflare/push.py                   # Push intelligence to Cloudflare D1/KV
+uv run push-draft drafts/FILE.md                # Save draft to Gmail
+uv run push-draft drafts/FILE.md --send         # Send email
+uv run pytest                                    # Run tests
 uv run ruff check .                             # Lint
 uv run ruff format .                            # Format
 uv run ty check                                 # Type check
+
+# Collaborator management
+uv run collab-add NAME --label LABEL [--github-user USER | --pat] [--public]
+uv run collab-sync [NAME]                       # Push/pull shared submodules
+uv run collab-status                            # Quick check for pending changes
+uv run collab-remove NAME [--delete-repo]
 ```
 
 ## Workflows
@@ -140,8 +161,10 @@ Ask Claude: *"Draft an email to [person] about [topic]"* — point it at any rel
 - **Streaming writes**: Each message is merged into its thread file immediately after fetch — no batching.
   If sync crashes mid-run, state is not saved; next run re-fetches from last good state.
 - **UIDVALIDITY**: If the IMAP server resets UIDVALIDITY for a folder, that label automatically does a full resync.
-- Threads are fetched for each label listed in `GMAIL_SYNC_LABELS`
-- Threads are written to `conversations/[label]/[YYYY-MM-DD]-[slug].md`
+- **Label routing**: Labels from `GMAIL_SYNC_LABELS` go to `conversations/{label}/`. Labels listed in
+  `collaborators.toml` are automatically included in the sync and routed to `shared/{name}/conversations/{label}/`.
+  A thread only needs the shared label (e.g. `for-alex`) -- no need to also label it `correspondence`.
+- Threads are written to `[YYYY-MM-DD]-[slug].md`
   - Date is derived from the most recent message in the thread
   - Slug is derived from the subject line
   - Existing thread files are matched by `**Thread ID**` metadata, not filename
@@ -197,24 +220,65 @@ Each synced thread is written in this format:
 
 ## Draft Format
 
-Drafts live in `drafts/`. Filename convention: `[YYYY-MM-DD]-[slug].md`.
+Drafts live in `drafts/` (private) or `shared/{name}/drafts/` (collaborator). Filename convention: `[YYYY-MM-DD]-[slug].md`.
 
 ```markdown
 # [Subject]
 
 **To**: [recipient]
 **CC**: (optional)
-**Re**: (optional — link to conversation file)
+**Status**: draft
+**Author**: brian
+**In-Reply-To**: (optional — message ID)
 
 ---
 
 [Draft body]
 ```
 
+Status values: `draft` -> `review` -> `approved` -> `sent`
+
 When asking Claude to help draft or refine an email:
 - Point it at the relevant thread in `conversations/` for context
 - Specify tone if it differs from the voice guidelines (formal, concise, etc.)
 - Indicate any constraints (length, what to avoid, etc.)
+
+## Collaborators
+
+Share specific threads with collaborators via per-collaborator GitHub repos linked as submodules.
+Collaborators can be people or AI agents -- anything that can read markdown and push to a git repo.
+
+### Config: `collaborators.toml`
+
+```toml
+[alex]
+labels = ["for-alex"]
+repo = "btakita/correspondence-shared-alex"
+github_user = "alex-github-username"
+```
+
+### How it works
+
+1. `collab-add` creates a private GitHub repo (or `--public`), initializes it with AGENTS.md + voice.md,
+   and adds it as a submodule under `shared/{name}/`
+2. `sync-gmail` routes shared labels to `shared/{name}/conversations/{label}/`
+3. `collab-sync` pushes synced conversations to the shared repo and pulls collaborator drafts
+4. Collaborators create drafts in `shared/{name}/drafts/` with Status/Author fields
+5. Brian reviews, approves, and sends via `push-draft`
+
+### AI agents as collaborators
+
+An AI agent (Codex, Claude Code, a custom agent) can be a collaborator. It reads conversations,
+drafts replies following voice.md, and pushes to the shared repo like any other collaborator.
+Brian still reviews and sends. Use `--pat` for token-based access when the collaborator isn't a
+GitHub user (e.g. a CI-driven agent).
+
+### Security model
+
+- `.env` is gitignored -- only Brian has Gmail credentials
+- Each shared repo is separate with per-user access control
+- Shared repos contain ONLY threads Brian explicitly labels for that person
+- Collaborators cannot see each other's shared repos
 
 ## MCP Alternative
 
@@ -260,7 +324,7 @@ should stay well under 1000 lines to avoid crowding out working context.
 
 ## Future Work
 
-- **Voice guidelines**: Analyze sent mail and fill in the Writing Voice section above
+- **Project setup script**: Interactive `collab-init` or `setup` command that configures .env defaults
 - **Protonmail sync**: Protonmail Bridge (IMAP) or Protonmail API
 - **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from Python
 - **Local Gmail MCP server**: Live Gmail access during Claude sessions without Pipedream

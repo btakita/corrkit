@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sync", "src/draft", "src/cloudflare"]
+packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/audit_docs.py" = "audit_docs.py"
@@ -13,15 +13,17 @@ name = "correspondence"
 version = "0.1.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "google-auth-oauthlib>=1.0.0",
     "httpx>=0.28.0",
     "imapclient>=3.1.0",
     "msgspec>=0.20.0",
-    "poethepoet==0.39.0",
     "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "poethepoet==0.39.0",
+    "pytest>=8.0",
     "ruff>=0.9.0",
     "ty>=0.0.1a6",
 ]
@@ -33,6 +35,10 @@ dev = ["correspondence[dev]"]
 sync-gmail = "sync.gmail:main"
 push-draft = "draft.push:main"
 audit-docs = "audit_docs:main"
+collab-add = "collab.add:main"
+collab-sync = "collab.sync:main"
+collab-status = "collab.sync:status"
+collab-remove = "collab.remove:main"
 
 [tool.ruff]
 target-version = "py312"
@@ -40,5 +46,12 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.poe.tasks]
 audit = "uv run audit-docs"
+precommit = ["ty", "ruff", "test"]
+ruff = "ruff check --fix"
+test = "pytest"
+ty = "ty check --error-on-warning"

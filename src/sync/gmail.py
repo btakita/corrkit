@@ -79,13 +79,13 @@ def extract_body(msg: email.message.Message) -> str:
                 "Content-Disposition"
             ):
                 payload = part.get_payload(decode=True)
-                if payload:
+                if isinstance(payload, bytes):
                     return payload.decode(
                         part.get_content_charset() or "utf-8", errors="replace"
                     )
     else:
         payload = msg.get_payload(decode=True)
-        if payload:
+        if isinstance(payload, bytes):
             return payload.decode(
                 msg.get_content_charset() or "utf-8", errors="replace"
             )
@@ -281,7 +281,12 @@ def _merge_message_to_file(
 
 
 def sync_label(
-    imap: IMAPClient, label_name: str, state: SyncState, *, full: bool
+    imap: IMAPClient,
+    label_name: str,
+    state: SyncState,
+    *,
+    full: bool,
+    out_dir: Path | None = None,
 ) -> None:
     print(f"Syncing label: {label_name}")
 
@@ -312,6 +317,7 @@ def sync_label(
         uids = imap.search(["SINCE", since])
     else:
         # Incremental: fetch UIDs after last_uid
+        assert prior is not None  # guaranteed by do_full logic above
         uids = imap.search(["UID", f"{prior.last_uid + 1}:*"])
         # IMAP UID search always returns at least one UID — filter out already-seen
         uids = [u for u in uids if u > prior.last_uid]
@@ -326,7 +332,8 @@ def sync_label(
 
     print(f"  Fetching {len(uids)} message(s)")
 
-    out_dir = Path("conversations") / label_name
+    if out_dir is None:
+        out_dir = Path("conversations") / label_name
     max_uid = prior.last_uid if prior else 0
 
     for uid in uids:
@@ -363,6 +370,24 @@ def sync_label(
     )
 
 
+def _build_label_routes() -> dict[str, Path]:
+    """Build label→output_dir map from collaborators.toml.
+
+    Shared labels route to shared/{name}/conversations/{label}/.
+    Private labels route to conversations/{label}/ (returned as None → default).
+    """
+    try:
+        from collab import load_collaborators
+    except ImportError:
+        return {}
+
+    routes: dict[str, Path] = {}
+    for name, collab in load_collaborators().items():
+        for label in collab.labels:
+            routes[label] = Path("shared") / name / "conversations" / label
+    return routes
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync Gmail threads to Markdown")
     parser.add_argument(
@@ -374,10 +399,17 @@ def main() -> None:
 
     state = SyncState() if args.full else load_state()
 
+    # Build label routing from collaborators.toml
+    routes = _build_label_routes()
+
+    # Merge shared labels into sync set
+    all_labels = list(dict.fromkeys(SYNC_LABELS + list(routes.keys())))
+
     with IMAPClient("imap.gmail.com", ssl=True) as imap:
         imap.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-        for label in SYNC_LABELS:
-            sync_label(imap, label, state, full=args.full)
+        for label in all_labels:
+            out_dir = routes.get(label)  # None → default conversations/{label}
+            sync_label(imap, label, state, full=args.full, out_dir=out_dir)
 
     save_state(state)
     print("Sync complete.")

@@ -95,6 +95,22 @@ def send_email(msg: EmailMessage) -> None:
         smtp.send_message(msg)
 
 
+VALID_SEND_STATUSES = {"review", "approved"}
+
+
+def _update_draft_status(path: Path, new_status: str) -> None:
+    """Update the **Status** field in a draft file."""
+    text = path.read_text(encoding="utf-8")
+    updated = re.sub(
+        r"^(\*\*Status\*\*:\s*).+$",
+        rf"\g<1>{new_status}",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    path.write_text(updated, encoding="utf-8")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Push a draft markdown file to Gmail")
     parser.add_argument("file", type=Path, help="Path to the draft markdown file")
@@ -110,8 +126,20 @@ def main() -> None:
 
     meta, subject, body = parse_draft(args.file)
 
+    # Validate Status for --send
+    status = meta.get("Status", "").lower()
+    if args.send and status and status not in VALID_SEND_STATUSES:
+        raise SystemExit(
+            f"Cannot send: Status is '{meta.get('Status')}'. "
+            f"Must be one of: {', '.join(VALID_SEND_STATUSES)}"
+        )
+
     print(f"To:      {meta['To']}")
     print(f"Subject: {subject}")
+    if meta.get("Author"):
+        print(f"Author:  {meta['Author']}")
+    if meta.get("Status"):
+        print(f"Status:  {meta['Status']}")
     if meta.get("In-Reply-To"):
         print(f"Reply:   {meta['In-Reply-To']}")
     print(f"Body:    {body[:80]}{'...' if len(body) > 80 else ''}")
@@ -121,7 +149,8 @@ def main() -> None:
 
     if args.send:
         send_email(msg)
-        print("Email sent.")
+        _update_draft_status(args.file, "sent")
+        print("Email sent. Status updated to 'sent'.")
     else:
         push_to_drafts(msg)
         print("Draft created in Gmail. Open Gmail drafts to review and send.")
