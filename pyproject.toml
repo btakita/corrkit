@@ -9,7 +9,7 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab"]
 "src/audit_docs.py" = "audit_docs.py"
 
 [project]
-name = "correspondence"
+name = "correspondence-kit"
 version = "0.1.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -29,7 +29,7 @@ dev = [
 ]
 
 [dependency-groups]
-dev = ["correspondence[dev]"]
+dev = ["correspondence-kit[dev]"]
 
 [project.scripts]
 sync-gmail = "sync.gmail:main"

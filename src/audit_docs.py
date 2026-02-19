@@ -97,8 +97,8 @@ def extract_tree_paths(content: str) -> list[tuple[int, str]]:
         else:
             parts = [d for _, d in stack] + [name]
             full = "".join(parts)
-            if full.startswith("correspondence/"):
-                full = full[len("correspondence/") :]
+            if full.startswith("correspondence-kit/"):
+                full = full[len("correspondence-kit/") :]
             results.append((i, full))
 
     return results

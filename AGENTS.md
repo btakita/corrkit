@@ -1,4 +1,4 @@
-# Correspondence
+# Correspondence Kit
 
 A personal workspace for drafting emails and syncing conversation threads from Gmail (and eventually Protonmail).
 
@@ -22,7 +22,7 @@ A personal workspace for drafting emails and syncing conversation threads from G
 ## Project Structure
 
 ```
-correspondence/
+correspondence-kit/
   AGENTS.md                      # Project instructions (CLAUDE.md symlinks here)
   pyproject.toml
   voice.md                       # Writing voice guidelines (committed)
