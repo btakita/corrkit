@@ -146,3 +146,104 @@ def test_add_public_flag(tmp_path, monkeypatch):
     create_cmd = [c for c in captured_cmds if "repo" in c and "create" in c]
     assert len(create_cmd) == 1
     assert "--public" in create_cmd[0]
+
+
+def test_add_multiple_labels(tmp_path, monkeypatch):
+    """Repeating --label stores all labels in the config."""
+    config_path = tmp_path / "collaborators.toml"
+    config_path.write_text("", encoding="utf-8")
+    voice = tmp_path / "voice.md"
+    voice.write_text("# Voice\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
+    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+
+    def fake_run(cmd, **kw):
+        if cmd[0] == "git" and "submodule" in cmd:
+            (tmp_path / "shared" / "dana").mkdir(parents=True, exist_ok=True)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("collab.add.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "collab-add", "dana",
+            "--label", "for-dana",
+            "--label", "project-x",
+            "--github-user", "dana-gh",
+        ],
+    )
+
+    main()
+
+    collabs = load_collaborators(config_path)
+    assert collabs["dana"].labels == ["for-dana", "project-x"]
+
+
+def test_add_custom_org(tmp_path, monkeypatch):
+    """--org overrides the default GitHub org in repo name."""
+    config_path = tmp_path / "collaborators.toml"
+    config_path.write_text("", encoding="utf-8")
+    voice = tmp_path / "voice.md"
+    voice.write_text("# Voice\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
+    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+
+    captured_cmds: list[list[str]] = []
+
+    def capture_run(cmd, **kw):
+        captured_cmds.append(cmd)
+        if cmd[0] == "git" and "submodule" in cmd:
+            (tmp_path / "shared" / "eve").mkdir(parents=True, exist_ok=True)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("collab.add.subprocess.run", capture_run)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["collab-add", "eve", "--label", "for-eve", "--org", "myorg"],
+    )
+
+    main()
+
+    collabs = load_collaborators(config_path)
+    assert collabs["eve"].repo == "myorg/correspondence-shared-eve"
+
+    create_cmd = [c for c in captured_cmds if "repo" in c and "create" in c]
+    assert "myorg/correspondence-shared-eve" in create_cmd[0]
+
+
+def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
+    """collab-add rejects if shared/{name} directory already exists on disk."""
+    config_path = tmp_path / "collaborators.toml"
+    config_path.write_text("", encoding="utf-8")
+
+    (tmp_path / "shared" / "alex").mkdir(parents=True)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["collab-add", "alex", "--label", "for-alex"],
+    )
+
+    import pytest
+
+    with pytest.raises(SystemExit):
+        main()
+
+
+def test_collab_add_listed_in_help():
+    """uv run help includes the collab-add command."""
+    result = subprocess.run(
+        ["uv", "run", "help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "collab-add" in result.stdout

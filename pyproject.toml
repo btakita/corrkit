@@ -7,6 +7,7 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/audit_docs.py" = "audit_docs.py"
+"src/help.py" = "help.py"
 
 [project]
 name = "correspondence-kit"
@@ -39,6 +40,7 @@ collab-add = "collab.add:main"
 collab-sync = "collab.sync:main"
 collab-status = "collab.sync:status"
 collab-remove = "collab.remove:main"
+help = "help:main"
 
 [tool.ruff]
 target-version = "py312"
