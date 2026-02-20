@@ -103,6 +103,65 @@ An agent added with `collab-add assistant --label for-assistant` can only see th
 
 This works across multiple email accounts — Gmail, Protonmail, self-hosted — each with its own labels and routing rules, all funneling through the same scoped collaborator model.
 
+## Collaborators
+
+Share specific email threads with people or AI agents via scoped GitHub repos.
+
+### Adding a collaborator
+
+```sh
+# Human collaborator (invited via GitHub)
+corrkit collab-add alex --label for-alex --github-user alex-gh
+
+# AI agent (uses a PAT instead of GitHub invite)
+corrkit collab-add assistant --label for-assistant --pat
+
+# Bind all labels to one account
+corrkit collab-add alex --label for-alex --account personal
+
+# Per-label account scoping (proton-dev account, INBOX folder)
+# Use account:label syntax in collaborators.toml directly
+```
+
+This creates a private GitHub repo, initializes it with instructions and helper scripts, and adds it as a submodule under `shared/{name}/`.
+
+### Daily workflow
+
+```sh
+# 1. Sync emails -- shared labels route to shared/{name}/conversations/
+corrkit sync
+
+# 2. Push synced threads to collaborator repos & pull their drafts
+corrkit collab-sync
+
+# 3. Check what's pending without pushing
+corrkit collab-status
+
+# 4. Review a collaborator's draft and push it as an email draft
+corrkit push-draft shared/alex/drafts/2026-02-19-reply.md
+```
+
+### What collaborators can do
+
+- Read conversations labeled for them
+- Draft replies in `shared/{name}/drafts/` following the format in AGENTS.md
+- Run `scripts/find_unanswered.py` and `scripts/validate_draft.py` in their repo
+- Push changes to their shared repo
+
+### What only you can do
+
+- Sync new emails (`corrkit sync`)
+- Push synced threads to collaborator repos (`corrkit collab-sync`)
+- Send emails (`corrkit push-draft --send`)
+- Change draft Status to `sent`
+
+### Removing a collaborator
+
+```sh
+corrkit collab-remove alex
+corrkit collab-remove alex --delete-repo  # also delete the GitHub repo
+```
+
 ## AI agent instructions
 
 Project instructions live in `AGENTS.md` (symlinked as `CLAUDE.md`). Personal overrides go in `AGENTS.override.md` / `CLAUDE.local.md` (gitignored).

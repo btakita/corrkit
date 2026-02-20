@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,7 @@ load_dotenv()
 
 SHARED_DIR = Path("shared")
 VOICE_FILE = Path("voice.md")
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -34,36 +36,174 @@ def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
     return result
 
 
+def _generate_readme_md() -> str:
+    return """# Shared Correspondence with Brian
+
+This repo contains email threads Brian has shared with you and a place for you
+to draft replies on his behalf.
+
+## Quick start
+
+```sh
+git clone <this-repo-url>
+cd correspondence-shared-alex
+```
+
+### 1. Read conversations
+
+Synced threads are in `conversations/`. Pull to get the latest:
+
+```sh
+git pull
+```
+
+### 2. Find threads that need a reply
+
+```sh
+python scripts/find_unanswered.py
+```
+
+### 3. Draft a reply
+
+Create a file in `drafts/` named `YYYY-MM-DD-slug.md`:
+
+```markdown
+# Subject
+
+**To**: recipient@example.com
+**Status**: review
+**Author**: alex
+
+---
+
+Your reply here.
+```
+
+Set **Status** to `review` when it's ready for Brian to look at.
+
+### 4. Validate and push
+
+```sh
+python scripts/validate_draft.py drafts/your-draft.md
+git add drafts/
+git commit -m "Draft reply to ..."
+git push
+```
+
+Brian will review your draft, and if approved, send it from his email account.
+
+## Reference
+
+See `AGENTS.md` for the full draft format (CC, In-Reply-To, Account, From),
+conversation format, status flow, and voice guidelines.
+"""
+
+
 def _generate_agents_md(name: str) -> str:
     return f"""# Shared Correspondence with Brian
 
-## Reading threads
-Synced conversations are in `conversations/`. Read them for context before drafting.
+## Workflow
+
+1. `git pull` to get the latest synced conversations
+2. Read threads in `conversations/` for context
+3. Draft replies in `drafts/`
+4. `git add`, `git commit`, and `git push` when done
+
+## Conversation format
+
+Synced conversations live in `conversations/{{label}}/`. Each file is one thread:
+
+```markdown
+# Subject Line
+
+**Label**: label-name
+**Thread ID**: thread-id
+**Last updated**: 2026-02-19
+
+---
+
+## Sender Name <sender@example.com> — Mon, 10 Feb 2025 10:00:00 +0000
+
+Message body text.
+
+---
+
+## Another Sender — Mon, 10 Feb 2025 11:00:00 +0000
+
+Reply body text.
+```
+
+## Finding unanswered threads
+
+Run the helper script to find threads awaiting a reply:
+
+```sh
+python scripts/find_unanswered.py
+python scripts/find_unanswered.py --from "Brian"
+```
 
 ## Drafting a reply
-1. Create a file in `drafts/` following this format:
-   ```
-   # Subject
-   **To**: recipient@example.com
-   **Status**: review
-   **Author**: {name}
-   ---
-   Body text
-   ```
-2. Set **Status** to `review` when ready for Brian to look at it
-3. Commit and push
+
+Create a file in `drafts/` named `YYYY-MM-DD-slug.md`:
+
+```markdown
+# Subject
+
+**To**: recipient@example.com
+**CC**: (optional)
+**Status**: review
+**Author**: {name}
+**Account**: (optional -- account name for sending)
+**From**: (optional -- email address for sending)
+**In-Reply-To**: (optional -- message ID from thread)
+
+---
+
+Body text here.
+```
+
+### Required fields
+- `# Subject` heading
+- `**To**`: recipient email
+- `**Status**`: set to `review` when ready for Brian
+- `**Author**`: your name (`{name}`)
+- `---` separator before the body
+
+### Replying to an existing thread
+Set `**In-Reply-To**` to a message ID from the conversation thread. Message IDs
+are not shown in the markdown files -- ask Brian for the ID or leave it blank
+and note which thread you're replying to in the body.
+
+### Validating a draft
+
+```sh
+python scripts/validate_draft.py drafts/2026-02-19-example.md
+```
+
+### Status flow
+
+`draft` -> `review` -> `approved` -> `sent`
+
+- **draft**: work in progress (not ready for Brian)
+- **review**: ready for Brian to review
+- **approved**: Brian approved, ready to send
+- **sent**: email has been sent (only Brian sets this)
 
 ## Voice guidelines
+
 See `voice.md` for Brian's writing voice. Match this style when drafting on his behalf.
 
 ## What you can do
+
 - Read conversations
 - Create and edit drafts
+- Run `scripts/find_unanswered.py` and `scripts/validate_draft.py`
 - Push changes to this repo
 
 ## What only Brian can do
-- Sync new emails from Gmail
-- Send emails (requires Gmail credentials)
+
+- Sync new emails into this repo
+- Send emails (requires email credentials)
 - Change draft Status to `sent`
 """
 
@@ -149,8 +289,16 @@ def main() -> None:
         tmp = Path(tmpdir)
         _run(["gh", "repo", "clone", repo_full, str(tmp)])
 
-        # AGENTS.md
+        # AGENTS.md + CLAUDE.md symlink + README.md
         (tmp / "AGENTS.md").write_text(_generate_agents_md(name), encoding="utf-8")
+        os.symlink("AGENTS.md", tmp / "CLAUDE.md")
+        (tmp / "README.md").write_text(_generate_readme_md(), encoding="utf-8")
+
+        # .gitignore
+        (tmp / ".gitignore").write_text(
+            "AGENTS.local.md\nCLAUDE.local.md\n__pycache__/\n",
+            encoding="utf-8",
+        )
 
         # voice.md
         if VOICE_FILE.exists():
@@ -161,6 +309,19 @@ def main() -> None:
         (tmp / "conversations" / ".gitkeep").touch()
         (tmp / "drafts").mkdir(exist_ok=True)
         (tmp / "drafts" / ".gitkeep").touch()
+
+        # scripts
+        (tmp / "scripts").mkdir(exist_ok=True)
+        for script in ("find_unanswered.py", "validate_draft.py"):
+            src = TEMPLATES_DIR / script
+            if src.exists():
+                shutil.copy2(src, tmp / "scripts" / script)
+
+        # GitHub Actions workflow
+        (tmp / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
+        notify_src = TEMPLATES_DIR / "notify.yml"
+        if notify_src.exists():
+            shutil.copy2(notify_src, tmp / ".github" / "workflows" / "notify.yml")
 
         # commit and push
         _run(["git", "-C", str(tmp), "add", "-A"])

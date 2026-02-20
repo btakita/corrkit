@@ -1,6 +1,0 @@
-# Collaborator config — one section per collaborator.
-#
-# [alex]
-# labels = ["for-alex"]
-# repo = "btakita/correspondence-shared-alex"
-# github_user = "alex-github-username"

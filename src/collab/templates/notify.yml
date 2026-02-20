@@ -1,0 +1,16 @@
+name: Check unanswered threads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'conversations/**'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find unanswered threads
+        run: python scripts/find_unanswered.py >> "$GITHUB_STEP_SUMMARY"

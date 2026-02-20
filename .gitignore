@@ -3,6 +3,7 @@ accounts.toml
 AGENTS.local.md
 CLAUDE.local.md
 correspondence
+shared/
 *.credentials.json
 credentials.json
 .venv/
