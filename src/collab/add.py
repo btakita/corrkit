@@ -60,7 +60,7 @@ git pull
 ### 2. Find threads that need a reply
 
 ```sh
-python scripts/find_unanswered.py
+uvx corrkit find-unanswered
 ```
 
 ### 3. Draft a reply
@@ -84,7 +84,7 @@ Set **Status** to `review` when it's ready for Brian to look at.
 ### 4. Validate and push
 
 ```sh
-python scripts/validate_draft.py drafts/your-draft.md
+uvx corrkit validate-draft drafts/your-draft.md
 git add drafts/
 git commit -m "Draft reply to ..."
 git push
@@ -135,11 +135,11 @@ Reply body text.
 
 ## Finding unanswered threads
 
-Run the helper script to find threads awaiting a reply:
+Run the helper command to find threads awaiting a reply:
 
 ```sh
-python scripts/find_unanswered.py
-python scripts/find_unanswered.py --from "Brian"
+uvx corrkit find-unanswered
+uvx corrkit find-unanswered --from "Brian"
 ```
 
 ## Drafting a reply
@@ -177,7 +177,7 @@ and note which thread you're replying to in the body.
 ### Validating a draft
 
 ```sh
-python scripts/validate_draft.py drafts/2026-02-19-example.md
+uvx corrkit validate-draft drafts/2026-02-19-example.md
 ```
 
 ### Status flow
@@ -197,7 +197,7 @@ See `voice.md` for Brian's writing voice. Match this style when drafting on his 
 
 - Read conversations
 - Create and edit drafts
-- Run `scripts/find_unanswered.py` and `scripts/validate_draft.py`
+- Run `uvx corrkit find-unanswered` and `uvx corrkit validate-draft`
 - Push changes to this repo
 
 ## What only Brian can do
@@ -309,13 +309,6 @@ def main() -> None:
         (tmp / "conversations" / ".gitkeep").touch()
         (tmp / "drafts").mkdir(exist_ok=True)
         (tmp / "drafts" / ".gitkeep").touch()
-
-        # scripts
-        (tmp / "scripts").mkdir(exist_ok=True)
-        for script in ("find_unanswered.py", "validate_draft.py"):
-            src = TEMPLATES_DIR / script
-            if src.exists():
-                shutil.copy2(src, tmp / "scripts" / script)
 
         # GitHub Actions workflow
         (tmp / ".github" / "workflows").mkdir(parents=True, exist_ok=True)

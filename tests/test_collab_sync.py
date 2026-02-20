@@ -34,6 +34,12 @@ def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
     root_voice.write_text("# Voice v2\n", encoding="utf-8")
     monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
 
+    # Templates for workflow sync
+    templates = tmp_path / "templates"
+    templates.mkdir()
+    (templates / "notify.yml").write_text("# stub", encoding="utf-8")
+    monkeypatch.setattr("collab.sync.TEMPLATES_DIR", templates)
+
     cmds_run: list[list[str]] = []
 
     def fake_run(cmd, **kw):
@@ -71,6 +77,12 @@ def test_sync_one_no_changes(tmp_path, monkeypatch, capsys):
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice\n", encoding="utf-8")
     monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
+
+    # Templates for workflow sync
+    templates = tmp_path / "templates"
+    templates.mkdir()
+    (templates / "notify.yml").write_text("# stub", encoding="utf-8")
+    monkeypatch.setattr("collab.sync.TEMPLATES_DIR", templates)
 
     cmds_run: list[list[str]] = []
 

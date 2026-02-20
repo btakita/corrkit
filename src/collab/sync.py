@@ -20,8 +20,6 @@ SHARED_DIR = Path("shared")
 VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
-# Files to sync from templates -> shared repo
-_TEMPLATE_SCRIPTS = ("find_unanswered.py", "validate_draft.py")
 _TEMPLATE_WORKFLOW = "notify.yml"
 
 
@@ -87,18 +85,6 @@ def _sync_one(name: str) -> None:
         if not sub_voice.exists() or root_newer:
             shutil.copy2(VOICE_FILE, sub_voice)
             print("  Updated voice.md")
-
-    # Sync scripts from templates
-    scripts_dir = sub_path / "scripts"
-    for script in _TEMPLATE_SCRIPTS:
-        src = TEMPLATES_DIR / script
-        if not src.exists():
-            continue
-        dst = scripts_dir / script
-        if not dst.exists() or src.stat().st_mtime > dst.stat().st_mtime:
-            scripts_dir.mkdir(exist_ok=True)
-            shutil.copy2(src, dst)
-            print(f"  Updated scripts/{script}")
 
     # Sync GitHub Actions workflow
     workflow_src = TEMPLATES_DIR / _TEMPLATE_WORKFLOW

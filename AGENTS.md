@@ -51,6 +51,8 @@ correspondence-kit/
       add.py                    # collab-add command
       sync.py                   # collab-sync / collab-status commands
       remove.py                 # collab-remove command
+      find_unanswered.py        # find-unanswered command
+      validate_draft.py         # validate-draft command
     cloudflare/
       __init__.py               # Push intelligence to Cloudflare D1/KV (planned)
   correspondence -> ~/work/btakita/correspondence  # Symlink to personal data repo
@@ -151,6 +153,8 @@ corrkit collab-add NAME --label LABEL [--github-user USER | --pat] [--public] [-
 corrkit collab-sync [NAME]                      # Push/pull shared submodules
 corrkit collab-status                           # Quick check for pending changes
 corrkit collab-remove NAME [--delete-repo]
+corrkit find-unanswered [--from NAME]                           # Find threads awaiting a reply
+corrkit validate-draft FILE [FILE...]                           # Validate draft markdown files
 corrkit audit-docs                              # Audit instruction files for staleness
 corrkit help                                    # Show command reference
 
@@ -174,7 +178,7 @@ uv run ty check                                 # Type check
 ### Finding unanswered threads
 
 ```sh
-uv run .claude/skills/email/find_unanswered.py
+corrkit find-unanswered [--from NAME]
 ```
 
 Lists all synced threads where the last message is not from you — i.e. threads awaiting your reply.
@@ -364,6 +368,7 @@ should stay well under 1000 lines to avoid crowding out working context.
 - Keep sync, draft, and cloudflare logic in separate subpackages
 - Do not commit `.env`, `accounts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence` (symlink to private data repo)
 - Scripts must be runnable directly: `uv run src/sync/imap.py`
+- Commits that include a version change should include the version number in the commit message
 
 ## Future Work
 

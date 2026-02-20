@@ -1,4 +1,4 @@
-"""Unified CLI dispatcher for correspondence-kit.
+"""Unified CLI dispatcher for corrkit.
 
 Usage:
     corrkit <subcommand> [args...]
@@ -18,6 +18,8 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "collab-sync": ("collab.sync", "main"),
     "collab-status": ("collab.sync", "status"),
     "collab-remove": ("collab.remove", "main"),
+    "find-unanswered": ("collab.find_unanswered", "main"),
+    "validate-draft": ("collab.validate_draft", "main"),
     "audit-docs": ("audit_docs", "main"),
     "help": ("help", "main"),
 }
@@ -59,6 +61,6 @@ def _show_help(file=None) -> None:
         help_mod.main()
     else:
         # For stderr, reuse the help module's data directly
-        print("correspondence-kit commands\n", file=file)
+        print("corrkit commands\n", file=file)
         for name, desc in help_mod.COMMANDS:
             print(f"  {name}  {desc}", file=file)

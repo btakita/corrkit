@@ -1,4 +1,4 @@
-"""Command reference for correspondence-kit."""
+"""Command reference for corrkit."""
 
 import sys
 
@@ -15,6 +15,8 @@ COMMANDS = [
     ("collab-sync [NAME]", "Push/pull shared submodules"),
     ("collab-status", "Check for pending changes"),
     ("collab-remove NAME [--delete-repo]", "Remove a collaborator"),
+    ("find-unanswered [--from NAME]", "Find threads awaiting a reply"),
+    ("validate-draft FILE [FILE...]", "Validate draft markdown files"),
     ("audit-docs", "Audit instruction files"),
     ("help", "Show this reference"),
 ]
@@ -44,7 +46,7 @@ def main() -> None:
             sys.exit(1)
         return
 
-    print("correspondence-kit commands\n")
+    print("corrkit commands\n")
     _print_table(COMMANDS)
 
     if filter_arg == "--dev" or not filter_arg:

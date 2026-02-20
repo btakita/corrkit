@@ -71,6 +71,8 @@ corrkit collab-add NAME --label LABEL     # Add a collaborator
 corrkit collab-sync [NAME]        # Push/pull shared submodules
 corrkit collab-status             # Check for pending changes
 corrkit collab-remove NAME        # Remove a collaborator
+corrkit find-unanswered           # Find threads awaiting a reply
+corrkit validate-draft FILE       # Validate draft markdown files
 corrkit audit-docs                # Audit instruction files for staleness
 corrkit help                      # Show command reference
 ```
@@ -123,7 +125,7 @@ corrkit collab-add alex --label for-alex --account personal
 # Use account:label syntax in collaborators.toml directly
 ```
 
-This creates a private GitHub repo, initializes it with instructions and helper scripts, and adds it as a submodule under `shared/{name}/`.
+This creates a private GitHub repo, initializes it with instructions, and adds it as a submodule under `shared/{name}/`. Collaborators use `uvx corrkit` for helper commands.
 
 ### Daily workflow
 
@@ -145,7 +147,7 @@ corrkit push-draft shared/alex/drafts/2026-02-19-reply.md
 
 - Read conversations labeled for them
 - Draft replies in `shared/{name}/drafts/` following the format in AGENTS.md
-- Run `scripts/find_unanswered.py` and `scripts/validate_draft.py` in their repo
+- Run `uvx corrkit find-unanswered` and `uvx corrkit validate-draft` in their repo
 - Push changes to their shared repo
 
 ### What only you can do

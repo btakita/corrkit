@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
 """
 Validate a draft markdown file has required fields and correct format.
 
-Stdlib only -- no external dependencies required.
-
 Usage:
-  python scripts/validate_draft.py drafts/2026-02-19-example.md
-  python scripts/validate_draft.py drafts/*.md
+  corrkit validate-draft drafts/2026-02-19-example.md
+  corrkit validate-draft drafts/*.md
 """
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -80,11 +78,17 @@ def validate_draft(path: Path) -> list[str]:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/validate_draft.py <draft.md> [draft2.md ...]")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Validate draft markdown files"
+    )
+    parser.add_argument(
+        "files",
+        nargs="+",
+        help="Draft markdown file(s) to validate",
+    )
+    args = parser.parse_args()
 
-    paths = [Path(p) for p in sys.argv[1:]]
+    paths = [Path(p) for p in args.files]
     all_ok = True
 
     for path in paths:

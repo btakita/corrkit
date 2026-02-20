@@ -29,7 +29,7 @@ def _find_root() -> Path:
 
 ROOT = _find_root()
 LINE_BUDGET = 1000
-SKIP_PATHS = {".env"}  # Gitignored files expected to be absent
+SKIP_PATHS = {".env", ".sync-state.json"}  # Gitignored files expected to be absent
 TOOL_COMMANDS = {"ruff", "ty", "pytest", "poe"}  # External tools invoked via uv run
 
 
@@ -87,6 +87,9 @@ def extract_tree_paths(content: str) -> list[tuple[int, str]]:
         name = stripped.strip().split("#")[0].strip()
         if not name:
             continue
+        # Strip symlink arrow notation (e.g. "correspondence -> ~/path")
+        if " -> " in name:
+            name = name.split(" -> ")[0].strip()
 
         # Pop deeper/equal entries from stack
         while stack and stack[-1][0] >= indent:

@@ -12,8 +12,10 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab"]
 "src/accounts.py" = "accounts.py"
 
 [project]
-name = "correspondence-kit"
-version = "0.2.0"
+name = "corrkit"
+version = "0.1.0"
+description = "Sync email threads from IMAP to Markdown, draft replies, push routing intelligence to Cloudflare"
+readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -32,8 +34,11 @@ dev = [
     "ty>=0.0.1a6",
 ]
 
+[project.urls]
+Repository = "https://github.com/btakita/corrkit"
+
 [dependency-groups]
-dev = ["correspondence-kit[dev]"]
+dev = ["corrkit[dev]"]
 
 [project.scripts]
 corrkit = "corrkit:main"
@@ -47,6 +52,8 @@ collab-add = "collab.add:main"
 collab-sync = "collab.sync:main"
 collab-status = "collab.sync:status"
 collab-remove = "collab.remove:main"
+find-unanswered = "collab.find_unanswered:main"
+validate-draft = "collab.validate_draft:main"
 help = "help:main"
 
 [tool.ruff]

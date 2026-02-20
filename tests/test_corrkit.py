@@ -20,6 +20,8 @@ def test_help_flag_shows_all_commands():
         "collab-sync",
         "collab-status",
         "collab-remove",
+        "find-unanswered",
+        "validate-draft",
         "audit-docs",
         "help",
     ]:

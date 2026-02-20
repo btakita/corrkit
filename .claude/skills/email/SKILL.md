@@ -13,14 +13,14 @@ Manage and draft correspondence using locally synced email threads.
 
 - `correspondence/conversations/` — synced email threads as Markdown, organized by label
 - `correspondence/drafts/` — outgoing email drafts being worked on
-- `uv run .claude/skills/email/find_unanswered.py` — list threads awaiting a reply
+- `corrkit find-unanswered` — list threads awaiting a reply
 - `corrkit sync` — re-sync threads from all accounts
 - `corrkit list-folders ACCOUNT` — list IMAP folders for an account
 
 ## Workflows
 
 ### Review inbox
-1. Run `find_unanswered.py` to identify threads needing a reply
+1. Run `corrkit find-unanswered` to identify threads needing a reply
 2. Read each thread and assess priority
 3. Present a prioritized list with a one-line summary per thread
 4. Wait for instruction before drafting anything

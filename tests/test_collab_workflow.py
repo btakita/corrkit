@@ -1,11 +1,11 @@
 """End-to-end tests for the collaborator workflow (sync routing, draft round-trip,
-scripts, collab-sync)."""
+corrkit commands, collab-sync)."""
 
 import subprocess
 from pathlib import Path
 
 from collab import Collaborator, save_collaborators
-from collab.add import TEMPLATES_DIR, _generate_agents_md
+from collab.add import _generate_agents_md
 from draft.push import parse_draft
 from sync.imap import _build_label_routes, _merge_message_to_file
 from sync.types import Message
@@ -65,11 +65,9 @@ def test_collab_sync_stages_and_commits(tmp_path, monkeypatch, capsys):
     root_voice.write_text("# Voice\n", encoding="utf-8")
     monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
 
-    # Make TEMPLATES_DIR point to a temp dir so script sync doesn't fail
+    # Make TEMPLATES_DIR point to a temp dir so workflow sync doesn't fail
     templates = tmp_path / "templates"
     templates.mkdir()
-    (templates / "find_unanswered.py").write_text("# stub", encoding="utf-8")
-    (templates / "validate_draft.py").write_text("# stub", encoding="utf-8")
     (templates / "notify.yml").write_text("# stub", encoding="utf-8")
     monkeypatch.setattr("collab.sync.TEMPLATES_DIR", templates)
 
@@ -152,174 +150,7 @@ def test_draft_with_account_field(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# 4. Script validation: find_unanswered.py
-# ---------------------------------------------------------------------------
-
-
-def test_find_unanswered_script(tmp_path):
-    """find_unanswered.py finds threads where last sender isn't Brian."""
-    conversations = tmp_path / "conversations" / "for-alex"
-    conversations.mkdir(parents=True)
-
-    # Thread where last message is from someone else -> unanswered
-    (conversations / "2025-02-10-hello.md").write_text(
-        "# Hello\n\n"
-        "**Label**: for-alex\n"
-        "**Thread ID**: t1\n"
-        "**Last updated**: 2025-02-10\n\n"
-        "---\n\n"
-        "## Brian \u2014 Mon, 10 Feb 2025 10:00:00 +0000\n\n"
-        "Hi there.\n\n"
-        "---\n\n"
-        "## Alice \u2014 Mon, 10 Feb 2025 11:00:00 +0000\n\n"
-        "Hey Brian!\n",
-        encoding="utf-8",
-    )
-
-    # Thread where last message is from Brian -> answered
-    (conversations / "2025-02-10-update.md").write_text(
-        "# Update\n\n"
-        "**Label**: for-alex\n"
-        "**Thread ID**: t2\n"
-        "**Last updated**: 2025-02-10\n\n"
-        "---\n\n"
-        "## Alice \u2014 Mon, 10 Feb 2025 09:00:00 +0000\n\n"
-        "Question?\n\n"
-        "---\n\n"
-        "## Brian \u2014 Mon, 10 Feb 2025 12:00:00 +0000\n\n"
-        "Answer.\n",
-        encoding="utf-8",
-    )
-
-    script = TEMPLATES_DIR / "find_unanswered.py"
-    result = subprocess.run(
-        ["python", str(script)],
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-    )
-
-    assert result.returncode == 0
-    assert "hello" in result.stdout.lower()
-    assert "update" not in result.stdout.lower()
-
-
-def test_find_unanswered_no_threads(tmp_path):
-    """find_unanswered.py handles empty conversations."""
-    conversations = tmp_path / "conversations"
-    conversations.mkdir()
-
-    script = TEMPLATES_DIR / "find_unanswered.py"
-    result = subprocess.run(
-        ["python", str(script)],
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-    )
-
-    assert result.returncode == 0
-    assert "no unanswered" in result.stdout.lower()
-
-
-# ---------------------------------------------------------------------------
-# 5. Script validation: validate_draft.py
-# ---------------------------------------------------------------------------
-
-
-def test_validate_draft_valid(tmp_path):
-    """validate_draft.py passes a valid draft."""
-    draft = tmp_path / "draft.md"
-    draft.write_text(
-        "# Test Subject\n\n"
-        "**To**: a@b.com\n"
-        "**Status**: review\n"
-        "**Author**: alex\n\n"
-        "---\n\n"
-        "Body text.\n",
-        encoding="utf-8",
-    )
-
-    script = TEMPLATES_DIR / "validate_draft.py"
-    result = subprocess.run(
-        ["python", str(script), str(draft)],
-        capture_output=True,
-        text=True,
-    )
-
-    assert "OK" in result.stdout
-
-
-def test_validate_draft_missing_to(tmp_path):
-    """validate_draft.py detects missing **To** field."""
-    draft = tmp_path / "draft.md"
-    draft.write_text(
-        "# Test Subject\n\n"
-        "**Status**: review\n"
-        "**Author**: alex\n\n"
-        "---\n\n"
-        "Body text.\n",
-        encoding="utf-8",
-    )
-
-    script = TEMPLATES_DIR / "validate_draft.py"
-    result = subprocess.run(
-        ["python", str(script), str(draft)],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode != 0
-    assert "To" in result.stdout
-
-
-def test_validate_draft_missing_separator(tmp_path):
-    """validate_draft.py detects missing --- separator."""
-    draft = tmp_path / "draft.md"
-    draft.write_text(
-        "# Test Subject\n\n"
-        "**To**: a@b.com\n"
-        "**Status**: review\n\n"
-        "Body text.\n",
-        encoding="utf-8",
-    )
-
-    script = TEMPLATES_DIR / "validate_draft.py"
-    result = subprocess.run(
-        ["python", str(script), str(draft)],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode != 0
-    assert "---" in result.stdout
-
-
-def test_validate_draft_warns_on_draft_status(tmp_path):
-    """validate_draft.py warns when status is still 'draft'."""
-    draft = tmp_path / "draft.md"
-    draft.write_text(
-        "# Test Subject\n\n"
-        "**To**: a@b.com\n"
-        "**Status**: draft\n"
-        "**Author**: alex\n\n"
-        "---\n\n"
-        "Body text.\n",
-        encoding="utf-8",
-    )
-
-    script = TEMPLATES_DIR / "validate_draft.py"
-    result = subprocess.run(
-        ["python", str(script), str(draft)],
-        capture_output=True,
-        text=True,
-    )
-
-    assert "Warning" in result.stdout
-    assert "review" in result.stdout.lower()
-
-
-# ---------------------------------------------------------------------------
-# 6. AGENTS.md template includes all sections
+# 4. AGENTS.md template includes all sections
 # ---------------------------------------------------------------------------
 
 
@@ -351,60 +182,33 @@ def test_agents_md_template_completeness():
     assert "git pull" in md
     assert "git push" in md
 
-    # Script references
-    assert "find_unanswered.py" in md
-    assert "validate_draft.py" in md
+    # Commands reference uvx corrkit, not scripts/
+    assert "uvx corrkit find-unanswered" in md
+    assert "uvx corrkit validate-draft" in md
 
 
 # ---------------------------------------------------------------------------
-# 7. collab-sync syncs scripts
+# 5. corrkit find-unanswered and validate-draft via CLI
 # ---------------------------------------------------------------------------
 
 
-def test_collab_sync_copies_scripts(tmp_path, monkeypatch, capsys):
-    """_sync_one copies scripts from templates to shared/{name}/scripts/."""
-    from collab.sync import _sync_one
-
-    shared = tmp_path / "shared" / "alex"
-    shared.mkdir(parents=True)
-    (shared / "voice.md").write_text("# Voice\n", encoding="utf-8")
-
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
-    root_voice = tmp_path / "voice.md"
-    root_voice.write_text("# Voice\n", encoding="utf-8")
-    monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
-
-    # Set up templates
-    templates = tmp_path / "templates"
-    templates.mkdir()
-    (templates / "find_unanswered.py").write_text("# find script v2", encoding="utf-8")
-    (templates / "validate_draft.py").write_text(
-        "# validate script v2", encoding="utf-8"
+def test_find_unanswered_via_corrkit():
+    """corrkit find-unanswered --help exits 0."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "find-unanswered", "--help"],
+        capture_output=True,
+        text=True,
     )
-    (templates / "notify.yml").write_text("name: notify v2", encoding="utf-8")
-    monkeypatch.setattr("collab.sync.TEMPLATES_DIR", templates)
+    assert result.returncode == 0
+    assert "reply" in result.stdout.lower()
 
-    def fake_run(cmd, **kw):
-        if "status" in cmd and "--porcelain" in cmd:
-            return subprocess.CompletedProcess(cmd, 0, stdout="M file\n", stderr="")
-        if "pull" in cmd:
-            return subprocess.CompletedProcess(
-                cmd, 0, stdout="Already up to date.\n", stderr=""
-            )
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
-    monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
-
-    _sync_one("alex")
-
-    # Verify scripts were copied
-    assert (shared / "scripts" / "find_unanswered.py").exists()
-    assert (shared / "scripts" / "validate_draft.py").exists()
-    assert (shared / ".github" / "workflows" / "notify.yml").exists()
-
-    assert (shared / "scripts" / "find_unanswered.py").read_text() == "# find script v2"
-
-    out = capsys.readouterr().out
-    assert "Updated scripts/find_unanswered.py" in out
-    assert "Updated scripts/validate_draft.py" in out
-    assert "Updated .github/workflows/notify.yml" in out
+def test_validate_draft_via_corrkit():
+    """corrkit validate-draft --help exits 0."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "validate-draft", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "draft" in result.stdout.lower()

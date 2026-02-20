@@ -110,8 +110,8 @@ wheels = [
 ]
 
 [[package]]
-name = "correspondence-kit"
-version = "0.2.0"
+name = "corrkit"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "google-auth-oauthlib" },
@@ -131,7 +131,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "correspondence-kit", extra = ["dev"] },
+    { name = "corrkit", extra = ["dev"] },
 ]
 
 [package.metadata]
@@ -149,7 +149,7 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "correspondence-kit", extras = ["dev"] }]
+dev = [{ name = "corrkit", extras = ["dev"] }]
 
 [[package]]
 name = "cryptography"

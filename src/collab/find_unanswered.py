@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
 """
 Find threads where the last message is not from Brian --
 i.e. threads awaiting a reply.
 
-Stdlib only -- no external dependencies required.
-
 Usage:
-  python scripts/find_unanswered.py
-  python scripts/find_unanswered.py --from "Brian"
+  corrkit find-unanswered
+  corrkit find-unanswered --from "Brian"
 """
 
 import argparse
