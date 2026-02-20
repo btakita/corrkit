@@ -154,7 +154,7 @@ corrkit collab-add NAME --label LABEL [--github-user USER | --pat] [--public] [-
 corrkit collab-sync [NAME]                      # Push/pull shared submodules
 corrkit collab-status                           # Quick check for pending changes
 corrkit collab-remove NAME [--delete-repo]
-corrkit collab-reset [NAME]                     # Regenerate template files in shared repos
+corrkit collab-reset [NAME] [--no-sync]          # Pull, regenerate templates, commit & push
 corrkit find-unanswered [--from NAME]                           # Find threads awaiting a reply
 corrkit validate-draft FILE [FILE...]                           # Validate draft markdown files
 corrkit audit-docs                              # Audit instruction files for staleness

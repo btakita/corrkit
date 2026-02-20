@@ -1,17 +1,20 @@
 """
 Regenerate template files in shared collaborator repos.
 
-Rewrites AGENTS.md, README.md, CLAUDE.md symlink, .gitignore, voice.md,
-and .github/workflows/notify.yml to match the current templates.
+Pulls the latest from the remote (rebase), rewrites AGENTS.md, README.md,
+CLAUDE.md symlink, .gitignore, voice.md, and .github/workflows/notify.yml
+to match the current templates, then commits and pushes.
 
 Usage:
   corrkit collab-reset alex          # Reset one collaborator
   corrkit collab-reset               # Reset all collaborators
+  corrkit collab-reset --no-sync     # Regenerate without pull/push
 """
 
 import argparse
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -25,17 +28,22 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 _TEMPLATE_WORKFLOW = "notify.yml"
 
 
-def _reset_one(name: str) -> None:
+def _run(
+    cmd: list[str], check: bool = True, **kwargs
+) -> subprocess.CompletedProcess:
+    result = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+    if check and result.returncode != 0:
+        print(f"  FAILED: {' '.join(cmd)}")
+        print(f"  {result.stderr.strip()}")
+    return result
+
+
+def _regenerate(name: str, sub_path: Path) -> None:
     """Regenerate template files for one collaborator."""
-    sub_path = SHARED_DIR / name
-    if not sub_path.exists():
-        print(f"  {name}: submodule not found at shared/{name} -- skipping")
-        return
-
-    print(f"Resetting {name}...")
-
     # AGENTS.md
-    (sub_path / "AGENTS.md").write_text(_generate_agents_md(name), encoding="utf-8")
+    (sub_path / "AGENTS.md").write_text(
+        _generate_agents_md(name), encoding="utf-8"
+    )
     print("  Updated AGENTS.md")
 
     # CLAUDE.md symlink
@@ -46,7 +54,9 @@ def _reset_one(name: str) -> None:
     print("  Updated CLAUDE.md -> AGENTS.md")
 
     # README.md
-    (sub_path / "README.md").write_text(_generate_readme_md(name), encoding="utf-8")
+    (sub_path / "README.md").write_text(
+        _generate_readme_md(name), encoding="utf-8"
+    )
     print("  Updated README.md")
 
     # .gitignore
@@ -69,11 +79,75 @@ def _reset_one(name: str) -> None:
         print(f"  Updated .github/workflows/{_TEMPLATE_WORKFLOW}")
 
 
+def _reset_one(name: str, *, sync: bool = True) -> None:
+    """Pull, regenerate templates, commit, and push for one collaborator."""
+    sub_path = SHARED_DIR / name
+    if not sub_path.exists():
+        print(f"  {name}: submodule not found at shared/{name} -- skipping")
+        return
+
+    print(f"Resetting {name}...")
+
+    # 1. Pull latest (rebase to keep collaborator changes)
+    if sync:
+        result = _run(
+            ["git", "-C", str(sub_path), "pull", "--rebase"], check=False
+        )
+        if result.returncode == 0:
+            pulled = result.stdout.strip()
+            if "Already up to date" not in pulled:
+                print("  Pulled changes")
+        else:
+            print("  Pull failed -- continuing with reset")
+
+    # 2. Regenerate template files
+    _regenerate(name, sub_path)
+
+    if not sync:
+        return
+
+    # 3. Stage, commit, push
+    _run(["git", "-C", str(sub_path), "add", "-A"], check=False)
+
+    status = _run(
+        ["git", "-C", str(sub_path), "status", "--porcelain"], check=False
+    )
+    if status.stdout.strip():
+        _run(
+            [
+                "git",
+                "-C",
+                str(sub_path),
+                "commit",
+                "-m",
+                "Reset template files to current version",
+            ],
+            check=False,
+        )
+        result = _run(["git", "-C", str(sub_path), "push"], check=False)
+        if result.returncode == 0:
+            print("  Pushed changes")
+        else:
+            print(f"  Push failed: {result.stderr.strip()}")
+    else:
+        print("  Templates already up to date")
+
+    # 4. Update submodule ref in parent
+    _run(["git", "add", f"shared/{name}"], check=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Regenerate template files in shared collaborator repos"
     )
-    parser.add_argument("name", nargs="?", help="Collaborator name (default: all)")
+    parser.add_argument(
+        "name", nargs="?", help="Collaborator name (default: all)"
+    )
+    parser.add_argument(
+        "--no-sync",
+        action="store_true",
+        help="Regenerate files without pulling/pushing",
+    )
     args = parser.parse_args()
 
     collabs = load_collaborators()
@@ -88,9 +162,7 @@ def main() -> None:
             sys.exit(1)
 
     for name in names:
-        _reset_one(name)
-
-    print("\nDone. Run 'corrkit collab-sync' to push changes to remote.")
+        _reset_one(name, sync=not args.no_sync)
 
 
 if __name__ == "__main__":

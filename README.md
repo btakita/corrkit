@@ -71,7 +71,7 @@ corrkit collab-add NAME --label LABEL     # Add a collaborator
 corrkit collab-sync [NAME]        # Push/pull shared submodules
 corrkit collab-status             # Check for pending changes
 corrkit collab-remove NAME        # Remove a collaborator
-corrkit collab-reset [NAME]      # Regenerate template files in shared repos
+corrkit collab-reset [NAME]      # Pull, regenerate templates, commit & push
 corrkit find-unanswered           # Find threads awaiting a reply
 corrkit validate-draft FILE       # Validate draft markdown files
 corrkit audit-docs                # Audit instruction files for staleness
