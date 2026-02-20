@@ -216,6 +216,69 @@ def test_build_label_routes_with_collaborators(tmp_path, monkeypatch):
     assert routes["triage"] == Path("shared/bot/conversations/triage")
 
 
+def test_build_label_routes_account_scoped_labels(tmp_path, monkeypatch):
+    """account:label syntax scopes a label to a specific account."""
+    from collab import Collaborator, save_collaborators
+
+    config = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "bot": Collaborator(
+                labels=["for-bot", "proton-dev:INBOX"],
+                repo="o/shared-bot",
+            ),
+        },
+        config,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config)
+
+    # When syncing personal: only for-bot (plain label), not INBOX
+    routes_personal = _build_label_routes("personal")
+    assert "for-bot" in routes_personal
+    assert "INBOX" not in routes_personal
+
+    # When syncing proton-dev: both for-bot (plain, no account binding) and INBOX
+    routes_proton = _build_label_routes("proton-dev")
+    assert "for-bot" in routes_proton
+    assert "INBOX" in routes_proton
+    assert routes_proton["INBOX"] == Path("shared/bot/conversations/INBOX")
+
+    # No account filter: both included
+    routes_all = _build_label_routes()
+    assert "for-bot" in routes_all
+    assert "INBOX" in routes_all
+
+
+def test_build_label_routes_account_scoped_with_collab_account(
+    tmp_path, monkeypatch
+):
+    """account:label syntax combined with collaborator-level account field."""
+    from collab import Collaborator, save_collaborators
+
+    config = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "bot": Collaborator(
+                labels=["for-bot", "proton-dev:INBOX"],
+                repo="o/shared-bot",
+                account="personal",
+            ),
+        },
+        config,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config)
+
+    # personal: for-bot (bound by collab.account) + not INBOX
+    routes = _build_label_routes("personal")
+    assert "for-bot" in routes
+    assert "INBOX" not in routes
+
+    # proton-dev: INBOX (by account:label) + NOT for-bot (collab.account=personal)
+    routes = _build_label_routes("proton-dev")
+    assert "INBOX" in routes
+    assert "for-bot" not in routes
+
+
 def test_build_label_routes_empty(tmp_path, monkeypatch):
     config = tmp_path / "nonexistent.toml"
     monkeypatch.setattr("collab.CONFIG_PATH", config)

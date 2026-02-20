@@ -359,6 +359,11 @@ def _build_label_routes(account_name: str = "") -> dict[str, Path]:
 
     Shared labels route to shared/{name}/conversations/{label}/.
     Private labels route to conversations/{label}/ (returned as None → default).
+
+    Labels support ``account:label`` syntax for per-label account binding.
+    E.g. ``"proton-dev:INBOX"`` only matches when syncing the ``proton-dev`` account,
+    syncing the IMAP folder ``INBOX`` into the collaborator's shared dir.
+    Plain labels (no colon) use the collaborator-level ``account`` field for scoping.
     """
     try:
         from collab import load_collaborators
@@ -367,16 +372,24 @@ def _build_label_routes(account_name: str = "") -> dict[str, Path]:
 
     routes: dict[str, Path] = {}
     for name, collab in load_collaborators().items():
-        # If collaborator is bound to a specific account, skip if mismatch
-        if (
-            account_name
-            and hasattr(collab, "account")
-            and collab.account
-            and collab.account != account_name
-        ):
-            continue
         for label in collab.labels:
-            routes[label] = Path("shared") / name / "conversations" / label
+            if ":" in label:
+                # Per-label account binding: "account:folder"
+                label_account, label_name = label.split(":", 1)
+                if account_name and label_account != account_name:
+                    continue
+                routes[label_name] = (
+                    Path("shared") / name / "conversations" / label_name
+                )
+            else:
+                # Plain label — subject to collaborator-level account binding
+                if (
+                    account_name
+                    and collab.account
+                    and collab.account != account_name
+                ):
+                    continue
+                routes[label] = Path("shared") / name / "conversations" / label
     return routes
 
 

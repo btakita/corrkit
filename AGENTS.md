@@ -61,7 +61,7 @@ correspondence-kit/
     drafts/                     # Outgoing email drafts
       [YYYY-MM-DD]-[subject].md
     .sync-state.json            # IMAP sync state
-  shared/                       # Collaborator submodules (tracked by git)
+  shared/                       # Collaborator submodules (gitignored, local-only)
     [name]/                     # submodule → btakita/correspondence-shared-[name]
       conversations/[label]/*.md
       drafts/*.md
@@ -194,7 +194,8 @@ Ask Claude: *"Draft an email to [person] about [topic]"* — point it at any rel
 - **UIDVALIDITY**: If the IMAP server resets UIDVALIDITY for a folder, that label automatically does a full resync.
 - **Label routing**: Labels from each account's config go to `correspondence/conversations/{account}/{label}/`.
   Labels listed in `collaborators.toml` are automatically included in the sync and routed to
-  `shared/{name}/conversations/{label}/`. Collaborators can be bound to a specific account via `account = "name"`.
+  `shared/{name}/conversations/{label}/`. Collaborators can be bound to a specific account via `account = "name"`,
+  or individual labels can use `account:label` syntax (e.g. `"proton-dev:INBOX"`) for per-label account scoping.
 - Threads are written to `[YYYY-MM-DD]-[slug].md`
   - Date is derived from the most recent message in the thread
   - Slug is derived from the subject line
@@ -288,8 +289,16 @@ Collaborators can be people or AI agents -- anything that can read markdown and 
 labels = ["for-alex"]
 repo = "btakita/correspondence-shared-alex"
 github_user = "alex-github-username"
-account = "personal"                    # optional — bind to a specific account
+account = "personal"                    # optional — bind ALL plain labels to one account
+
+[bot]
+labels = ["for-bot", "proton-dev:INBOX"]   # account:label scopes to one account
+repo = "btakita/correspondence-shared-bot"
 ```
+
+**Label scoping**: Labels support `account:label` syntax for per-label account binding.
+`"proton-dev:INBOX"` syncs the INBOX folder only from the `proton-dev` account.
+Plain labels (no colon) use the collaborator-level `account` field for scoping, or match all accounts if unset.
 
 ### How it works
 
@@ -371,6 +380,7 @@ accounts.toml
 CLAUDE.local.md
 AGENTS.local.md
 correspondence
+shared/
 *.credentials.json
 .venv/
 __pycache__/
