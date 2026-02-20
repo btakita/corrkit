@@ -5,6 +5,7 @@ import sys
 COMMANDS = [
     ("sync [--full] [--account NAME]", "Sync email threads to markdown"),
     ("sync-auth", "Gmail OAuth setup"),
+    ("list-folders [ACCOUNT]", "List IMAP folders for an account"),
     ("sync-gmail [--full] [--account NAME]", "Alias for sync"),
     (
         "push-draft FILE [--send]",

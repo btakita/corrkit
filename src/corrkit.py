@@ -11,6 +11,7 @@ import sys
 SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "sync": ("sync.imap", "main"),
     "sync-auth": ("sync.auth", "main"),
+    "list-folders": ("sync.folders", "main"),
     "sync-gmail": ("sync.imap", "main"),  # alias for sync
     "push-draft": ("draft.push", "main"),
     "collab-add": ("collab.add", "main"),

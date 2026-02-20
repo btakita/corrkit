@@ -15,6 +15,7 @@ Usage:
 import argparse
 import re
 import smtplib
+import ssl as ssl_mod
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from pathlib import Path
@@ -88,10 +89,17 @@ def push_to_drafts(
     drafts_folder: str,
 ) -> None:
     """APPEND an email to the drafts folder via IMAP."""
-    ssl = not starttls
-    with IMAPClient(imap_host, port=imap_port, ssl=ssl) as imap:
+    use_ssl = not starttls
+    ssl_context = None
+    if starttls or (imap_host in ("127.0.0.1", "localhost")):
+        ssl_context = ssl_mod.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl_mod.CERT_NONE
+    with IMAPClient(
+        imap_host, port=imap_port, ssl=use_ssl, ssl_context=ssl_context
+    ) as imap:
         if starttls:
-            imap.starttls()
+            imap.starttls(ssl_context=ssl_context)
         imap.login(user, password)
         imap.append(
             drafts_folder, msg.as_bytes(), flags=[], msg_time=datetime.now(tz=UTC)

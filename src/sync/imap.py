@@ -12,6 +12,7 @@ import argparse
 import email
 import email.message
 import re
+import ssl as ssl_mod
 from datetime import UTC, datetime, timedelta
 from email.header import decode_header as _decode_header
 from email.utils import parsedate_to_datetime
@@ -408,10 +409,16 @@ def sync_account(
 
     print(f"Connecting to {host}:{port} as {user}")
 
-    ssl = not starttls
-    with IMAPClient(host, port=port, ssl=ssl) as imap:
+    use_ssl = not starttls
+    # Protonmail Bridge (and other local servers) use self-signed certs
+    ssl_context = None
+    if starttls or (host in ("127.0.0.1", "localhost")):
+        ssl_context = ssl_mod.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl_mod.CERT_NONE
+    with IMAPClient(host, port=port, ssl=use_ssl, ssl_context=ssl_context) as imap:
         if starttls:
-            imap.starttls()
+            imap.starttls(ssl_context=ssl_context)
         imap.login(user, password)
         for label in all_labels:
             out_dir = routes.get(label)

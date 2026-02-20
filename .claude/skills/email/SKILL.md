@@ -1,10 +1,10 @@
 # Email Skill
 
-Manage and draft correspondence using locally synced Gmail threads.
+Manage and draft correspondence using locally synced email threads.
 
 ## Core Principles
 
-- **Draft only** — never send email directly; always save as a Gmail draft for human review
+- **Draft only** — never send email directly; always save as a draft for human review
 - **Match voice** — follow the Writing Voice guidelines in CLAUDE.md exactly
 - **Use context** — always read the relevant thread in `conversations/` before drafting a reply
 - **Be concise** — prefer shorter responses; ask before writing anything long
@@ -14,7 +14,8 @@ Manage and draft correspondence using locally synced Gmail threads.
 - `correspondence/conversations/` — synced email threads as Markdown, organized by label
 - `correspondence/drafts/` — outgoing email drafts being worked on
 - `uv run .claude/skills/email/find_unanswered.py` — list threads awaiting a reply
-- `corrkit sync-gmail` — re-sync threads from Gmail
+- `corrkit sync` — re-sync threads from all accounts
+- `corrkit list-folders ACCOUNT` — list IMAP folders for an account
 
 ## Workflows
 
@@ -29,7 +30,7 @@ Manage and draft correspondence using locally synced Gmail threads.
 2. Identify the key ask or context requiring a response
 3. Draft a reply in `correspondence/drafts/[YYYY-MM-DD]-[slug].md` matching the voice guidelines
 4. Present the draft and ask for feedback before finalizing
-5. Iterate until approved — then offer to save as a Gmail draft
+5. Iterate until approved — then offer to save as a draft
 
 ### Draft a new email
 1. Ask for: recipient, topic, any relevant context or linked threads

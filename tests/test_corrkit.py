@@ -14,6 +14,7 @@ def test_help_flag_shows_all_commands():
     for cmd in [
         "sync",
         "sync-gmail",
+        "list-folders",
         "push-draft",
         "collab-add",
         "collab-sync",
@@ -45,6 +46,17 @@ def test_subcommand_help():
     )
     assert result.returncode == 0
     assert "--full" in result.stdout
+
+
+def test_list_folders_help():
+    """corrkit list-folders --help shows usage."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "list-folders", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "account" in result.stdout.lower()
 
 
 def test_unknown_subcommand_exits_nonzero():

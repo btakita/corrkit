@@ -64,6 +64,7 @@ corrkit sync                     # Sync all accounts
 corrkit sync --account personal  # Sync one account
 corrkit sync --full              # Full re-sync (ignore saved state)
 corrkit sync-gmail               # Alias for sync (backward compat)
+corrkit list-folders [ACCOUNT]   # List IMAP folders for an account
 corrkit push-draft correspondence/drafts/FILE.md # Save a draft via IMAP
 corrkit push-draft correspondence/drafts/FILE.md --send  # Send via SMTP
 corrkit collab-add NAME --label LABEL     # Add a collaborator

@@ -144,6 +144,7 @@ corrkit sync --full                             # Full re-sync (ignores saved st
 corrkit sync --account personal                 # Sync one account only
 corrkit sync-auth                               # One-time Gmail OAuth setup
 corrkit sync-gmail                              # Alias for sync (backward compat)
+corrkit list-folders [ACCOUNT]                  # List IMAP folders for an account
 corrkit push-draft correspondence/drafts/FILE.md               # Save draft via IMAP
 corrkit push-draft correspondence/drafts/FILE.md --send        # Send email via SMTP
 corrkit collab-add NAME --label LABEL [--github-user USER | --pat] [--public] [--account NAME]
