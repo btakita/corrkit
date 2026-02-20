@@ -165,6 +165,56 @@ corrkit collab-remove alex
 corrkit collab-remove alex --delete-repo  # also delete the GitHub repo
 ```
 
+## Agent-friendly design
+
+Corrkit is built to be operated by AI agents, not just used alongside them. Every interaction is
+file-based and CLI-driven — no GUIs, no OAuth popups, no interactive prompts.
+
+### Why this works with agents
+
+- **Everything is files.** Threads are Markdown. Config is TOML. Drafts are Markdown. Agents read
+  and write files natively — no API wrappers or browser automation needed.
+- **CLI is the interface.** Every operation is a single `corrkit` command. An agent can sync emails,
+  manage collaborators, validate drafts, and push changes in the same session it writes code.
+- **Zero-install for collaborators.** `uvx corrkit find-unanswered` and `uvx corrkit validate-draft`
+  work without cloning the main repo or setting up a dev environment.
+- **Self-documenting repos.** Each shared repo ships with `AGENTS.md` (full instructions),
+  `CLAUDE.md` (symlink for Claude Code), `voice.md`, and a `README.md`. A collaborator agent
+  dropped into the repo knows exactly what to do.
+- **Templates stay current.** `corrkit collab-reset` regenerates all template files in shared repos
+  when the tool evolves. No manual sync of instructions across collaborators.
+
+### Owner-side workflow
+
+The owner works with an AI agent (Claude Code, Codex, etc.) that has full context of both the
+codebase and the correspondence. In a single session, the agent can:
+
+1. Develop the tool — write code, run tests, commit
+2. Sync emails — `corrkit sync`
+3. Manage collaborators — add, reset templates, push synced threads
+4. Draft replies — reading threads for context, writing drafts matching the voice guidelines
+5. Review collaborator drafts — validate, approve, push to email
+
+The agent operates the tool the same way a human would, just faster. There's no separate "agent
+mode" — the CLI is the agent interface.
+
+### Collaborator-side workflow
+
+A collaborator agent (or human) gets a scoped git repo with:
+
+```
+shared/{name}/
+  AGENTS.md          # Full instructions: formats, commands, status flow
+  CLAUDE.md          # Symlink for Claude Code auto-discovery
+  README.md          # Quick-start guide
+  voice.md           # Writing style guidelines
+  conversations/     # Synced threads (read-only for the collaborator)
+  drafts/            # Where the collaborator writes replies
+```
+
+The agent reads conversations, drafts replies following the documented format, validates with
+`uvx corrkit validate-draft`, and pushes. The owner reviews and sends.
+
 ## AI agent instructions
 
 Project instructions live in `AGENTS.md` (symlinked as `CLAUDE.md`). Personal overrides go in `AGENTS.override.md` / `CLAUDE.local.md` (gitignored).
