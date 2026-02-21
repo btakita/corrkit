@@ -18,6 +18,7 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "collab-sync": ("collab.sync", "main"),
     "collab-status": ("collab.sync", "status"),
     "collab-remove": ("collab.remove", "main"),
+    "collab-rename": ("collab.rename", "main"),
     "collab-reset": ("collab.reset", "main"),
     "find-unanswered": ("collab.find_unanswered", "main"),
     "validate-draft": ("collab.validate_draft", "main"),

@@ -7,6 +7,7 @@ Requires credentials.json downloaded from Google Cloud Console:
 
 Usage: uv run sync-auth
 """
+
 from pathlib import Path
 
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -30,8 +31,7 @@ def main() -> None:
     creds = flow.run_local_server(
         port=3000,
         authorization_prompt_message=(
-            "Please visit this URL to authorize this application:"
-            "\n{url}\n"
+            "Please visit this URL to authorize this application:\n{url}\n"
         ),
     )
 

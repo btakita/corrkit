@@ -6,29 +6,38 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from accounts import OwnerConfig
 from collab import Collaborator, save_collaborators
 from collab.add import _generate_agents_md, _generate_readme_md
 from draft.push import parse_draft
 from sync.imap import _build_label_routes, _merge_message_to_file
 from sync.types import Message
 
+MOCK_OWNER = OwnerConfig(github_user="btakita", name="Brian")
+
 # ---------------------------------------------------------------------------
-# 1. Sync routes to shared/
+# 1. Sync routes to for/{gh-user}/
 # ---------------------------------------------------------------------------
 
 
-def test_sync_routes_to_shared_dir(tmp_path, monkeypatch):
-    """Messages for a collaborator label land in shared/{name}/conversations/."""
+def test_sync_routes_to_collab_dir(tmp_path, monkeypatch):
+    """Messages for a collaborator label land in for/{gh-user}/conversations/."""
     config = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"drafter": Collaborator(labels=["for-drafter"], repo="o/shared-drafter")},
+        {
+            "drafter-gh": Collaborator(
+                labels=["for-drafter"],
+                github_user="drafter-gh",
+                repo="o/to-drafter-gh",
+            )
+        },
         config,
     )
     monkeypatch.setattr("collab.CONFIG_PATH", config)
 
     routes = _build_label_routes()
     assert "for-drafter" in routes
-    assert routes["for-drafter"] == Path("shared/drafter/conversations/for-drafter")
+    assert routes["for-drafter"] == Path("correspondence/for/drafter-gh/conversations")
 
     # Simulate merge to the routed directory
     out_dir = tmp_path / routes["for-drafter"]
@@ -55,14 +64,27 @@ def test_sync_routes_to_shared_dir(tmp_path, monkeypatch):
 
 
 def test_collab_sync_stages_and_commits(tmp_path, monkeypatch, capsys):
-    """_sync_one stages, commits, and pushes changes in shared/{name}/."""
+    """_sync_one stages, commits, and pushes changes in for/{gh-user}/."""
     from collab.sync import _sync_one
 
-    shared = tmp_path / "shared" / "drafter"
-    shared.mkdir(parents=True)
-    (shared / "voice.md").write_text("# Voice\n", encoding="utf-8")
+    config_path = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "drafter-gh": Collaborator(
+                labels=["for-drafter"],
+                github_user="drafter-gh",
+                repo="o/to-drafter-gh",
+            )
+        },
+        config_path,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
 
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
+    sub = tmp_path / "correspondence" / "for" / "drafter-gh"
+    sub.mkdir(parents=True)
+    (sub / "voice.md").write_text("# Voice\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice\n", encoding="utf-8")
     monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
@@ -87,7 +109,7 @@ def test_collab_sync_stages_and_commits(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
 
-    _sync_one("drafter")
+    _sync_one("drafter-gh")
 
     cmd_strs = [" ".join(c) for c in cmds_run]
     assert any("add -A" in s for s in cmd_strs)
@@ -115,8 +137,8 @@ Thanks for the update. Here are my thoughts on the next steps.
 
 
 def test_draft_round_trip(tmp_path):
-    """A draft in shared/{name}/drafts/ parses correctly via parse_draft."""
-    draft_dir = tmp_path / "shared" / "drafter" / "drafts"
+    """A draft in for/{gh-user}/drafts/ parses correctly via parse_draft."""
+    draft_dir = tmp_path / "correspondence" / "for" / "drafter-gh" / "drafts"
     draft_dir.mkdir(parents=True)
     draft_path = draft_dir / "2026-02-19-project-update.md"
     draft_path.write_text(DRAFTER_DRAFT, encoding="utf-8")
@@ -189,6 +211,13 @@ def test_agents_md_template_completeness():
     assert "uvx corrkit validate-draft" in md
 
 
+def test_agents_md_uses_owner_name():
+    """AGENTS.md template parameterizes owner name."""
+    md = _generate_agents_md("drafter", owner_name="Dana")
+    assert "Shared Correspondence with Dana" in md
+    assert "ready for Dana" in md
+
+
 # ---------------------------------------------------------------------------
 # 5. corrkit find-unanswered and validate-draft via CLI
 # ---------------------------------------------------------------------------
@@ -227,11 +256,16 @@ VOICE_FILE = Path(__file__).resolve().parent.parent / "voice.md"
 def test_collab_add_creates_correct_files(tmp_path):
     """collab-add file-creation logic produces all expected files."""
     name = "helper"
+    owner_name = "Brian"
 
     # Replicate the file-creation logic from collab.add.main()
-    (tmp_path / "AGENTS.md").write_text(_generate_agents_md(name), encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text(
+        _generate_agents_md(name, owner_name), encoding="utf-8"
+    )
     os.symlink("AGENTS.md", tmp_path / "CLAUDE.md")
-    (tmp_path / "README.md").write_text(_generate_readme_md(name), encoding="utf-8")
+    (tmp_path / "README.md").write_text(
+        _generate_readme_md(name, owner_name), encoding="utf-8"
+    )
     (tmp_path / ".gitignore").write_text(
         "AGENTS.local.md\nCLAUDE.local.md\n__pycache__/\n", encoding="utf-8"
     )
@@ -263,10 +297,10 @@ def test_collab_add_creates_correct_files(tmp_path):
     agents_content = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
     assert f"**Author**: {name}" in agents_content
 
-    # README.md contains collaborator name in dir name and Author field
+    # README.md uses owner name
     readme_content = (tmp_path / "README.md").read_text(encoding="utf-8")
-    assert f"cd correspondence-shared-{name}" in readme_content
     assert f"**Author**: {name}" in readme_content
+    assert f"Shared Correspondence with {owner_name}" in readme_content
 
     # .gitignore contains expected entries
     gitignore = (tmp_path / ".gitignore").read_text(encoding="utf-8")
@@ -282,14 +316,13 @@ def test_collab_add_creates_correct_files(tmp_path):
 
 def test_readme_md_template_completeness():
     """Expanded README.md template includes all required sections and content."""
-    md = _generate_readme_md("drafter")
+    md = _generate_readme_md("drafter", owner_name="Brian")
 
     # Title
     assert "# Shared Correspondence with Brian" in md
 
-    # Quick start with parameterized dir name
+    # Quick start
     assert "## Quick start" in md
-    assert "cd correspondence-shared-drafter" in md
 
     # All four workflow sections
     assert "### 1. Read conversations" in md

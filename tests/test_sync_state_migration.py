@@ -62,9 +62,7 @@ def test_new_format_no_migration_when_accounts_present():
     """If both accounts and labels exist, accounts wins — labels left as-is."""
     mixed = {
         "accounts": {
-            "personal": {
-                "labels": {"inbox": {"uidvalidity": 1, "last_uid": 100}}
-            }
+            "personal": {"labels": {"inbox": {"uidvalidity": 1, "last_uid": 100}}}
         },
         "labels": {
             "old": {"uidvalidity": 9, "last_uid": 999},

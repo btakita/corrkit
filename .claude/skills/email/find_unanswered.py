@@ -4,6 +4,7 @@ i.e. threads awaiting your reply.
 
 Usage: uv run .claude/skills/email/find_unanswered.py
 """
+
 import os
 import re
 import sys
@@ -45,9 +46,7 @@ def thread_labels(text: str) -> str:
 
 unanswered: list[tuple[str, str, str]] = []  # (labels, filename, last_sender)
 
-thread_files = sorted(
-    CONVERSATIONS.rglob("*.md"), key=lambda p: p.name, reverse=True
-)
+thread_files = sorted(CONVERSATIONS.rglob("*.md"), key=lambda p: p.name, reverse=True)
 for thread_file in thread_files:
     text = thread_file.read_text(encoding="utf-8")
     sender = last_sender(text)

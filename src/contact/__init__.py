@@ -28,9 +28,7 @@ def load_contacts(path: Path | None = None) -> dict[str, Contact]:
     return result
 
 
-def save_contacts(
-    contacts: dict[str, Contact], path: Path | None = None
-) -> None:
+def save_contacts(contacts: dict[str, Contact], path: Path | None = None) -> None:
     """Write contacts back to TOML. Simple serializer — no third-party dep."""
     if path is None:
         path = CONFIG_PATH

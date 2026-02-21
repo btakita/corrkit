@@ -147,9 +147,7 @@ def test_set_mtime(tmp_path):
     f = tmp_path / "test.md"
     f.write_text("hello")
     _set_mtime(f, "Mon, 10 Feb 2025 14:30:00 +0000")
-    expected = _parse_msg_date(
-        "Mon, 10 Feb 2025 14:30:00 +0000"
-    ).timestamp()
+    expected = _parse_msg_date("Mon, 10 Feb 2025 14:30:00 +0000").timestamp()
     assert abs(f.stat().st_mtime - expected) < 1
 
 
@@ -177,9 +175,7 @@ def test_merge_creates_new_file(tmp_path):
         body="Hi there.",
     )
 
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg, "hello"
-    )
+    _merge_message_to_file(out_dir, "test-label", "personal", msg, "hello")
 
     files = list(out_dir.glob("*.md"))
     assert len(files) == 1
@@ -202,12 +198,8 @@ def test_merge_deduplicates(tmp_path):
         body="Hi there.",
     )
 
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg, "hello"
-    )
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg, "hello"
-    )
+    _merge_message_to_file(out_dir, "test-label", "personal", msg, "hello")
+    _merge_message_to_file(out_dir, "test-label", "personal", msg, "hello")
 
     files = list(out_dir.glob("*.md"))
     assert len(files) == 1
@@ -235,12 +227,8 @@ def test_merge_appends_new_message(tmp_path):
         body="Hey Alice!",
     )
 
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg1, "hello"
-    )
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg2, "hello"
-    )
+    _merge_message_to_file(out_dir, "test-label", "personal", msg1, "hello")
+    _merge_message_to_file(out_dir, "test-label", "personal", msg2, "hello")
 
     files = list(out_dir.glob("*.md"))
     assert len(files) == 1
@@ -262,12 +250,8 @@ def test_merge_accumulates_labels(tmp_path):
         body="Hi there.",
     )
 
-    _merge_message_to_file(
-        out_dir, "correspondence", "personal", msg, "hello"
-    )
-    _merge_message_to_file(
-        out_dir, "for-alex", "personal", msg, "hello"
-    )
+    _merge_message_to_file(out_dir, "correspondence", "personal", msg, "hello")
+    _merge_message_to_file(out_dir, "for-alex", "personal", msg, "hello")
 
     files = list(out_dir.glob("*.md"))
     assert len(files) == 1
@@ -287,12 +271,8 @@ def test_merge_accumulates_accounts(tmp_path):
         body="Hi there.",
     )
 
-    _merge_message_to_file(
-        out_dir, "inbox", "personal", msg, "hello"
-    )
-    _merge_message_to_file(
-        out_dir, "inbox", "proton", msg, "hello"
-    )
+    _merge_message_to_file(out_dir, "inbox", "personal", msg, "hello")
+    _merge_message_to_file(out_dir, "inbox", "proton", msg, "hello")
 
     files = list(out_dir.glob("*.md"))
     assert len(files) == 1
@@ -311,14 +291,10 @@ def test_merge_sets_mtime(tmp_path):
         body="Hi there.",
     )
 
-    _merge_message_to_file(
-        out_dir, "test-label", "personal", msg, "hello"
-    )
+    _merge_message_to_file(out_dir, "test-label", "personal", msg, "hello")
 
     files = list(out_dir.glob("*.md"))
-    expected = _parse_msg_date(
-        "Mon, 10 Feb 2025 10:00:00 +0000"
-    ).timestamp()
+    expected = _parse_msg_date("Mon, 10 Feb 2025 10:00:00 +0000").timestamp()
     assert abs(files[0].stat().st_mtime - expected) < 1
 
 
@@ -342,12 +318,8 @@ def test_merge_slug_collision(tmp_path):
         body="Different thread, same subject.",
     )
 
-    _merge_message_to_file(
-        out_dir, "label", "personal", msg1, "thread-a"
-    )
-    _merge_message_to_file(
-        out_dir, "label", "personal", msg2, "thread-b"
-    )
+    _merge_message_to_file(out_dir, "label", "personal", msg1, "thread-a")
+    _merge_message_to_file(out_dir, "label", "personal", msg2, "thread-b")
 
     files = sorted(f.name for f in out_dir.glob("*.md"))
     assert len(files) == 2
@@ -389,19 +361,19 @@ def test_cleanup_orphans_missing_dir(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_build_label_routes_with_collaborators(
-    tmp_path, monkeypatch
-):
+def test_build_label_routes_with_collaborators(tmp_path, monkeypatch):
     from collab import Collaborator, save_collaborators
 
     config = tmp_path / "collaborators.toml"
     save_collaborators(
         {
-            "alex": Collaborator(
-                labels=["for-alex"], repo="o/shared-alex"
+            "alex-gh": Collaborator(
+                labels=["for-alex"], github_user="alex-gh", repo="o/to-alex-gh"
             ),
-            "bot": Collaborator(
-                labels=["for-bot", "triage"], repo="o/shared-bot"
+            "bot-agent": Collaborator(
+                labels=["for-bot", "triage"],
+                github_user="bot-agent",
+                repo="o/to-bot-agent",
             ),
         },
         config,
@@ -410,29 +382,22 @@ def test_build_label_routes_with_collaborators(
 
     routes = _build_label_routes()
 
-    assert routes["for-alex"] == Path(
-        "shared/alex/conversations/for-alex"
-    )
-    assert routes["for-bot"] == Path(
-        "shared/bot/conversations/for-bot"
-    )
-    assert routes["triage"] == Path(
-        "shared/bot/conversations/triage"
-    )
+    assert routes["for-alex"] == Path("correspondence/for/alex-gh/conversations")
+    assert routes["for-bot"] == Path("correspondence/for/bot-agent/conversations")
+    assert routes["triage"] == Path("correspondence/for/bot-agent/conversations")
 
 
-def test_build_label_routes_account_scoped_labels(
-    tmp_path, monkeypatch
-):
+def test_build_label_routes_account_scoped_labels(tmp_path, monkeypatch):
     """account:label syntax scopes a label to a specific account."""
     from collab import Collaborator, save_collaborators
 
     config = tmp_path / "collaborators.toml"
     save_collaborators(
         {
-            "bot": Collaborator(
+            "bot-agent": Collaborator(
                 labels=["for-bot", "proton-dev:INBOX"],
-                repo="o/shared-bot",
+                github_user="bot-agent",
+                repo="o/to-bot-agent",
             ),
         },
         config,
@@ -448,9 +413,7 @@ def test_build_label_routes_account_scoped_labels(
     routes_proton = _build_label_routes("proton-dev")
     assert "for-bot" in routes_proton
     assert "INBOX" in routes_proton
-    assert routes_proton["INBOX"] == Path(
-        "shared/bot/conversations/INBOX"
-    )
+    assert routes_proton["INBOX"] == Path("correspondence/for/bot-agent/conversations")
 
     # No account filter: both included
     routes_all = _build_label_routes()
@@ -458,18 +421,17 @@ def test_build_label_routes_account_scoped_labels(
     assert "INBOX" in routes_all
 
 
-def test_build_label_routes_account_scoped_with_collab_account(
-    tmp_path, monkeypatch
-):
+def test_build_label_routes_account_scoped_with_collab_account(tmp_path, monkeypatch):
     """account:label combined with collaborator-level account field."""
     from collab import Collaborator, save_collaborators
 
     config = tmp_path / "collaborators.toml"
     save_collaborators(
         {
-            "bot": Collaborator(
+            "bot-agent": Collaborator(
                 labels=["for-bot", "proton-dev:INBOX"],
-                repo="o/shared-bot",
+                github_user="bot-agent",
+                repo="o/to-bot-agent",
                 account="personal",
             ),
         },

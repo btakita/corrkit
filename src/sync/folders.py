@@ -28,8 +28,7 @@ def main() -> None:
 
     if args.account not in accounts:
         raise SystemExit(
-            f"Unknown account: {args.account}\n"
-            f"Available: {', '.join(accounts.keys())}"
+            f"Unknown account: {args.account}\nAvailable: {', '.join(accounts.keys())}"
         )
 
     acct = accounts[args.account]
@@ -45,8 +44,10 @@ def main() -> None:
     print(f"Connecting to {acct.imap_host}:{acct.imap_port} as {acct.user}\n")
 
     with IMAPClient(
-        acct.imap_host, port=acct.imap_port,
-        ssl=use_ssl, ssl_context=ssl_context,
+        acct.imap_host,
+        port=acct.imap_port,
+        ssl=use_ssl,
+        ssl_context=ssl_context,
     ) as imap:
         if acct.imap_starttls:
             imap.starttls(ssl_context=ssl_context)

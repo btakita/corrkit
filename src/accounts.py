@@ -32,7 +32,12 @@ PROVIDER_PRESETS: dict[str, dict[str, object]] = {
 }
 
 
-_NON_ACCOUNT_KEYS = frozenset({"watch"})
+_NON_ACCOUNT_KEYS = frozenset({"watch", "owner"})
+
+
+class OwnerConfig(msgspec.Struct):
+    github_user: str
+    name: str = ""
 
 
 class WatchConfig(msgspec.Struct):
@@ -144,6 +149,26 @@ def load_accounts_or_env(path: Path | None = None) -> dict[str, Account]:
     return {"_legacy": _legacy_account_from_env()}
 
 
+def load_owner(path: Path | None = None) -> OwnerConfig:
+    """Load [owner] section from accounts.toml."""
+    if path is None:
+        path = CONFIG_PATH
+    if not path.exists():
+        raise SystemExit(
+            f"accounts.toml not found at {path}.\n"
+            "Add an [owner] section with github_user."
+        )
+    with open(path, "rb") as f:
+        raw = tomllib.load(f)
+    owner_data = raw.get("owner")
+    if owner_data is None:
+        raise SystemExit(
+            "Missing [owner] section in accounts.toml.\n"
+            'Add: [owner]\ngithub_user = "your-github-username"'
+        )
+    return msgspec.convert(owner_data, OwnerConfig)
+
+
 def get_default_account(accounts: dict[str, Account]) -> tuple[str, Account]:
     """Return (name, account) for the default account."""
     for name, acct in accounts.items():
@@ -188,8 +213,7 @@ def add_label_to_account(
     accounts = load_accounts(path)
     if account_name not in accounts:
         print(
-            f"Unknown account: {account_name}\n"
-            f"Available: {', '.join(accounts.keys())}",
+            f"Unknown account: {account_name}\nAvailable: {', '.join(accounts.keys())}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -207,9 +231,7 @@ def add_label_to_account(
     section_match = section_re.search(text)
     if not section_match:
         # Try flat format (no [accounts.] prefix)
-        section_re = re.compile(
-            rf"^\[{re.escape(account_name)}\]", re.MULTILINE
-        )
+        section_re = re.compile(rf"^\[{re.escape(account_name)}\]", re.MULTILINE)
         section_match = section_re.search(text)
     if not section_match:
         print(
@@ -220,7 +242,7 @@ def add_label_to_account(
 
     # Find the labels = [...] line after the section header
     labels_re = re.compile(
-        r'^(labels\s*=\s*\[)(.*?)(\])',
+        r"^(labels\s*=\s*\[)(.*?)(\])",
         re.MULTILINE,
     )
     # Search from the section start
@@ -233,7 +255,7 @@ def add_label_to_account(
         sys.exit(1)
 
     # Check it's within this section (before next section header)
-    next_section = re.search(r'^\[', text[section_match.end():], re.MULTILINE)
+    next_section = re.search(r"^\[", text[section_match.end() :], re.MULTILINE)
     beyond_section = (
         next_section
         and labels_match.start() > section_match.end() + next_section.start()
@@ -255,7 +277,7 @@ def add_label_to_account(
     new_text = (
         text[: labels_match.start()]
         + f"labels = [{new_labels}]"
-        + text[labels_match.end():]
+        + text[labels_match.end() :]
     )
     path.write_text(new_text, encoding="utf-8")
     return True
@@ -276,15 +298,9 @@ def add_label_main() -> None:
 
     added = add_label_to_account(args.account, args.label)
     if added:
-        print(
-            f"Added '{args.label}' to account "
-            f"'{args.account}' in accounts.toml"
-        )
+        print(f"Added '{args.label}' to account '{args.account}' in accounts.toml")
     else:
-        print(
-            f"Label '{args.label}' already in account "
-            f"'{args.account}'"
-        )
+        print(f"Label '{args.label}' already in account '{args.account}'")
 
 
 def load_watch_config(path: Path | None = None) -> WatchConfig:

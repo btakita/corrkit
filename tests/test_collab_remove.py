@@ -16,33 +16,45 @@ def test_remove_deletes_config_entry(tmp_path, monkeypatch):
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
         {
-            "alex": Collaborator(
-                labels=["for-alex"], repo="o/shared-alex", github_user="alex-gh"
+            "alex-gh": Collaborator(
+                labels=["for-alex"],
+                repo="o/to-alex-gh",
+                github_user="alex-gh",
+                name="Alex",
             ),
-            "bot": Collaborator(labels=["for-bot"], repo="o/shared-bot"),
+            "bot-agent": Collaborator(
+                labels=["for-bot"],
+                repo="o/to-bot-agent",
+                github_user="bot-agent",
+            ),
         },
         config_path,
     )
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.remove.SHARED_DIR", tmp_path / "shared")
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("collab.remove.subprocess.run", lambda cmd, **kw: _ok())
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex"])
+    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
 
     main()
 
     result = load_collaborators(config_path)
-    assert "alex" not in result
-    assert "bot" in result
+    assert "alex-gh" not in result
+    assert "bot-agent" in result
 
 
 def test_remove_runs_submodule_deinit(tmp_path, monkeypatch):
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="o/r")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
-    shared = tmp_path / "shared" / "alex"
-    shared.mkdir(parents=True)
+    sub = tmp_path / "correspondence" / "for" / "alex-gh"
+    sub.mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
 
     cmds: list[list[str]] = []
 
@@ -51,9 +63,8 @@ def test_remove_runs_submodule_deinit(tmp_path, monkeypatch):
         return _ok()
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.remove.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex"])
+    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
 
     main()
 
@@ -65,17 +76,21 @@ def test_remove_runs_submodule_deinit(tmp_path, monkeypatch):
 def test_remove_skips_git_when_no_submodule_dir(tmp_path, monkeypatch, capsys):
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="o/r")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
+    monkeypatch.chdir(tmp_path)
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.remove.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr(
         "collab.remove.subprocess.run",
         lambda cmd, **kw: _ok(),
     )
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex"])
+    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
 
     main()
 
@@ -97,9 +112,14 @@ def test_remove_delete_repo_prompts(tmp_path, monkeypatch, capsys):
     """--delete-repo with 'y' input runs gh repo delete."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="o/shared-alex")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
+    monkeypatch.chdir(tmp_path)
 
     cmds: list[list[str]] = []
 
@@ -108,10 +128,9 @@ def test_remove_delete_repo_prompts(tmp_path, monkeypatch, capsys):
         return _ok()
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.remove.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex", "--delete-repo"])
+    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh", "--delete-repo"])
 
     main()
 
@@ -123,9 +142,14 @@ def test_remove_delete_repo_declined(tmp_path, monkeypatch, capsys):
     """--delete-repo with 'n' input skips deletion."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="o/shared-alex")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
+    monkeypatch.chdir(tmp_path)
 
     cmds: list[list[str]] = []
 
@@ -134,10 +158,9 @@ def test_remove_delete_repo_declined(tmp_path, monkeypatch, capsys):
         return _ok()
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.remove.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
     monkeypatch.setattr("builtins.input", lambda _: "n")
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex", "--delete-repo"])
+    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh", "--delete-repo"])
 
     main()
 

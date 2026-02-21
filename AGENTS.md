@@ -1,14 +1,5 @@
 # Correspondence Kit
 
-A personal workspace for syncing conversations from multiple sources into a single flat directory of Markdown files, drafting replies with AI assistance, and pushing routing intelligence to Cloudflare.
-
-## Purpose
-
-- Consolidate conversations from multiple email accounts (Gmail, Protonmail, self-hosted IMAP) into one flat directory
-- Draft and refine outgoing messages with Claude's assistance, using per-contact context
-- Maintain a readable, version-controlled record of all correspondence
-- Push distilled intelligence (tags, routing rules, contact metadata) to Cloudflare for email routing
-
 ## Tech Stack
 
 - **Runtime**: Python 3.12+ via `uv`
@@ -19,69 +10,85 @@ A personal workspace for syncing conversations from multiple sources into a sing
 - **Sources**: Any IMAP provider (Gmail, Protonmail Bridge, generic IMAP); Slack and social media planned
 - **Cloudflare** (routing layer): TypeScript Workers reading from D1/KV populated by Python
 
+## Two Repos
+
+**corrkit** is the tool — Python source, tests, config templates. It is a public repo.
+
+**correspondence** is the data — synced threads, drafts, contacts, collaborator submodules.
+It is a separate, private repo. corrkit accesses it via a `correspondence/` path in the
+working directory, which can be either:
+
+- A **symlink** to an external clone (e.g. `correspondence -> ~/data/correspondence`)
+- A **subdirectory** or nested clone inside the corrkit checkout
+
+All corrkit commands assume `correspondence/` exists at the working directory root.
+The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history
+regardless of how it is linked.
+
 ## Project Structure
 
 ```
-correspondence-kit/
-  AGENTS.md                      # Project instructions (CLAUDE.md symlinks here)
+./                                 # Tool repo (this repo)
+  AGENTS.md                        # Project instructions (CLAUDE.md symlinks here)
   pyproject.toml
-  voice.md                       # Writing voice guidelines (committed)
-  accounts.toml                  # Multi-account IMAP config (gitignored)
-  accounts.toml.example          # Template with provider presets (committed)
-  contacts.toml                  # Contact metadata (gitignored, real names/emails)
-  contacts.toml.example          # Template (committed)
-  collaborators.toml             # Collaborator config (committed)
-  .env                          # Legacy credentials fallback (gitignored)
-  .gitignore
+  voice.md                         # Writing voice guidelines (committed)
+  accounts.toml                    # Multi-account IMAP config (gitignored)
+  accounts.toml.example            # Template with provider presets (committed)
+  contacts.toml                    # Contact metadata (gitignored)
+  contacts.toml.example            # Template (committed)
+  collaborators.toml               # Collaborator config (committed)
+  .env                             # Legacy credentials fallback (gitignored)
   .claude/
     skills/
       email/
-        SKILL.md                # Email drafting & management skill
-        find_unanswered.py      # Find threads needing a reply
+        SKILL.md                   # Email drafting & management skill
+        find_unanswered.py         # Find threads needing a reply
   src/
-    accounts.py                  # Account config parser (accounts.toml)
+    accounts.py                    # Account config parser (accounts.toml)
     sync/
-      __init__.py
-      imap.py                   # Multi-account IMAP sync logic
-      types.py                  # msgspec Structs (Thread, Message, SyncState, etc.)
-      auth.py                   # One-time Gmail OAuth flow
+      imap.py                      # Multi-account IMAP sync logic
+      types.py                     # msgspec Structs
+      auth.py                      # One-time Gmail OAuth flow
     draft/
-      __init__.py
-      push.py                   # Push draft to email (draft or send)
+      push.py                      # Push draft to email (draft or send)
     collab/
-      __init__.py               # Collaborator config parser (collaborators.toml)
-      add.py                    # collab-add command
-      sync.py                   # collab-sync / collab-status commands
-      remove.py                 # collab-remove command
-      reset.py                  # collab-reset command
-      find_unanswered.py        # find-unanswered command
-      validate_draft.py         # validate-draft command
+      __init__.py                  # Collaborator config parser
+      add.py                       # collab-add command
+      sync.py                      # collab-sync / collab-status commands
+      remove.py                    # collab-remove command
+      rename.py                    # collab-rename command
+      reset.py                     # collab-reset command
+      find_unanswered.py           # find-unanswered command
+      validate_draft.py            # validate-draft command
     contact/
-      __init__.py               # Contact config parser (contacts.toml)
-      add.py                    # contact-add command
+      __init__.py                  # Contact config parser
+      add.py                       # contact-add command
     cloudflare/
-      __init__.py               # Push intelligence to Cloudflare D1/KV (planned)
-    watch.py                    # IMAP polling daemon (corrkit watch)
+      __init__.py                  # Push intelligence to Cloudflare (planned)
+    watch.py                       # IMAP polling daemon (corrkit watch)
   services/
-    corrkit-watch.service       # systemd user unit template
-    com.corrkit.watch.plist     # launchd agent template
-  correspondence -> ~/work/btakita/correspondence  # Symlink to personal data repo
-    conversations/              # Synced threads (flat, one file per thread)
-      [subject-slug].md         # Immutable filename, mtime = last message date
-    contacts/                   # Per-contact context docs
-      [name]/
-        AGENTS.md               # Relationship, tone, topics, notes
-        CLAUDE.md               # Symlink → AGENTS.md
-    drafts/                     # Outgoing email drafts
-      [YYYY-MM-DD]-[subject].md
-    manifest.toml               # Thread index (generated by sync)
-    .sync-state.json            # IMAP sync state
-  shared/                       # Collaborator submodules (gitignored, local-only)
-    [name]/                     # submodule → btakita/correspondence-shared-[name]
-      conversations/[label]/*.md
+    corrkit-watch.service          # systemd user unit template
+    com.corrkit.watch.plist        # launchd agent template
+  tests/
+
+correspondence/                    # Data repo (separate, gitignored)
+  conversations/                   # Synced threads (flat, one file per thread)
+    [subject-slug].md              # Immutable filename, mtime = last message date
+  contacts/                        # Per-contact context docs
+    [name]/
+      AGENTS.md                    # Relationship, tone, topics, notes
+      CLAUDE.md                    # Symlink → AGENTS.md
+  drafts/                          # Outgoing email drafts
+    [YYYY-MM-DD]-[subject].md
+  for/                             # Collaborator submodules (outgoing)
+    [gh-user]/                     # submodule → {owner}/to-{collab-gh}
+      conversations/*.md
       drafts/*.md
       AGENTS.md
       voice.md
+  by/                              # Collaborator submodules (incoming, planned)
+  manifest.toml                    # Thread index (generated by sync)
+  .sync-state.json                 # IMAP sync state
 ```
 
 ## Writing Voice
@@ -101,193 +108,23 @@ cp accounts.toml.example accounts.toml   # configure your email accounts
 uv sync
 ```
 
-### accounts.toml
-
-Define one or more email accounts with provider presets:
-
-```toml
-[accounts.personal]
-provider = "gmail"                      # gmail | protonmail-bridge | imap
-user = "brian@gmail.com"
-password_cmd = "pass email/personal"    # or: password = "inline-secret"
-labels = ["correspondence"]
-default = true
-
-[accounts.proton]
-provider = "protonmail-bridge"
-user = "brian@proton.me"
-password_cmd = "pass email/proton"
-labels = ["private"]
-```
-
-**Provider presets** fill in connection defaults:
-
-| Field | `gmail` | `protonmail-bridge` | `imap` (generic) |
-|---|---|---|---|
-| imap_host | imap.gmail.com | 127.0.0.1 | (required) |
-| imap_port | 993 | 1143 | 993 |
-| imap_starttls | false | true | false |
-| smtp_host | smtp.gmail.com | 127.0.0.1 | (required) |
-| smtp_port | 465 | 1025 | 465 |
-| drafts_folder | [Gmail]/Drafts | Drafts | Drafts |
-
-Any preset value can be overridden per-account.
-
-**Credential resolution**: `password` (inline) or `password_cmd` (runs shell command, e.g. `pass email/personal`). Resolved lazily at connection time.
-
-**Backward compat**: If no `accounts.toml` exists, falls back to `.env` GMAIL_* vars as a synthetic `_legacy` account.
-
-### contacts.toml
-
-Per-contact metadata for drafting context. Maps contacts to email addresses and conversation labels.
-
-```toml
-[alex]
-emails = ["alex@example.com", "alex@work.com"]
-labels = ["correspondence"]
-account = "personal"
-```
-
-Labels are for lookup only — they tell Claude which conversation folders contain this person's threads. They do NOT affect sync routing. The `account` field scopes label lookups to a specific account.
-
-Per-contact context docs live in `correspondence/contacts/{name}/AGENTS.md` (with a CLAUDE.md symlink). These are auto-loaded by Claude Code when drafting emails to that person.
-
-### Gmail OAuth Setup (legacy .env)
-
-If using `.env` instead of `accounts.toml`:
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project → Enable the **Gmail API**
-3. Create OAuth 2.0 credentials (Desktop app type)
-4. Download the credentials JSON and extract `client_id` and `client_secret` into `.env`
-5. Run the auth flow once to obtain a refresh token:
-   ```sh
-   corrkit sync-auth
-   ```
-
-## Commands
-
-```sh
-uv sync                                         # Install dependencies
-corrkit sync                                    # Sync all accounts (incremental)
-corrkit sync --full                             # Full re-sync (ignores saved state)
-corrkit sync --account personal                 # Sync one account only
-corrkit sync-auth                               # One-time Gmail OAuth setup
-corrkit sync-gmail                              # Alias for sync (backward compat)
-corrkit list-folders [ACCOUNT]                  # List IMAP folders for an account
-corrkit push-draft correspondence/drafts/FILE.md               # Save draft via IMAP
-corrkit push-draft correspondence/drafts/FILE.md --send        # Send email via SMTP
-corrkit add-label LABEL --account NAME               # Add a label to an account's sync config
-corrkit contact-add NAME --email EMAIL [--label LABEL] [--account ACCOUNT]
-corrkit collab-add NAME --label LABEL [--github-user USER | --pat] [--public] [--account NAME]
-corrkit collab-sync [NAME]                      # Push/pull shared submodules
-corrkit collab-status                           # Quick check for pending changes
-corrkit collab-remove NAME [--delete-repo]
-corrkit collab-reset [NAME] [--no-sync]          # Pull, regenerate templates, commit & push
-corrkit find-unanswered [--from NAME]                           # Find threads awaiting a reply
-corrkit validate-draft FILE [FILE...]                           # Validate draft markdown files
-corrkit watch                                   # Poll IMAP and sync on an interval
-corrkit watch --interval 60                     # Override poll interval (seconds)
-corrkit audit-docs                              # Audit instruction files for staleness
-corrkit help                                    # Show command reference
-
-# Dev tools
-uv run pytest                                    # Run tests
-uv run ruff check .                             # Lint
-uv run ruff format .                            # Format
-uv run ty check                                 # Type check
-```
-
-## Workflows
-
-### Daily email review
-
-1. Run `corrkit sync` to pull latest threads
-2. Ask Claude: *"Review correspondence/conversations/ and identify threads that need a response, ordered by priority"*
-3. For each thread, ask Claude to draft a reply matching the voice guidelines above
-4. Review and edit the draft in `correspondence/drafts/`
-5. When satisfied, ask Claude to save it as a Gmail draft (never send directly)
-
-### Finding unanswered threads
-
-```sh
-corrkit find-unanswered [--from NAME]
-```
-
-Lists all synced threads where the last message is not from you — i.e. threads awaiting your reply.
-
-### Drafting a new email
-
-Ask Claude: *"Draft an email to [person] about [topic]"* — point it at any relevant thread in `correspondence/conversations/` for context.
-
-## Flat Conversation Directory
-
-All synced threads live in a single flat directory: `correspondence/conversations/`. There are no
-subdirectories for accounts, labels, or sources. This design consolidates correspondence across
-multiple email accounts (and in the future, Slack and social media) into one unified view.
-
-**Why flat?**
-- A conversation with the same person may arrive via Gmail, Protonmail, or both. Flat storage
-  deduplicates naturally — the same thread merges into one file regardless of which account fetched it.
-- Agents and humans browse one directory, not a tree of account/label folders. `ls -t` shows all
-  recent threads sorted by activity.
-- The source metadata (which accounts, which labels) is preserved inside each file and in
-  `manifest.toml`, not encoded in the directory structure.
-- Adding new sources (Slack, social media) doesn't change the directory layout — new messages just
-  merge into the same flat directory with their source tracked in metadata.
-
-**manifest.toml** is generated after each sync. It indexes every thread by subject, labels, accounts,
-contacts, and last-updated date. Agents read the manifest for discovery, then read individual files
-for content — no recursive scanning needed.
+See README.md for full config reference (accounts.toml, contacts.toml, Gmail OAuth).
 
 ## Sync Behavior
 
-- **Immutable filenames**: Slug is derived from the subject on first write and never changes.
-  Thread identity is tracked by `**Thread ID**` metadata inside the file.
-- **File mtime**: Set to the last message date via `os.utime()`. `ls -t` sorts by thread activity.
-- **Multi-label accumulation**: A thread fetched from multiple labels accumulates all labels in its
-  `**Labels**` metadata. Same thread from multiple accounts accumulates `**Accounts**`.
-- **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json` (gitignored). Only new messages since
-  last sync are fetched. Use `--full` to ignore saved state and re-fetch everything.
-- **Orphan cleanup**: On `--full`, files not touched during sync are deleted from `conversations/`.
-- **Streaming writes**: Each message is merged into its thread file immediately after fetch — no batching.
-  If sync crashes mid-run, state is not saved; next run re-fetches from last good state.
-- **UIDVALIDITY**: If the IMAP server resets UIDVALIDITY for a folder, that label automatically does a full resync.
-- **Shared label routing**: Labels listed in `collaborators.toml` are routed to
-  `shared/{name}/conversations/{label}/`. Collaborators can be bound to a specific account via `account = "name"`,
-  or individual labels can use `account:label` syntax (e.g. `"proton-dev:INBOX"`) for per-label account scoping.
-- **Manifest**: After sync, `correspondence/manifest.toml` is generated with thread metadata
-  (labels, accounts, contacts, last updated). Contact matching uses `contacts.toml` email addresses.
-- New messages are deduplicated by `(sender, date)` tuple when merging into existing files
-- Slug collisions between different threads are resolved with a `-2`, `-3` suffix
-- Attachments are noted inline but not downloaded
-
-## Cloudflare Architecture
-
-Python handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage for use by a lightweight TypeScript Worker that handles email routing.
-
-```
-Gmail/Protonmail
-      ↓
-Python (local, uv)
-  - sync threads → markdown
-  - extract intelligence (tags, contact metadata, routing rules)
-  - push to Cloudflare
-      ↓
-Cloudflare D1 / KV
-  - contact importance scores
-  - thread tags / inferred topics
-  - routing rules
-      ↓
-Cloudflare Worker (TypeScript)
-  - email routing decisions using intelligence from Python
-```
-
-Full conversation threads stay local. Cloudflare only receives the minimal distilled signal needed for routing.
+- **Immutable filenames**: Slug derived from subject on first write, never changes.
+  Thread identity tracked by `**Thread ID**` metadata inside the file.
+- **File mtime**: Set to last message date via `os.utime()`.
+- **Multi-label accumulation**: Thread fetched from multiple labels/accounts accumulates all in metadata.
+- **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json`. `--full` re-fetches everything.
+- **Streaming writes**: Each message merged immediately. If sync crashes, state is not saved; next run re-fetches.
+- **Shared label routing**: Labels in `collaborators.toml` route to `correspondence/for/{gh-user}/conversations/`.
+  Supports `account:label` syntax for per-label account binding.
+- **Dedup**: Messages deduplicated by `(sender, date)` tuple when merging into existing files.
+- **Slug collisions**: Different threads with same slug get `-2`, `-3` suffix.
+- **Orphan cleanup**: On `--full`, files not touched during sync are deleted.
 
 ## Conversation Markdown Format
-
-Each synced thread is written in this format:
 
 ```markdown
 # [Subject]
@@ -312,7 +149,8 @@ Each synced thread is written in this format:
 
 ## Draft Format
 
-Drafts live in `correspondence/drafts/` (private) or `shared/{name}/drafts/` (collaborator). Filename convention: `[YYYY-MM-DD]-[slug].md`.
+Drafts live in `correspondence/drafts/` (private) or `correspondence/for/{gh-user}/drafts/` (collaborator).
+Filename convention: `[YYYY-MM-DD]-[slug].md`.
 
 ```markdown
 # [Subject]
@@ -332,88 +170,39 @@ Drafts live in `correspondence/drafts/` (private) or `shared/{name}/drafts/` (co
 
 Status values: `draft` -> `review` -> `approved` -> `sent`
 
-When asking Claude to help draft or refine an email:
-- Point it at the relevant thread in `correspondence/conversations/` for context
-- Specify tone if it differs from the voice guidelines (formal, concise, etc.)
-- Indicate any constraints (length, what to avoid, etc.)
+## Collaborators Config
 
-## Collaborators
-
-Share specific threads with collaborators via per-collaborator GitHub repos linked as submodules.
-Collaborators can be people or AI agents -- anything that can read markdown and push to a git repo.
-
-### Config: `collaborators.toml`
+The TOML section key is the collaborator's GitHub username. `repo` is auto-derived as
+`{owner_gh}/to-{collab_gh}` if omitted.
 
 ```toml
-[alex]
+[alex-gh]
 labels = ["for-alex"]
-repo = "btakita/correspondence-shared-alex"
-github_user = "alex-github-username"
+name = "Alex"
 account = "personal"                    # optional — bind ALL plain labels to one account
 
-[bot]
+[bot-agent]
 labels = ["for-bot", "proton-dev:INBOX"]   # account:label scopes to one account
-repo = "btakita/correspondence-shared-bot"
 ```
 
-**Label scoping**: Labels support `account:label` syntax for per-label account binding.
-`"proton-dev:INBOX"` syncs the INBOX folder only from the `proton-dev` account.
-Plain labels (no colon) use the collaborator-level `account` field for scoping, or match all accounts if unset.
-
-### How it works
-
-1. `collab-add` creates a private GitHub repo (or `--public`), initializes it with AGENTS.md + voice.md,
-   and adds it as a submodule under `shared/{name}/`
-2. `sync` routes shared labels to `shared/{name}/conversations/{label}/`
-3. `collab-sync` pushes synced conversations to the shared repo and pulls collaborator drafts
-4. Collaborators create drafts in `shared/{name}/drafts/` with Status/Author fields
-5. Brian reviews, approves, and sends via `push-draft`
-
-### AI agents as collaborators
-
-An AI agent (Codex, Claude Code, a custom agent) can be a collaborator. It reads conversations,
-drafts replies following voice.md, and pushes to the shared repo like any other collaborator.
-Brian still reviews and sends. Use `--pat` for token-based access when the collaborator isn't a
-GitHub user (e.g. a CI-driven agent).
-
-### Security model
-
-- `.env` is gitignored -- only Brian has Gmail credentials
-- Each shared repo is separate with per-user access control
-- Shared repos contain ONLY threads Brian explicitly labels for that person
-- Collaborators cannot see each other's shared repos
-
-## MCP Alternative
-
-Instead of pre-syncing to markdown files, Claude can access Gmail live via an MCP server during a session. Options:
-
-- **Pipedream** — hosted MCP with Gmail, Calendar, Contacts (note: data passes through Pipedream)
-- **Local Python MCP server** — run a Gmail MCP server locally for fully private live access (future)
-
-Current approach (file sync) is preferred for privacy and offline use. MCP is worth revisiting for real-time workflows.
+**Label scoping**: `account:label` syntax binds a label to one account.
+Plain labels use the collaborator-level `account` field, or match all accounts if unset.
 
 ## Package-Level Instruction Files
 
-Each subpackage (`src/sync/`, `src/draft/`, `src/cloudflare/`) can contain its own `AGENTS.md` with package-specific
-conventions and context. These files are committed to the repo and auto-loaded when an agent works in that directory.
-They also surface when searching dependency code across packages.
+Each subpackage can contain its own `AGENTS.md` with package-specific conventions.
+Keep the root `AGENTS.md` focused on cross-cutting concerns.
 
-Use package-level files for deep-dives on that package's types, patterns, and gotchas. Keep the root `AGENTS.md`
-focused on cross-cutting project concerns.
+**Dual-name convention:** `AGENTS.md` is canonical (committed). `CLAUDE.md` is a symlink.
+Personal overrides: `CLAUDE.local.md` / `AGENTS.local.md` (gitignored).
 
-**Dual-name convention:** `AGENTS.md` is the canonical committed file, readable by Codex and other agents. `CLAUDE.md`
-is a symlink to `AGENTS.md`, readable natively by Claude Code. For personal overrides, use `CLAUDE.local.md` (Claude
-Code) or `AGENTS.local.md` (Codex) — both are gitignored.
+**Actionable over informational.** Instruction files contain the minimum needed to generate
+correct code. Reference material belongs in `README.md`.
 
-**Actionable over informational.** Instruction files should contain the minimum needed to generate correct code: type
-names, import paths, patterns, conventions, constraints. Reference material like module tables, route lists, and
-architecture overviews belongs in `README.md`.
+**Update with the code.** When a change affects patterns, conventions, or module boundaries,
+update instruction files as part of the same change.
 
-**Update with the code.** When a change affects patterns, conventions, type names, import paths, or module boundaries
-documented in `AGENTS.md` or `README.md`, update those files as part of the same change.
-
-**Stay concise.** All instruction files loaded in a session share the context window. Combined root + package files
-should stay well under 1000 lines to avoid crowding out working context.
+**Stay concise.** Combined root + package files should stay well under 1000 lines.
 
 ## Conventions
 
@@ -422,18 +211,9 @@ should stay well under 1000 lines to avoid crowding out working context.
 - Use `ruff` for linting and formatting
 - Use `ty` for type checking
 - Keep sync, draft, and cloudflare logic in separate subpackages
-- Do not commit `.env`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence` (symlink to private data repo)
+- Do not commit `.env`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
 - Scripts must be runnable directly: `uv run src/sync/imap.py`
 - Commits that include a version change should include the version number in the commit message
-
-## Future Work
-
-- **Slack sync**: Pull conversations from Slack channels/DMs into the same flat conversations/ directory
-- **Social media sync**: Pull DMs and threads from social platforms into conversations/
-- **Project setup script**: Interactive `collab-init` or `setup` command that configures accounts.toml
-- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from Python
-- **Local MCP server**: Live email access during Claude sessions without Pipedream
-- **Multi-user**: Per-user credential flow documented here when shared with another developer
 
 ## .gitignore
 
@@ -444,7 +224,6 @@ contacts.toml
 CLAUDE.local.md
 AGENTS.local.md
 correspondence
-shared/
 *.credentials.json
 .venv/
 __pycache__/

@@ -2,6 +2,10 @@
 # Copy to accounts.toml and fill in your details.
 # See README.md for full documentation.
 
+[owner]
+github_user = "your-github-username"       # Required for collaborator features
+name = "Your Name"                         # Display name used in shared repo templates
+
 [accounts.personal]
 provider = "gmail"                          # gmail | protonmail-bridge | imap
 user = "you@gmail.com"

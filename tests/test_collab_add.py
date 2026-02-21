@@ -2,8 +2,15 @@
 
 import subprocess
 
+from accounts import OwnerConfig
 from collab import Collaborator, load_collaborators, save_collaborators
 from collab.add import _generate_agents_md, main
+
+MOCK_OWNER = OwnerConfig(github_user="btakita", name="Brian")
+
+
+def _patch_owner(monkeypatch):
+    monkeypatch.setattr("accounts.load_owner", lambda path=None: MOCK_OWNER)
 
 
 def test_generate_agents_md_includes_name():
@@ -11,6 +18,11 @@ def test_generate_agents_md_includes_name():
     assert "**Author**: alex" in md
     assert "Shared Correspondence with Brian" in md
     assert "voice.md" in md
+
+
+def test_generate_agents_md_custom_owner():
+    md = _generate_agents_md("alex", owner_name="Dana")
+    assert "Shared Correspondence with Dana" in md
 
 
 def test_generate_agents_md_different_names():
@@ -31,21 +43,22 @@ def test_add_creates_config_entry(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.add.VOICE_FILE", voice)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("collab.add.subprocess.run", _fake_run_ok)
+    _patch_owner(monkeypatch)
 
     # Simulate argparse
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex", "--label", "for-alex", "--github-user", "alex-gh"],
+        ["collab-add", "alex-gh", "--label", "for-alex", "--name", "Alex"],
     )
 
     # Create the submodule dir that git submodule add would create
     def fake_run_with_submodule(cmd, **kw):
         if cmd[0] == "git" and "submodule" in cmd:
-            (tmp_path / "shared" / "alex").mkdir(parents=True, exist_ok=True)
+            (tmp_path / "correspondence" / "for" / "alex-gh").mkdir(
+                parents=True, exist_ok=True
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr("collab.add.subprocess.run", fake_run_with_submodule)
@@ -53,25 +66,31 @@ def test_add_creates_config_entry(tmp_path, monkeypatch):
     main()
 
     collabs = load_collaborators(config_path)
-    assert "alex" in collabs
-    assert collabs["alex"].labels == ["for-alex"]
-    assert collabs["alex"].repo == "btakita/correspondence-shared-alex"
-    assert collabs["alex"].github_user == "alex-gh"
+    assert "alex-gh" in collabs
+    assert collabs["alex-gh"].labels == ["for-alex"]
+    assert collabs["alex-gh"].repo == "btakita/to-alex-gh"
+    assert collabs["alex-gh"].github_user == "alex-gh"
+    assert collabs["alex-gh"].name == "Alex"
 
 
 def test_add_exits_if_already_exists(tmp_path, monkeypatch):
     """collab-add rejects duplicate collaborator names."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="r/x", github_user="")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="r/to-alex-gh"
+            )
+        },
         config_path,
     )
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex", "--label", "for-alex"],
+        ["collab-add", "alex-gh", "--label", "for-alex"],
     )
 
     import pytest
@@ -88,16 +107,18 @@ def test_add_private_by_default(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.add.VOICE_FILE", voice)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
 
     def capture_run(cmd, **kw):
         captured_cmds.append(cmd)
         if cmd[0] == "git" and "submodule" in cmd:
-            (tmp_path / "shared" / "newuser").mkdir(parents=True, exist_ok=True)
+            (tmp_path / "correspondence" / "for" / "newuser").mkdir(
+                parents=True, exist_ok=True
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
@@ -123,16 +144,18 @@ def test_add_public_flag(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.add.VOICE_FILE", voice)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
 
     def capture_run(cmd, **kw):
         captured_cmds.append(cmd)
         if cmd[0] == "git" and "submodule" in cmd:
-            (tmp_path / "shared" / "pub").mkdir(parents=True, exist_ok=True)
+            (tmp_path / "correspondence" / "for" / "pub").mkdir(
+                parents=True, exist_ok=True
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
@@ -156,30 +179,36 @@ def test_add_multiple_labels(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.add.VOICE_FILE", voice)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
 
     def fake_run(cmd, **kw):
         if cmd[0] == "git" and "submodule" in cmd:
-            (tmp_path / "shared" / "dana").mkdir(parents=True, exist_ok=True)
+            (tmp_path / "correspondence" / "for" / "dana-gh").mkdir(
+                parents=True, exist_ok=True
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr("collab.add.subprocess.run", fake_run)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "collab-add", "dana",
-            "--label", "for-dana",
-            "--label", "project-x",
-            "--github-user", "dana-gh",
+            "collab-add",
+            "dana-gh",
+            "--label",
+            "for-dana",
+            "--label",
+            "project-x",
+            "--name",
+            "Dana",
         ],
     )
 
     main()
 
     collabs = load_collaborators(config_path)
-    assert collabs["dana"].labels == ["for-dana", "project-x"]
+    assert collabs["dana-gh"].labels == ["for-dana", "project-x"]
 
 
 def test_add_custom_org(tmp_path, monkeypatch):
@@ -190,16 +219,18 @@ def test_add_custom_org(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.add.VOICE_FILE", voice)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
 
     def capture_run(cmd, **kw):
         captured_cmds.append(cmd)
         if cmd[0] == "git" and "submodule" in cmd:
-            (tmp_path / "shared" / "eve").mkdir(parents=True, exist_ok=True)
+            (tmp_path / "correspondence" / "for" / "eve").mkdir(
+                parents=True, exist_ok=True
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
@@ -211,25 +242,25 @@ def test_add_custom_org(tmp_path, monkeypatch):
     main()
 
     collabs = load_collaborators(config_path)
-    assert collabs["eve"].repo == "myorg/correspondence-shared-eve"
+    assert collabs["eve"].repo == "myorg/to-eve"
 
     create_cmd = [c for c in captured_cmds if "repo" in c and "create" in c]
-    assert "myorg/correspondence-shared-eve" in create_cmd[0]
+    assert "myorg/to-eve" in create_cmd[0]
 
 
 def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
-    """collab-add rejects if shared/{name} directory already exists on disk."""
+    """collab-add rejects if for/{gh_user} directory already exists on disk."""
     config_path = tmp_path / "collaborators.toml"
     config_path.write_text("", encoding="utf-8")
 
-    (tmp_path / "shared" / "alex").mkdir(parents=True)
+    (tmp_path / "correspondence" / "for" / "alex-gh").mkdir(parents=True)
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex", "--label", "for-alex"],
+        ["collab-add", "alex-gh", "--label", "for-alex"],
     )
 
     import pytest

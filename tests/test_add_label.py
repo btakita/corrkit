@@ -14,12 +14,15 @@ def _write_accounts_toml(path, text):
 def test_add_label_basic(tmp_path):
     """Adds a label to an existing account."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 [accounts.personal]
 provider = "gmail"
 user = "user@gmail.com"
 labels = ["correspondence"]
-""")
+""",
+    )
 
     result = add_label_to_account("personal", "for-alex", path=cfg)
     assert result is True
@@ -32,12 +35,15 @@ labels = ["correspondence"]
 def test_add_label_already_present(tmp_path):
     """Returns False when label already exists."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 [accounts.personal]
 provider = "gmail"
 user = "user@gmail.com"
 labels = ["correspondence"]
-""")
+""",
+    )
 
     result = add_label_to_account("personal", "correspondence", path=cfg)
     assert result is False
@@ -46,12 +52,15 @@ labels = ["correspondence"]
 def test_add_label_empty_labels(tmp_path):
     """Adds a label when the labels list is empty."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 [accounts.personal]
 provider = "gmail"
 user = "user@gmail.com"
 labels = []
-""")
+""",
+    )
 
     result = add_label_to_account("personal", "inbox", path=cfg)
     assert result is True
@@ -63,14 +72,17 @@ labels = []
 def test_add_label_preserves_comments(tmp_path):
     """Text-level edit preserves TOML comments."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 # My accounts
 [accounts.personal]
 provider = "gmail"  # gmail provider
 user = "user@gmail.com"
 labels = ["correspondence"]
 default = true
-""")
+""",
+    )
 
     add_label_to_account("personal", "for-alex", path=cfg)
 
@@ -82,12 +94,15 @@ default = true
 def test_add_label_unknown_account(tmp_path):
     """Exits with error for unknown account name."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 [accounts.personal]
 provider = "gmail"
 user = "user@gmail.com"
 labels = ["correspondence"]
-""")
+""",
+    )
 
     with pytest.raises(SystemExit):
         add_label_to_account("nonexistent", "test", path=cfg)
@@ -96,7 +111,9 @@ labels = ["correspondence"]
 def test_add_label_multiple_accounts(tmp_path):
     """Only modifies the targeted account."""
     cfg = tmp_path / "accounts.toml"
-    _write_accounts_toml(cfg, """\
+    _write_accounts_toml(
+        cfg,
+        """\
 [accounts.personal]
 provider = "gmail"
 user = "user@gmail.com"
@@ -106,7 +123,8 @@ labels = ["correspondence"]
 provider = "imap"
 user = "user@work.com"
 labels = ["inbox"]
-""")
+""",
+    )
 
     add_label_to_account("personal", "for-alex", path=cfg)
 

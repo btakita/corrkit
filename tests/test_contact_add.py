@@ -30,9 +30,12 @@ def test_add_creates_directory_and_config(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "contact-add", "alex",
-            "--email", "alex@example.com",
-            "--label", "correspondence",
+            "contact-add",
+            "alex",
+            "--email",
+            "alex@example.com",
+            "--label",
+            "correspondence",
         ],
     )
 
@@ -64,9 +67,12 @@ def test_add_multiple_emails(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "contact-add", "alex",
-            "--email", "alex@example.com",
-            "--email", "alex@work.com",
+            "contact-add",
+            "alex",
+            "--email",
+            "alex@example.com",
+            "--email",
+            "alex@work.com",
         ],
     )
 
@@ -169,10 +175,14 @@ def test_add_with_label_and_account_updates_accounts_toml(tmp_path, monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "contact-add", "alex",
-            "--email", "alex@example.com",
-            "--label", "for-alex",
-            "--account", "personal",
+            "contact-add",
+            "alex",
+            "--email",
+            "alex@example.com",
+            "--label",
+            "for-alex",
+            "--account",
+            "personal",
         ],
     )
 

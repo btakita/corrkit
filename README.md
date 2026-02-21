@@ -40,7 +40,19 @@ password_cmd = "pass email/selfhosted"
 labels = ["important"]
 ```
 
-Provider presets fill in IMAP/SMTP connection defaults. See `AGENTS.md` for the full preset table.
+Provider presets fill in IMAP/SMTP connection defaults:
+
+| Field | `gmail` | `protonmail-bridge` | `imap` (generic) |
+|---|---|---|---|
+| imap_host | imap.gmail.com | 127.0.0.1 | (required) |
+| imap_port | 993 | 1143 | 993 |
+| imap_starttls | false | true | false |
+| smtp_host | smtp.gmail.com | 127.0.0.1 | (required) |
+| smtp_port | 465 | 1025 | 465 |
+| drafts_folder | [Gmail]/Drafts | Drafts | Drafts |
+
+Any preset value can be overridden per-account. Credential resolution: `password` (inline)
+or `password_cmd` (shell command, e.g. `pass email/personal`).
 
 **Backward compat**: If no `accounts.toml` exists, falls back to `.env` GMAIL_* vars.
 
@@ -75,6 +87,7 @@ corrkit collab-add NAME --label LABEL     # Add a collaborator
 corrkit collab-sync [NAME]        # Push/pull shared submodules
 corrkit collab-status             # Check for pending changes
 corrkit collab-remove NAME        # Remove a collaborator
+corrkit collab-rename OLD NEW    # Rename a collaborator directory
 corrkit collab-reset [NAME]      # Pull, regenerate templates, commit & push
 corrkit find-unanswered           # Find threads awaiting a reply
 corrkit validate-draft FILE       # Validate draft markdown files
@@ -185,24 +198,24 @@ Share specific email threads with people or AI agents via scoped GitHub repos.
 
 ```sh
 # Human collaborator (invited via GitHub)
-corrkit collab-add alex --label for-alex --github-user alex-gh
+corrkit collab-add alex-gh --label for-alex --name "Alex"
 
 # AI agent (uses a PAT instead of GitHub invite)
-corrkit collab-add assistant --label for-assistant --pat
+corrkit collab-add assistant-bot --label for-assistant --pat
 
 # Bind all labels to one account
-corrkit collab-add alex --label for-alex --account personal
+corrkit collab-add alex-gh --label for-alex --account personal
 
 # Per-label account scoping (proton-dev account, INBOX folder)
 # Use account:label syntax in collaborators.toml directly
 ```
 
-This creates a private GitHub repo, initializes it with instructions, and adds it as a submodule under `shared/{name}/`. Collaborators use `uvx corrkit` for helper commands.
+This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with instructions, and adds it as a submodule under `for/{gh-user}/`. Collaborators use `uvx corrkit` for helper commands.
 
 ### Daily workflow
 
 ```sh
-# 1. Sync emails -- shared labels route to shared/{name}/conversations/
+# 1. Sync emails -- shared labels route to for/{gh-user}/conversations/
 corrkit sync
 
 # 2. Push synced threads to collaborator repos & pull their drafts
@@ -212,7 +225,7 @@ corrkit collab-sync
 corrkit collab-status
 
 # 4. Review a collaborator's draft and push it as an email draft
-corrkit push-draft shared/alex/drafts/2026-02-19-reply.md
+corrkit push-draft for/alex-gh/drafts/2026-02-19-reply.md
 ```
 
 ### Unattended sync with `corrkit watch`
@@ -256,7 +269,7 @@ tail -f /tmp/corrkit-watch.log          # view logs
 ### What collaborators can do
 
 - Read conversations labeled for them
-- Draft replies in `shared/{name}/drafts/` following the format in AGENTS.md
+- Draft replies in `for/{gh-user}/drafts/` following the format in AGENTS.md
 - Run `uvx corrkit find-unanswered` and `uvx corrkit validate-draft` in their repo
 - Push changes to their shared repo
 
@@ -270,8 +283,8 @@ tail -f /tmp/corrkit-watch.log          # view logs
 ### Removing a collaborator
 
 ```sh
-corrkit collab-remove alex
-corrkit collab-remove alex --delete-repo  # also delete the GitHub repo
+corrkit collab-remove alex-gh
+corrkit collab-remove alex-gh --delete-repo  # also delete the GitHub repo
 ```
 
 ## Designed for humans and agents
@@ -312,7 +325,7 @@ universal interface.
 Each collaborator — human or agent — gets a scoped git repo with:
 
 ```
-shared/{name}/
+for/{gh-user}/
   AGENTS.md          # Full instructions: formats, commands, status flow
   CLAUDE.md          # Symlink for Claude Code auto-discovery
   README.md          # Quick-start guide
@@ -324,6 +337,51 @@ shared/{name}/
 The collaborator reads conversations, drafts replies following the documented format, validates with
 `uvx corrkit validate-draft`, and pushes. The owner reviews and sends.
 
+## Cloudflare architecture
+
+Python handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage
+for use by a lightweight TypeScript Worker that handles email routing.
+
+```
+Gmail/Protonmail
+      ↓
+Python (local, uv)
+  - sync threads → markdown
+  - extract intelligence (tags, contact metadata, routing rules)
+  - push to Cloudflare
+      ↓
+Cloudflare D1 / KV
+  - contact importance scores
+  - thread tags / inferred topics
+  - routing rules
+      ↓
+Cloudflare Worker (TypeScript)
+  - email routing decisions using intelligence from Python
+```
+
+Full conversation threads stay local. Cloudflare only receives the minimal distilled signal
+needed for routing.
+
+## MCP alternative
+
+Instead of pre-syncing to markdown files, Claude can access Gmail live via an MCP server during
+a session. Options:
+
+- **Pipedream** — hosted MCP with Gmail, Calendar, Contacts (note: data passes through Pipedream)
+- **Local Python MCP server** — run a Gmail MCP server locally for fully private live access (future)
+
+Current approach (file sync) is preferred for privacy and offline use. MCP is worth revisiting
+for real-time workflows.
+
+## Future work
+
+- **Slack sync**: Pull conversations from Slack channels/DMs into the flat conversations/ directory
+- **Social media sync**: Pull DMs and threads from social platforms into conversations/
+- **Project setup script**: Interactive `collab-init` or `setup` command that configures accounts.toml
+- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from Python
+- **Local MCP server**: Live email access during Claude sessions without Pipedream
+- **Multi-user**: Per-user credential flow when shared with another developer
+
 ## AI agent instructions
 
-Project instructions live in `AGENTS.md` (symlinked as `CLAUDE.md`). Personal overrides go in `AGENTS.override.md` / `CLAUDE.local.md` (gitignored).
+Project instructions live in `AGENTS.md` (symlinked as `CLAUDE.md`). Personal overrides go in `CLAUDE.local.md` / `AGENTS.local.md` (gitignored).

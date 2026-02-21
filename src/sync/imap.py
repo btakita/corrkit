@@ -235,9 +235,7 @@ def _find_thread_file(out_dir: Path, thread_id: str) -> Path | None:
         return None
     for md_file in out_dir.glob("*.md"):
         text = md_file.read_text(encoding="utf-8")
-        m = re.search(
-            r"^\*\*Thread ID\*\*:\s*(.+)$", text, re.MULTILINE
-        )
+        m = re.search(r"^\*\*Thread ID\*\*:\s*(.+)$", text, re.MULTILINE)
         if m and m.group(1).strip() == thread_id:
             return md_file
     return None
@@ -295,9 +293,7 @@ def _merge_message_to_file(
     if (message.from_, message.date) in seen:
         # Still update labels/accounts even if message is a dupe
         if existing_file:
-            existing_file.write_text(
-                thread_to_markdown(thread), encoding="utf-8"
-            )
+            existing_file.write_text(thread_to_markdown(thread), encoding="utf-8")
             _set_mtime(existing_file, thread.last_date)
         return existing_file
 
@@ -424,7 +420,7 @@ def sync_label(
 def _build_label_routes(account_name: str = "") -> dict[str, Path]:
     """Build label->output_dir map from collaborators.toml.
 
-    Shared labels route to shared/{name}/conversations/{label}/.
+    Shared labels route to ``correspondence/for/{gh_user}/conversations/``.
     Private labels are not included (they go to the flat conversations/ dir).
 
     Labels support ``account:label`` syntax for per-label account binding.
@@ -433,38 +429,29 @@ def _build_label_routes(account_name: str = "") -> dict[str, Path]:
     Plain labels (no colon) use the collaborator-level ``account`` field.
     """
     try:
-        from collab import load_collaborators
+        from collab import collab_dir, load_collaborators
     except ImportError:
         return {}
 
     routes: dict[str, Path] = {}
-    for name, collab in load_collaborators().items():
+    for _gh_user, collab in load_collaborators().items():
+        cdir = collab_dir(collab)
         for label in collab.labels:
             if ":" in label:
                 # Per-label account binding: "account:folder"
                 label_account, label_name = label.split(":", 1)
                 if account_name and label_account != account_name:
                     continue
-                routes[label_name] = (
-                    Path("shared") / name / "conversations" / label_name
-                )
+                routes[label_name] = cdir / "conversations"
             else:
                 # Plain label — subject to collaborator-level account binding
-                if (
-                    account_name
-                    and collab.account
-                    and collab.account != account_name
-                ):
+                if account_name and collab.account and collab.account != account_name:
                     continue
-                routes[label] = (
-                    Path("shared") / name / "conversations" / label
-                )
+                routes[label] = cdir / "conversations"
     return routes
 
 
-def _cleanup_orphans(
-    conversations_dir: Path, touched: set[Path]
-) -> None:
+def _cleanup_orphans(conversations_dir: Path, touched: set[Path]) -> None:
     """Delete conversation files not touched during a --full sync."""
     if not conversations_dir.exists():
         return
@@ -490,9 +477,7 @@ def sync_account(
     touched: set[Path] | None = None,
 ) -> None:
     """Sync all labels for one account."""
-    acct_state = state.accounts.setdefault(
-        account_name, AccountSyncState()
-    )
+    acct_state = state.accounts.setdefault(account_name, AccountSyncState())
 
     # Build label routing from collaborators.toml
     routes = _build_label_routes(account_name)
@@ -501,10 +486,7 @@ def sync_account(
     all_labels = list(dict.fromkeys(labels + list(routes.keys())))
 
     if not all_labels:
-        print(
-            f"  No labels configured for account "
-            f"'{account_name}' \u2014 skipping"
-        )
+        print(f"  No labels configured for account '{account_name}' \u2014 skipping")
         return
 
     print(f"Connecting to {host}:{port} as {user}")
@@ -516,16 +498,14 @@ def sync_account(
         ssl_context = ssl_mod.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl_mod.CERT_NONE
-    with IMAPClient(
-        host, port=port, ssl=use_ssl, ssl_context=ssl_context
-    ) as imap:
+    with IMAPClient(host, port=port, ssl=use_ssl, ssl_context=ssl_context) as imap:
         if starttls:
             imap.starttls(ssl_context=ssl_context)
         imap.login(user, password)
         for label in all_labels:
             shared_dir = routes.get(label)
             # Private labels → flat conversations dir
-            # Shared labels → shared/{name}/conversations/{label}/
+            # Shared labels → correspondence/for/{gh_user}/conversations/
             sync_label(
                 imap,
                 label,
@@ -541,9 +521,7 @@ def sync_account(
 def main() -> None:
     from accounts import load_accounts_or_env, resolve_password
 
-    parser = argparse.ArgumentParser(
-        description="Sync email threads to Markdown"
-    )
+    parser = argparse.ArgumentParser(description="Sync email threads to Markdown")
     parser.add_argument(
         "--full",
         action="store_true",
@@ -608,14 +586,12 @@ def _generate_manifest(conversations_dir: Path) -> None:
     try:
         import tomli_w
     except ImportError:
-        print(
-            "  Warning: tomli_w not installed, "
-            "skipping manifest generation"
-        )
+        print("  Warning: tomli_w not installed, skipping manifest generation")
         return
 
     try:
         from contact import load_contacts
+
         contacts = load_contacts()
     except ImportError:
         contacts = {}

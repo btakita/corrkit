@@ -15,7 +15,16 @@ def _fail(stderr="error"):
 
 
 def test_sync_one_skips_missing_submodule(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
+    config_path = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "nobody": Collaborator(
+                labels=["x"], github_user="nobody", repo="o/to-nobody"
+            )
+        },
+        config_path,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     _sync_one("nobody")
     out = capsys.readouterr().out
     assert "not found" in out
@@ -23,12 +32,23 @@ def test_sync_one_skips_missing_submodule(tmp_path, monkeypatch, capsys):
 
 def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
     """Full sync: pull, copy voice.md, stage, commit, push."""
-    shared = tmp_path / "shared" / "alex"
-    shared.mkdir(parents=True)
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
+    config_path = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "alex-gh": Collaborator(
+                labels=["for-alex"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
+        config_path,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+
+    sub = tmp_path / "correspondence" / "for" / "alex-gh"
+    sub.mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
 
     # Create voice files -- root newer than sub
-    sub_voice = shared / "voice.md"
+    sub_voice = sub / "voice.md"
     sub_voice.write_text("# Voice v1\n", encoding="utf-8")
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice v2\n", encoding="utf-8")
@@ -52,10 +72,10 @@ def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
 
-    _sync_one("alex")
+    _sync_one("alex-gh")
 
     out = capsys.readouterr().out
-    assert "Syncing alex" in out
+    assert "Syncing alex-gh" in out
     assert "Pulled changes" in out
     assert "Updated voice.md" in out
 
@@ -69,11 +89,22 @@ def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
 
 def test_sync_one_no_changes(tmp_path, monkeypatch, capsys):
     """No local changes means no commit/push."""
-    shared = tmp_path / "shared" / "alex"
-    shared.mkdir(parents=True)
-    (shared / "voice.md").write_text("# Voice\n", encoding="utf-8")
+    config_path = tmp_path / "collaborators.toml"
+    save_collaborators(
+        {
+            "alex-gh": Collaborator(
+                labels=["for-alex"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
+        config_path,
+    )
+    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
 
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
+    sub = tmp_path / "correspondence" / "for" / "alex-gh"
+    sub.mkdir(parents=True)
+    (sub / "voice.md").write_text("# Voice\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice\n", encoding="utf-8")
     monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
@@ -96,7 +127,7 @@ def test_sync_one_no_changes(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
 
-    _sync_one("alex")
+    _sync_one("alex-gh")
 
     out = capsys.readouterr().out
     assert "No local changes to push" in out
@@ -114,7 +145,7 @@ def test_submodule_status_up_to_date(tmp_path, monkeypatch, capsys):
         return _ok()
 
     monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
-    _submodule_status("alex", sub)
+    _submodule_status("alex-gh", sub)
 
     out = capsys.readouterr().out
     assert "up to date" in out
@@ -132,7 +163,7 @@ def test_submodule_status_incoming(tmp_path, monkeypatch, capsys):
         return _ok()
 
     monkeypatch.setattr("collab.sync.subprocess.run", fake_run)
-    _submodule_status("alex", sub)
+    _submodule_status("alex-gh", sub)
 
     out = capsys.readouterr().out
     assert "3 incoming" in out
@@ -142,13 +173,17 @@ def test_main_status_mode(tmp_path, monkeypatch, capsys):
     """collab-sync --status prints status for each collaborator."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["for-alex"], repo="o/r")},
+        {
+            "alex-gh": Collaborator(
+                labels=["for-alex"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
-    shared = tmp_path / "shared" / "alex"
-    shared.mkdir(parents=True)
+    sub = tmp_path / "correspondence" / "for" / "alex-gh"
+    sub.mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
 
-    monkeypatch.setattr("collab.sync.SHARED_DIR", tmp_path / "shared")
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("sys.argv", ["collab-sync", "--status"])
 
@@ -162,14 +197,18 @@ def test_main_status_mode(tmp_path, monkeypatch, capsys):
     main()
 
     out = capsys.readouterr().out
-    assert "alex" in out
+    assert "alex-gh" in out
 
 
 def test_main_unknown_collaborator(tmp_path, monkeypatch):
     """collab-sync with unknown name exits."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
-        {"alex": Collaborator(labels=["x"], repo="o/r")},
+        {
+            "alex-gh": Collaborator(
+                labels=["x"], github_user="alex-gh", repo="o/to-alex-gh"
+            )
+        },
         config_path,
     )
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)

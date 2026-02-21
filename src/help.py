@@ -15,6 +15,7 @@ COMMANDS = [
     ("collab-sync [NAME]", "Push/pull shared submodules"),
     ("collab-status", "Check for pending changes"),
     ("collab-remove NAME [--delete-repo]", "Remove a collaborator"),
+    ("collab-rename OLD NEW", "Rename a collaborator directory"),
     ("collab-reset [NAME] [--no-sync]", "Pull, regenerate templates, commit & push"),
     ("add-label LABEL --account NAME", "Add a label to an account's sync config"),
     ("contact-add NAME --email EMAIL", "Add a contact with context docs"),
