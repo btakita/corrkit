@@ -8,7 +8,7 @@ Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hos
 
 ## Install
 
-Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 **Quick start (general user):**
 ```sh

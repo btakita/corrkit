@@ -4,6 +4,15 @@ Corrkit is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.6.1
+
+Lower Python requirement to 3.11+, app config with multi-space support.
+
+- **Python 3.11+**: Lowered minimum from 3.12. No 3.12-specific features were used; `tomllib` and `datetime.UTC` (3.11+) are the actual floor.
+- **App config (`src/app_config.py`)**: New module for persistent configuration via `platformdirs`. Stores named spaces in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), `%APPDATA%/corrkit/config.toml` (Windows).
+- **Spaces**: `corrkit spaces` lists configured spaces. `corrkit init` registers a space automatically. `corrkit --space NAME <cmd>` selects a specific space for any command.
+- **Data dir resolution updated**: New 4-step order: `correspondence/` in cwd → `CORRKIT_DATA` env → app config space → `~/Documents/correspondence` fallback.
+
 ## 0.6.0
 
 Path resolution, `corrkit init`, and functional specification.

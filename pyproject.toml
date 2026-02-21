@@ -18,11 +18,11 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab", "src/contac
 
 [project]
 name = "corrkit"
-version = "0.6.0"
+version = "0.6.1"
 description = "Sync email threads from IMAP to Markdown, draft replies, push routing intelligence to Cloudflare"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "google-auth-oauthlib>=1.0.0",
     "httpx>=0.28.0",

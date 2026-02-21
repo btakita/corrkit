@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- **Runtime**: Python 3.12+ via `uv`
+- **Runtime**: Python 3.11+ via `uv`
 - **Linter/formatter**: `ruff`
 - **Type checker**: `ty`
 - **Types/serialization**: `msgspec` (Struct instead of dataclasses)
