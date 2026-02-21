@@ -8,11 +8,30 @@ Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hos
 
 ## Install
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
-
-**Quick start (general user):**
+**Quick install (Linux & macOS):**
 ```sh
-uvx corrkit init --user you@gmail.com
+curl -sSf https://raw.githubusercontent.com/btakita/corrkit/main/install.sh | sh
+```
+
+This downloads a prebuilt binary to `~/.local/bin/corrkit`. Use `--system` to install
+to `/usr/local/bin` instead (requires sudo).
+
+**Via pip/uvx (wrapper):**
+```sh
+pip install corrkit    # installs a thin wrapper that calls the Rust binary
+uvx corrkit --help     # one-shot execution
+```
+
+The pip package is a thin wrapper — it requires the Rust binary to be installed separately.
+
+**From source:**
+```sh
+cargo install --path .
+```
+
+**Initialize:**
+```sh
+corrkit init --user you@gmail.com
 ```
 
 This creates `~/Documents/correspondence` with directory structure, `accounts.toml`,
@@ -21,7 +40,7 @@ and empty config files. Edit `accounts.toml` with credentials, then run `corrkit
 **Developer setup (from repo checkout):**
 ```sh
 cp accounts.toml.example accounts.toml   # configure your email accounts
-uv sync
+cargo build
 ```
 
 ### Account configuration
@@ -111,7 +130,8 @@ corrkit audit-docs                        # Audit instruction files for stalenes
 corrkit help                              # Show command reference
 ```
 
-Run with `uv run corrkit <subcommand>` if the package isn't installed globally.
+Windows users can download `.zip` from [GitHub Releases](https://github.com/btakita/corrkit/releases)
+or build from source with `cargo install --path .`.
 
 ### Spaces
 
@@ -137,11 +157,9 @@ Synced threads are written to `correspondence/conversations/[slug].md` (flat, on
 ## Development
 
 ```sh
-uv run pytest             # Run tests
-uv run ruff check .       # Lint
-uv run ruff format .      # Format
-uv run ty check           # Type check
-uv run poe precommit      # Run ty + ruff + tests
+cargo test                        # Run tests
+cargo clippy -- -D warnings       # Lint
+cargo build --release             # Release build
 ```
 
 ## Unified conversation directory
@@ -243,7 +261,7 @@ corrkit for add alex-gh --label for-alex --account personal
 # Use account:label syntax in collaborators.toml directly
 ```
 
-This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with instructions, and adds it as a submodule under `for/{gh-user}/`. Collaborators use `uvx corrkit by ...` for helper commands.
+This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with instructions, and adds it as a submodule under `for/{gh-user}/`. Collaborators use `corrkit by ...` for helper commands.
 
 ### Daily workflow
 
@@ -303,7 +321,7 @@ tail -f /tmp/corrkit-watch.log          # view logs
 
 - Read conversations labeled for them
 - Draft replies in `for/{gh-user}/drafts/` following the format in AGENTS.md
-- Run `uvx corrkit by find-unanswered` and `uvx corrkit by validate-draft` in their repo
+- Run `corrkit by find-unanswered` and `corrkit by validate-draft` in their repo
 - Push changes to their shared repo
 
 ### What only you can do
@@ -331,8 +349,8 @@ and AI agents. No GUIs, no OAuth popups, no interactive prompts.
   them in any editor; agents read and write them natively.
 - **CLI is the interface.** Every operation is a single `corrkit` command. Scriptable, composable,
   works the same whether a human or agent is at the keyboard.
-- **Zero-install for collaborators.** `uvx corrkit by find-unanswered` and `uvx corrkit by validate-draft`
-  work without cloning the main repo or setting up a dev environment.
+- **Single-binary for collaborators.** One `curl | sh` install gives collaborators
+  `corrkit by find-unanswered` and `corrkit by validate-draft` — no dev environment needed.
 - **Self-documenting repos.** Each shared repo ships with `AGENTS.md` (full instructions),
   `CLAUDE.md` (symlink for Claude Code), `voice.md`, and a `README.md`. A new collaborator —
   human or agent — can start contributing immediately.
@@ -368,17 +386,17 @@ for/{gh-user}/
 ```
 
 The collaborator reads conversations, drafts replies following the documented format, validates with
-`uvx corrkit validate-draft`, and pushes. The owner reviews and sends.
+`corrkit by validate-draft`, and pushes. The owner reviews and sends.
 
 ## Cloudflare architecture
 
-Python handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage
+Corrkit handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage
 for use by a lightweight TypeScript Worker that handles email routing.
 
 ```
 Gmail/Protonmail
       ↓
-Python (local, uv)
+corrkit (local)
   - sync threads → markdown
   - extract intelligence (tags, contact metadata, routing rules)
   - push to Cloudflare
@@ -389,7 +407,7 @@ Cloudflare D1 / KV
   - routing rules
       ↓
 Cloudflare Worker (TypeScript)
-  - email routing decisions using intelligence from Python
+  - email routing decisions using intelligence from corrkit
 ```
 
 Full conversation threads stay local. Cloudflare only receives the minimal distilled signal
@@ -401,7 +419,7 @@ Instead of pre-syncing to markdown files, Claude can access Gmail live via an MC
 a session. Options:
 
 - **Pipedream** — hosted MCP with Gmail, Calendar, Contacts (note: data passes through Pipedream)
-- **Local Python MCP server** — run a Gmail MCP server locally for fully private live access (future)
+- **Local MCP server** — run a Gmail MCP server locally for fully private live access (future)
 
 Current approach (file sync) is preferred for privacy and offline use. MCP is worth revisiting
 for real-time workflows.
@@ -410,7 +428,7 @@ for real-time workflows.
 
 - **Slack sync**: Pull conversations from Slack channels/DMs into the flat conversations/ directory
 - **Social media sync**: Pull DMs and threads from social platforms into conversations/
-- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from Python
+- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from corrkit
 - **Local MCP server**: Live email access during Claude sessions without Pipedream
 - **Multi-user**: Per-user credential flow when shared with another developer
 

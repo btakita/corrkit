@@ -39,6 +39,7 @@ order in `src/resolve.rs`: local `correspondence/`, `CORRKIT_DATA` env, app conf
   AGENTS.md                        # Project instructions (CLAUDE.md symlinks here)
   SPECS.md                         # Functional specification
   Cargo.toml
+  install.sh                       # POSIX shell installer (curl | sh)
   voice.md                         # Writing voice guidelines (committed)
   accounts.toml                    # Multi-account IMAP config (gitignored)
   accounts.toml.example            # Template with provider presets (committed)
@@ -90,6 +91,10 @@ order in `src/resolve.rs`: local `correspondence/`, `CORRKIT_DATA` env, app conf
     contact/
       mod.rs                       # Re-exports add
       add.rs                       # contact-add
+  wrapper/                           # Python wrapper package (pip install corrkit)
+    pyproject.toml
+    src/corrkit/__init__.py
+    src/corrkit/__main__.py
   services/
     corrkit-watch.service          # systemd user unit template
     com.corrkit.watch.plist        # launchd agent template
@@ -137,9 +142,15 @@ See `voice.md` (committed) for tone, style, and formatting guidelines.
 
 ## Environment Setup
 
-**New user (general):**
+**New user (quick install):**
 ```sh
-cargo install corrkit
+curl -sSf https://raw.githubusercontent.com/btakita/corrkit/main/install.sh | sh
+corrkit init --user you@gmail.com
+```
+
+**New user (from source):**
+```sh
+cargo install --path .
 corrkit init --user you@gmail.com
 ```
 
@@ -271,5 +282,13 @@ CLAUDE.local.md
 AGENTS.local.md
 correspondence
 *.credentials.json
+credentials.json
+.idea/
+tmp/
 target/
+.agents/
+.junie/
+.kilocode/
+skills/
+skills-lock.json
 ```
