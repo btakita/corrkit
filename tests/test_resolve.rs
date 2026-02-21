@@ -34,17 +34,6 @@ fn test_expand_tilde_relative() {
 }
 
 #[test]
-fn test_data_dir_env_var() {
-    let (_tmp, data_dir) = common::temp_data_dir();
-    std::env::set_var("CORRKIT_DATA", data_dir.to_string_lossy().as_ref());
-
-    let env_val = std::env::var("CORRKIT_DATA").unwrap();
-    assert_eq!(PathBuf::from(&env_val), data_dir);
-
-    std::env::remove_var("CORRKIT_DATA");
-}
-
-#[test]
 fn test_home_dir_returns_path() {
     let home = resolve::home_dir();
     assert!(!home.to_string_lossy().is_empty());

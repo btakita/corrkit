@@ -1,4 +1,4 @@
-.PHONY: build release test clippy check install clean init-python
+.PHONY: build release test clippy check precommit install install-hooks clean init-python
 
 # Build debug binary
 build:
@@ -22,9 +22,20 @@ clippy:
 # clippy + test
 check: clippy test
 
+# Pre-commit: clippy + test + audit-docs
+precommit: check
+	cargo run --quiet -- audit-docs
+
 # Install to ~/.cargo/bin
 install:
 	cargo install --path .
+
+# Install git hooks
+install-hooks:
+	@mkdir -p .git/hooks
+	@printf '#!/bin/sh\nmake precommit\n' > .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "Installed .git/hooks/pre-commit"
 
 # Remove build artifacts
 clean:
