@@ -104,6 +104,11 @@ def main() -> None:
         help="Run first sync after setup",
     )
     parser.add_argument(
+        "--space",
+        default="default",
+        help="Space name to register in app config (default: 'default')",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Overwrite existing accounts.toml",
@@ -142,7 +147,13 @@ def main() -> None:
             p.write_text("", encoding="utf-8")
             print(f"Created {p}")
 
-    # 4. Provider-specific guidance
+    # 4. Register space in app config
+    import app_config
+
+    app_config.add_space(args.space, str(data_dir))
+    print(f"Registered space '{args.space}' → {data_dir}")
+
+    # 5. Provider-specific guidance
     if args.provider == "gmail" and not args.password_cmd:
         print()
         print("Gmail setup:")
@@ -152,7 +163,7 @@ def main() -> None:
             "  Option B: OAuth — run 'corrkit sync-auth' after placing credentials.json"
         )
 
-    # 5. Optional first sync
+    # 6. Optional first sync
     if args.sync:
         os.environ["CORRKIT_DATA"] = str(data_dir)
         from sync.imap import main as sync_main

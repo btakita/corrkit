@@ -3,7 +3,8 @@
 Resolution order for data directory:
   1. correspondence/ in cwd (developer workflow)
   2. CORRKIT_DATA environment variable
-  3. ~/Documents/correspondence (general user default)
+  3. App config space (via app_config.resolve_space)
+  4. ~/Documents/correspondence (general user default)
 
 Config directory:
   - If correspondence/ exists in cwd → Path(".") (developer workflow)
@@ -22,6 +23,13 @@ def data_dir() -> Path:
     env = os.environ.get("CORRKIT_DATA")
     if env:
         return Path(env)
+    # Lazy import to keep developer workflow fast (no platformdirs needed
+    # when correspondence/ exists in cwd or CORRKIT_DATA is set)
+    import app_config
+
+    space_path = app_config.resolve_space(None)
+    if space_path is not None:
+        return space_path
     return Path.home() / "Documents" / "correspondence"
 
 

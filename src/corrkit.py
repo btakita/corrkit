@@ -8,6 +8,7 @@ Usage:
 """
 
 import importlib
+import os
 import sys
 
 SUBCOMMANDS: dict[str, tuple[str, str]] = {
@@ -20,6 +21,7 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "add-label": ("accounts", "add_label_main"),
     "contact-add": ("contact.add", "main"),
     "watch": ("watch", "main"),
+    "spaces": ("spaces", "main"),
     "audit-docs": ("audit_docs", "main"),
     "help": ("help", "main"),
 }
@@ -40,8 +42,42 @@ NESTED_COMMANDS: dict[str, dict[str, tuple[str, str]]] = {
 }
 
 
+def _extract_space(args: list[str]) -> list[str]:
+    """Extract --space NAME from args before the subcommand and set CORRKIT_DATA.
+
+    Only consumes --space if it appears before the first non-flag argument
+    (the subcommand). Subcommands like 'init' have their own --space flag
+    with different semantics.
+    """
+    if "--space" not in args:
+        return args
+    idx = args.index("--space")
+    # Only consume --space if it appears before any subcommand (position 0)
+    # i.e., corrkit --space NAME subcommand ...
+    # Skip if --space comes after the subcommand (it belongs to the subcommand)
+    if idx > 0:
+        return args
+    if idx + 1 >= len(args):
+        print("--space requires a NAME argument", file=sys.stderr)
+        sys.exit(1)
+    name = args[idx + 1]
+    remaining = args[idx + 2 :]
+
+    import app_config
+
+    path = app_config.resolve_space(name)
+    if path is None:
+        print("No spaces configured. Run 'corrkit init' first.", file=sys.stderr)
+        sys.exit(1)
+    os.environ["CORRKIT_DATA"] = str(path)
+    return remaining
+
+
 def main() -> None:
     args = sys.argv[1:]
+
+    # Extract --space NAME before dispatching
+    args = _extract_space(args)
 
     if not args or args[0] in ("--help", "-h"):
         _show_help()

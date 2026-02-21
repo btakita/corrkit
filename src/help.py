@@ -15,6 +15,7 @@ COMMANDS = [
     ("add-label LABEL --account NAME", "Add a label to an account's sync config"),
     ("contact-add NAME --email EMAIL", "Add a contact with context docs"),
     ("watch [--interval N]", "Poll IMAP and sync on an interval"),
+    ("spaces", "List configured spaces"),
     ("audit-docs", "Audit instruction files"),
     ("help", "Show this reference"),
 ]

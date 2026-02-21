@@ -12,6 +12,8 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab", "src/contac
 "src/accounts.py" = "accounts.py"
 "src/resolve.py" = "resolve.py"
 "src/init.py" = "init.py"
+"src/app_config.py" = "app_config.py"
+"src/spaces.py" = "spaces.py"
 "src/watch.py" = "watch.py"
 
 [project]
@@ -26,7 +28,7 @@ dependencies = [
     "httpx>=0.28.0",
     "imapclient>=3.1.0",
     "msgspec>=0.20.0",
-
+    "platformdirs>=4.0.0",
     "python-dotenv>=1.0.0",
     "tomli-w>=1.0.0",
 ]
@@ -59,6 +61,7 @@ validate-draft = "collab.validate_draft:main"
 add-label = "accounts:add_label_main"
 contact-add = "contact.add:main"
 watch = "watch:main"
+spaces = "spaces:main"
 help = "help:main"
 
 [tool.ruff]

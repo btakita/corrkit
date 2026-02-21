@@ -2,7 +2,13 @@
 
 from pathlib import Path
 
+import app_config
 from resolve import config_dir, data_dir
+
+
+def _no_spaces(monkeypatch):
+    """Patch app_config so resolve_space returns None (no spaces configured)."""
+    monkeypatch.setattr(app_config, "resolve_space", lambda _name: None)
 
 
 def test_data_dir_local_correspondence(tmp_path, monkeypatch):
@@ -23,6 +29,7 @@ def test_data_dir_fallback(tmp_path, monkeypatch):
     """data_dir() returns ~/Documents/correspondence as fallback."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("CORRKIT_DATA", raising=False)
+    _no_spaces(monkeypatch)
     result = data_dir()
     assert result == Path.home() / "Documents" / "correspondence"
 
@@ -38,6 +45,7 @@ def test_config_dir_no_local(tmp_path, monkeypatch):
     """config_dir() returns data dir when no local correspondence/."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("CORRKIT_DATA", raising=False)
+    _no_spaces(monkeypatch)
     assert config_dir() == data_dir()
 
 
@@ -55,3 +63,22 @@ def test_local_dir_takes_precedence_over_env(tmp_path, monkeypatch):
     (tmp_path / "correspondence").mkdir()
     monkeypatch.setenv("CORRKIT_DATA", str(tmp_path / "other"))
     assert data_dir() == Path("correspondence")
+
+
+def test_data_dir_app_config_space(tmp_path, monkeypatch):
+    """data_dir() uses app config space when no local dir or env var."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CORRKIT_DATA", raising=False)
+    space_path = tmp_path / "my-space"
+    monkeypatch.setattr(app_config, "resolve_space", lambda _name: space_path)
+    assert data_dir() == space_path
+
+
+def test_data_dir_env_takes_precedence_over_app_config(tmp_path, monkeypatch):
+    """CORRKIT_DATA takes precedence over app config spaces."""
+    monkeypatch.chdir(tmp_path)
+    env_path = tmp_path / "env-data"
+    monkeypatch.setenv("CORRKIT_DATA", str(env_path))
+    space_path = tmp_path / "space-data"
+    monkeypatch.setattr(app_config, "resolve_space", lambda _name: space_path)
+    assert data_dir() == env_path

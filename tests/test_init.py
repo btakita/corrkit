@@ -4,7 +4,16 @@ import tomllib
 
 import pytest
 
+import app_config
 from init import main
+
+
+@pytest.fixture(autouse=True)
+def _isolate_app_config(tmp_path, monkeypatch):
+    """Isolate app_config to a temp directory so tests don't write to real config."""
+    config_dir = tmp_path / "app-config"
+    config_dir.mkdir()
+    monkeypatch.setattr(app_config, "app_config_dir", lambda: config_dir)
 
 
 def test_init_creates_directory_structure(tmp_path, monkeypatch):
@@ -162,3 +171,42 @@ def test_init_protonmail_provider(tmp_path, monkeypatch):
     with open(data_dir / "accounts.toml", "rb") as f:
         raw = tomllib.load(f)
     assert raw["accounts"]["default"]["provider"] == "protonmail-bridge"
+
+
+def test_init_registers_space(tmp_path, monkeypatch):
+    """init registers the data dir as a space in app config."""
+    data_dir = tmp_path / "correspondence"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["init", "--user", "test@example.com", "--data-dir", str(data_dir)],
+    )
+
+    main()
+
+    config = app_config.load()
+    assert "default" in config["spaces"]
+    assert config["spaces"]["default"]["path"] == str(data_dir)
+    assert config["default_space"] == "default"
+
+
+def test_init_custom_space_name(tmp_path, monkeypatch):
+    """--space sets a custom space name."""
+    data_dir = tmp_path / "correspondence"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "init",
+            "--user",
+            "test@example.com",
+            "--data-dir",
+            str(data_dir),
+            "--space",
+            "work",
+        ],
+    )
+
+    main()
+
+    config = app_config.load()
+    assert "work" in config["spaces"]
+    assert config["default_space"] == "work"

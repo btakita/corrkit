@@ -105,11 +105,32 @@ corrkit by find-unanswered                # Find threads awaiting a reply
 corrkit by validate-draft FILE            # Validate draft markdown files
 corrkit watch                             # Poll IMAP and sync on an interval
 corrkit watch --interval 60               # Override poll interval (seconds)
+corrkit spaces                            # List configured spaces
+corrkit --space work sync                 # Sync a specific space
 corrkit audit-docs                        # Audit instruction files for staleness
 corrkit help                              # Show command reference
 ```
 
 Run with `uv run corrkit <subcommand>` if the package isn't installed globally.
+
+### Spaces
+
+Manage multiple correspondence directories (personal, work, etc.) with named spaces:
+
+```sh
+# Init creates a space automatically
+corrkit init --user you@gmail.com                              # registers "default" space
+corrkit init --user work@company.com --data-dir ~/work/correspondence --space work
+
+# List configured spaces
+corrkit spaces
+
+# Use a specific space for any command
+corrkit --space work sync
+corrkit --space personal for status
+```
+
+Spaces are stored in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), or `%APPDATA%/corrkit/config.toml` (Windows). The first space added becomes the default. With one space configured, `--space` is optional.
 
 Synced threads are written to `correspondence/conversations/[slug].md` (flat, one file per thread). Labels and accounts are metadata inside each file. A `manifest.toml` index is generated after each sync.
 

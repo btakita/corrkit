@@ -25,8 +25,9 @@ working directory, which can be either:
 The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
 
 **General user workflow:** `corrkit init --user EMAIL` creates `~/Documents/correspondence` with
-config and data. Commands find the data dir via `CORRKIT_DATA` env or the `~/Documents` default.
-See `src/resolve.py` for the full resolution order.
+config and data, and registers it as a named space. Commands find the data dir via the resolution
+order in `src/resolve.py`: local `correspondence/`, `CORRKIT_DATA` env, app config space,
+`~/Documents` fallback. Use `--space NAME` to select a specific space.
 
 ## Project Structure
 
@@ -50,6 +51,8 @@ See `src/resolve.py` for the full resolution order.
   src/
     resolve.py                     # Path resolution (data dir, config dir)
     init.py                        # Initialize a new data directory
+    app_config.py                  # App config (spaces, config.toml)
+    spaces.py                      # spaces command
     accounts.py                    # Account config parser (accounts.toml)
     sync/
       imap.py                      # Multi-account IMAP sync logic
@@ -226,8 +229,11 @@ update instruction files as part of the same change.
 - Keep sync, draft, and cloudflare logic in separate subpackages
 - Do not commit `.env`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
 - Scripts must be runnable directly: `uv run src/sync/imap.py`
+- Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes
+- Update `SPECS.md` when corrkit functionality changes (commands, formats, algorithms)
+- Commits must be clean — no dangling unstaged files. When splitting work across commits, stage all related files (including generated files like `uv.lock`)
 
 ## .gitignore
 

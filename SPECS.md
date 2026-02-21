@@ -48,7 +48,8 @@ routing intelligence to Cloudflare.
 The data directory is resolved at runtime in this order:
 1. `correspondence/` directory in current working directory (developer workflow)
 2. `CORRKIT_DATA` environment variable
-3. `~/Documents/correspondence` (general user default)
+3. App config space (see §2.4)
+4. `~/Documents/correspondence` (hardcoded fallback)
 
 ### 2.3 Config Directory
 
@@ -56,6 +57,21 @@ The data directory is resolved at runtime in this order:
 - Otherwise → same as data directory (general user: config lives inside data dir)
 
 Config files: `accounts.toml`, `collaborators.toml`, `contacts.toml`, `voice.md`, `credentials.json`
+
+### 2.4 App Config
+
+Location: `{platformdirs.user_config_dir("corrkit")}/config.toml`
+- Linux: `~/.config/corrkit/config.toml`
+- macOS: `~/Library/Application Support/corrkit/config.toml`
+- Windows: `%APPDATA%/corrkit/config.toml`
+
+Stores named spaces (data directory references) and a default. Used in resolution step 3.
+
+Space resolution (when no explicit name given):
+1. `default_space` set → use that space
+2. Exactly one space → use it implicitly
+3. Multiple spaces, no default → error with list
+4. No spaces → return None (fall through to step 4)
 
 ## 3. File Formats
 
@@ -204,6 +220,24 @@ contacts = ["contact-name"]
 
 Generated after each sync by scanning conversation files and matching sender emails against contacts.toml.
 
+### 3.8 config.toml (App Config)
+
+```toml
+default_space = "personal"
+
+[spaces.personal]
+path = "~/Documents/correspondence"
+
+[spaces.work]
+path = "~/work/correspondence"
+```
+
+Top-level fields:
+- `default_space`: name of the default space (set automatically to the first space added)
+
+Space fields:
+- `path`: absolute or `~`-relative path to a correspondence data directory
+
 ## 4. Algorithms
 
 ### 4.1 Thread Slug Generation
@@ -269,17 +303,19 @@ After sync, scan all `.md` files in `conversations/`:
 ```
 corrkit init --user EMAIL [--data-dir PATH] [--provider PROVIDER]
              [--password-cmd CMD] [--labels LABEL,...] [--github-user USER]
-             [--name NAME] [--sync] [--force]
+             [--name NAME] [--space NAME] [--sync] [--force]
 ```
 
 - Creates `{data_dir}/{conversations,drafts,contacts}/` with `.gitkeep` files
 - Generates `accounts.toml` with provider preset and owner section
 - Creates empty `collaborators.toml` and `contacts.toml`
+- Registers the data dir as a named space in app config
 - `--force`: overwrite existing config; without it, exit 1 if accounts.toml exists
 - `--sync`: set `CORRKIT_DATA` env, run sync
 - `--provider`: `gmail` (default), `protonmail-bridge`, `imap`
 - `--data-dir`: default `~/Documents/correspondence`
 - `--labels`: default `correspondence` (comma-separated)
+- `--space`: space name to register (default: `"default"`)
 
 ### 5.2 sync
 
@@ -451,6 +487,22 @@ corrkit by validate-draft FILE [FILE...]
 Validates draft files. Checks: subject heading, required fields (To), recommended fields (Status, Author), valid status value, `---` separator, non-empty body.
 
 Exit code: 0 if all valid, 1 if any errors.
+
+### 5.19 spaces
+
+```
+corrkit spaces
+```
+
+Lists all configured spaces with paths. Marks the default space. If no spaces configured, prints setup instructions.
+
+### 5.20 Global `--space` Flag
+
+```
+corrkit --space NAME <subcommand> [args...]
+```
+
+Available on all commands. Resolves the named space via app config and sets `CORRKIT_DATA` before dispatching to the subcommand.
 
 ## 6. Sync Algorithm
 
