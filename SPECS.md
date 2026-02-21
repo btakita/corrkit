@@ -301,21 +301,33 @@ After sync, scan all `.md` files in `conversations/`:
 ### 5.1 init
 
 ```
-corrkit init --user EMAIL [--data-dir PATH] [--provider PROVIDER]
+corrkit init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
              [--password-cmd CMD] [--labels LABEL,...] [--github-user USER]
-             [--name NAME] [--space NAME] [--sync] [--force]
+             [--name NAME] [--space-name NAME] [--sync] [--force]
 ```
 
-- Creates `{data_dir}/{conversations,drafts,contacts}/` with `.gitkeep` files
-- Generates `accounts.toml` with provider preset and owner section
-- Creates empty `collaborators.toml` and `contacts.toml`
-- Registers the data dir as a named space in app config
+- `PATH`: project directory (default: `.` — current directory)
+- Creates `{path}/correspondence/{conversations,drafts,contacts}/` with `.gitkeep` files
+- Generates `accounts.toml`, `collaborators.toml`, `contacts.toml` at `{path}/`
+- Installs `voice.md` at `{path}/` if not present
+- If inside a git repo: adds `correspondence` to `.gitignore`
+- `--with-skill`: install the email skill to `.claude/skills/email/`
+- Registers the project dir as a named space in app config
 - `--force`: overwrite existing config; without it, exit 1 if accounts.toml exists
 - `--sync`: set `CORRKIT_DATA` env, run sync
 - `--provider`: `gmail` (default), `protonmail-bridge`, `imap`
-- `--data-dir`: default `~/Documents/correspondence`
 - `--labels`: default `correspondence` (comma-separated)
-- `--space`: space name to register (default: `"default"`)
+- `--space-name`: space name to register (default: `"default"`)
+
+### 5.1.1 install-skill
+
+```
+corrkit install-skill NAME
+```
+
+- Install an agent skill into the current directory
+- Currently supported: `email` (installs `.claude/skills/email/SKILL.md` and `README.md`)
+- Skips files that already exist (never overwrites)
 
 ### 5.2 sync
 

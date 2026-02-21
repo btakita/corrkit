@@ -117,7 +117,9 @@ All commands are available through the `corrkit` CLI:
 
 ```sh
 corrkit --help                    # Show all commands
-corrkit init --user EMAIL        # Initialize a new data directory
+corrkit init --user EMAIL        # Initialize in current directory
+corrkit init --user EMAIL /path # Initialize at specific path
+corrkit install-skill email     # Install the email agent skill
 corrkit sync                     # Sync all accounts
 corrkit sync --account personal  # Sync one account
 corrkit sync --full              # Full re-sync (ignore saved state)
@@ -152,8 +154,8 @@ Manage multiple correspondence directories (personal, work, etc.) with named spa
 
 ```sh
 # Init creates a space automatically
-corrkit init --user you@gmail.com                              # registers "default" space
-corrkit init --user work@company.com --data-dir ~/work/correspondence --space work
+corrkit init --user you@gmail.com                                   # init in cwd
+corrkit init --user work@company.com ~/work/project --space-name work  # init at path
 
 # List configured spaces
 corrkit spaces

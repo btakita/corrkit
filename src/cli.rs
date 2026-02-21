@@ -14,15 +14,19 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Initialize a new data directory
+    /// Initialize a new project directory
     Init {
+        /// Project directory (default: current directory)
+        #[arg(value_name = "PATH", default_value = ".")]
+        path: PathBuf,
+
         /// Email address
         #[arg(long)]
         user: String,
 
-        /// Data directory path
-        #[arg(long, default_value_os_t = default_data_dir())]
-        data_dir: PathBuf,
+        /// Install the email skill to .claude/skills/email/
+        #[arg(long)]
+        with_skill: bool,
 
         /// Email provider
         #[arg(long, default_value = "gmail", value_parser = ["gmail", "protonmail-bridge", "imap"])]
@@ -124,6 +128,12 @@ pub enum Commands {
 
     /// List configured spaces
     Spaces,
+
+    /// Install an agent skill
+    InstallSkill {
+        /// Skill name (currently: email)
+        name: String,
+    },
 
     /// Audit instruction files
     AuditDocs,
@@ -235,20 +245,3 @@ pub enum ByCommands {
     },
 }
 
-fn default_data_dir() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("Documents")
-        .join("correspondence")
-}
-
-/// Helper to get home directory (used by default_data_dir and resolve)
-mod dirs {
-    use std::path::PathBuf;
-
-    pub fn home_dir() -> Option<PathBuf> {
-        std::env::var_os("HOME")
-            .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
-    }
-}

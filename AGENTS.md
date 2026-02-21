@@ -14,10 +14,11 @@ working directory, which can be either:
 **Developer workflow:** `correspondence/` exists at the working directory root (symlink or subdirectory).
 The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
 
-**General user workflow:** `corrkit init --user EMAIL` creates `~/Documents/correspondence` with
-config and data, and registers it as a named space. Commands find the data dir via the resolution
-order in `src/resolve.rs`: local `correspondence/`, `CORRKIT_DATA` env, app config space,
-`~/Documents` fallback. Use `--space NAME` to select a specific space.
+**General user workflow:** `corrkit init --user EMAIL` creates `correspondence/` in the current
+directory with config at the project root, and registers the project dir as a named space.
+Commands find the data dir via the resolution order in `src/resolve.rs`: local `correspondence/`,
+`CORRKIT_DATA` env, app config space, `~/Documents` fallback. Use `--space NAME` to select a
+specific space.
 
 ## Writing Voice
 

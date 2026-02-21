@@ -1,10 +1,12 @@
-//! Initialize a new corrkit data directory with config and folder structure.
+//! Initialize a new corrkit project directory with config and folder structure.
 
 use anyhow::Result;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::accounts::provider_presets;
 use crate::app_config;
+
+const VOICE_MD: &str = include_str!("../voice.md");
 
 /// Create the data directory structure with .gitkeep files.
 fn create_dirs(data_dir: &Path) -> Result<()> {
@@ -62,10 +64,58 @@ fn generate_accounts_toml(
     doc.to_string()
 }
 
+/// Find the git repo root containing `start`.
+fn find_git_root(start: &Path) -> Option<PathBuf> {
+    let mut dir = start.to_path_buf();
+    loop {
+        if dir.join(".git").exists() {
+            return Some(dir);
+        }
+        if !dir.pop() {
+            return None;
+        }
+    }
+}
+
+/// Ensure an entry exists in .gitignore at the repo root.
+fn ensure_gitignore_entry(repo_root: &Path, entry: &str) -> Result<()> {
+    let gitignore = repo_root.join(".gitignore");
+    if gitignore.exists() {
+        let content = std::fs::read_to_string(&gitignore)?;
+        for line in content.lines() {
+            if line.trim() == entry {
+                return Ok(());
+            }
+        }
+        // Append entry, ensuring a newline before it
+        let suffix = if content.ends_with('\n') || content.is_empty() {
+            format!("{}\n", entry)
+        } else {
+            format!("\n{}\n", entry)
+        };
+        std::fs::write(&gitignore, format!("{}{}", content, suffix))?;
+    } else {
+        std::fs::write(&gitignore, format!("{}\n", entry))?;
+    }
+    println!("Added '{}' to {}", entry, gitignore.display());
+    Ok(())
+}
+
+/// Install voice.md into the project directory if not present.
+fn install_voice_md(project_dir: &Path) -> Result<()> {
+    let path = project_dir.join("voice.md");
+    if path.exists() {
+        return Ok(());
+    }
+    std::fs::write(&path, VOICE_MD)?;
+    println!("Created {}", path.display());
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     user: &str,
-    data_dir: &Path,
+    path: &Path,
     provider: &str,
     password_cmd: &str,
     labels_str: &str,
@@ -74,12 +124,18 @@ pub fn run(
     sync: bool,
     space: &str,
     force: bool,
+    with_skill: bool,
 ) -> Result<()> {
-    let data_dir = if data_dir.starts_with("~") {
-        crate::resolve::expand_tilde(&data_dir.to_string_lossy())
+    // 1. Resolve project path
+    let path = if path.starts_with("~") {
+        crate::resolve::expand_tilde(&path.to_string_lossy())
     } else {
-        data_dir.to_path_buf()
+        path.to_path_buf()
     };
+    std::fs::create_dir_all(&path)?;
+    let path = path.canonicalize()?;
+
+    let data_dir = path.join("correspondence");
 
     let labels: Vec<String> = labels_str
         .split(',')
@@ -87,36 +143,56 @@ pub fn run(
         .filter(|s| !s.is_empty())
         .collect();
 
-    let accounts_path = data_dir.join("accounts.toml");
+    let accounts_path = path.join("accounts.toml");
     if accounts_path.exists() && !force {
         eprintln!("accounts.toml already exists at {}", accounts_path.display());
         eprintln!("Use --force to overwrite.");
         std::process::exit(1);
     }
 
-    // 1. Create directory structure
+    // 2. Create correspondence/{conversations,drafts,contacts}/
     create_dirs(&data_dir)?;
-    println!("Created {}/{{conversations,drafts,contacts}}/", data_dir.display());
+    println!(
+        "Created {}/{{conversations,drafts,contacts}}/",
+        data_dir.display()
+    );
 
-    // 2. Generate accounts.toml
-    let content = generate_accounts_toml(user, provider, password_cmd, &labels, github_user, name);
+    // 3. Generate config files at project root
+    let content =
+        generate_accounts_toml(user, provider, password_cmd, &labels, github_user, name);
     std::fs::write(&accounts_path, &content)?;
     println!("Created {}", accounts_path.display());
 
-    // 3. Create empty collaborators.toml and contacts.toml
     for filename in &["collaborators.toml", "contacts.toml"] {
-        let p = data_dir.join(filename);
+        let p = path.join(filename);
         if !p.exists() {
             std::fs::write(&p, "")?;
             println!("Created {}", p.display());
         }
     }
 
-    // 4. Register space in app config
-    app_config::add_space(space, &data_dir.to_string_lossy())?;
-    println!("Registered space '{}' \u{2192} {}", space, data_dir.display());
+    // 4. Install voice.md
+    install_voice_md(&path)?;
 
-    // 5. Provider-specific guidance
+    // 5. Add correspondence to .gitignore if in a git repo
+    if let Some(repo_root) = find_git_root(&path) {
+        ensure_gitignore_entry(&repo_root, "correspondence")?;
+    }
+
+    // 6. Install email skill if requested
+    if with_skill {
+        crate::skill::install("email", &path)?;
+    }
+
+    // 7. Register space in app config
+    app_config::add_space(space, &path.to_string_lossy())?;
+    println!(
+        "Registered space '{}' \u{2192} {}",
+        space,
+        path.display()
+    );
+
+    // 8. Provider-specific guidance
     let presets = provider_presets();
     if provider == "gmail" && password_cmd.is_empty() {
         println!();
@@ -126,7 +202,7 @@ pub fn run(
         println!("  Option B: OAuth \u{2014} run 'corrkit sync-auth' after placing credentials.json");
     }
 
-    // 6. Optional first sync
+    // 9. Optional first sync
     if sync {
         std::env::set_var("CORRKIT_DATA", data_dir.to_string_lossy().as_ref());
         println!();
@@ -143,10 +219,10 @@ pub fn run(
         if !presets.contains_key(provider) && provider == "imap" {
             println!("  - Add imap_host, smtp_host to accounts.toml");
         }
-        println!(
-            "  - Run: CORRKIT_DATA={} corrkit sync",
-            data_dir.display()
-        );
+        println!("  - Run: corrkit sync");
+        if !with_skill {
+            println!("  - Run: corrkit install-skill email  (to add the email agent skill)");
+        }
     }
 
     Ok(())

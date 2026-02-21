@@ -3,7 +3,8 @@
 use anyhow::Result;
 
 const COMMANDS: &[(&str, &str)] = &[
-    ("init --user EMAIL [--data-dir PATH]", "Initialize a new data directory"),
+    ("init --user EMAIL [PATH]", "Initialize a new project directory"),
+    ("install-skill NAME", "Install an agent skill (e.g. email)"),
     ("sync [--full] [--account NAME]", "Sync email threads to markdown"),
     ("sync-auth", "Gmail OAuth setup"),
     ("list-folders [ACCOUNT]", "List IMAP folders for an account"),

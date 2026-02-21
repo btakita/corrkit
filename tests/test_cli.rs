@@ -1,10 +1,11 @@
 //! Basic binary invocation tests (assert_cmd).
 
+use assert_cmd::cargo::cargo_bin_cmd;
 use assert_cmd::Command;
 use predicates::prelude::*;
 
 fn corrkit_cmd() -> Command {
-    Command::cargo_bin("corrkit").unwrap()
+    cargo_bin_cmd!("corrkit")
 }
 
 #[test]
@@ -105,9 +106,9 @@ fn test_cli_unknown_subcommand() {
 }
 
 #[test]
-fn test_cli_init_with_data_dir() {
+fn test_cli_init_with_path() {
     let tmp = tempfile::TempDir::new().unwrap();
-    let data_dir = tmp.path().join("test-init-cli");
+    let project_dir = tmp.path().join("test-init-cli");
 
     let mut cmd = corrkit_cmd();
     // Isolate from real config by using temp HOME
@@ -116,14 +117,14 @@ fn test_cli_init_with_data_dir() {
         "init",
         "--user",
         "test@example.com",
-        "--data-dir",
-        &data_dir.to_string_lossy(),
         "--force",
+        &project_dir.to_string_lossy(),
     ]);
     cmd.assert().success();
 
-    assert!(data_dir.join("conversations").exists());
-    assert!(data_dir.join("accounts.toml").exists());
+    assert!(project_dir.join("correspondence/conversations").exists());
+    assert!(project_dir.join("accounts.toml").exists());
+    assert!(project_dir.join("voice.md").exists());
 }
 
 #[test]

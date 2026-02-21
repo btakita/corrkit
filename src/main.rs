@@ -19,8 +19,9 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Init {
+            path,
             user,
-            data_dir,
+            with_skill,
             provider,
             password_cmd,
             labels,
@@ -31,7 +32,7 @@ fn main() -> Result<()> {
             force,
         } => corrkit::init::run(
             &user,
-            &data_dir,
+            &path,
             &provider,
             &password_cmd,
             &labels,
@@ -40,6 +41,7 @@ fn main() -> Result<()> {
             sync,
             &space_name,
             force,
+            with_skill,
         ),
         Commands::Sync { full, account } => corrkit::sync::run(full, account.as_deref()),
         Commands::SyncAuth => corrkit::sync::auth::run(),
@@ -53,6 +55,7 @@ fn main() -> Result<()> {
             account,
         } => corrkit::contact::add::run(&name, &emails, &labels, &account),
         Commands::Watch { interval } => corrkit::watch::run(interval),
+        Commands::InstallSkill { name } => corrkit::skill::run(&name),
         Commands::Spaces => corrkit::spaces::run(),
         Commands::AuditDocs => corrkit::audit_docs::run(),
         Commands::Help { filter } => corrkit::help::run(filter.as_deref()),

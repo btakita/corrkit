@@ -322,8 +322,8 @@ fn check_actionable(rel: &str, content: &str) -> Vec<Issue> {
             let title_lower = title.to_lowercase();
             if INFORMATIONAL_HEADINGS.iter().any(|h| title_lower == *h) {
                 let mut end = lines.len();
-                for j in (i + 1)..lines.len() {
-                    if let Some((next_level, _)) = heading_level(lines[j]) {
+                for (j, line_j) in lines.iter().enumerate().skip(i + 1) {
+                    if let Some((next_level, _)) = heading_level(line_j) {
                         if next_level <= level {
                             end = j;
                             break;

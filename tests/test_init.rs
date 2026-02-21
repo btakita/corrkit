@@ -17,7 +17,7 @@ static ENV_MUTEX: Mutex<()> = Mutex::new(());
 /// app_config::add_space writes to an isolated config.
 fn run_init_isolated(
     tmp: &TempDir,
-    data_dir: &std::path::Path,
+    path: &std::path::Path,
     user: &str,
     provider: &str,
     password_cmd: &str,
@@ -31,9 +31,10 @@ fn run_init_isolated(
     let old_home = std::env::var("HOME").ok();
     std::env::set_var("HOME", tmp.path().to_string_lossy().as_ref());
     let result = corrkit::init::run(
-        user, data_dir, provider, password_cmd, labels, github_user, name,
+        user, path, provider, password_cmd, labels, github_user, name,
         false, // sync
         space, force,
+        false, // with_skill
     );
     // Restore HOME
     if let Some(h) = old_home {
@@ -45,39 +46,42 @@ fn run_init_isolated(
 #[test]
 fn test_init_creates_directory_structure() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("mydata");
+    let path = tmp.path().join("myproject");
 
     run_init_isolated(
-        &tmp, &data_dir, "test@example.com", "gmail", "",
+        &tmp, &path, "test@example.com", "gmail", "",
         "correspondence", "testgh", "Test User",
         "test-init-space", true,
     )
     .unwrap();
 
+    let data_dir = path.join("correspondence");
     assert!(data_dir.join("conversations").is_dir());
     assert!(data_dir.join("drafts").is_dir());
     assert!(data_dir.join("contacts").is_dir());
     assert!(data_dir.join("conversations").join(".gitkeep").exists());
     assert!(data_dir.join("drafts").join(".gitkeep").exists());
     assert!(data_dir.join("contacts").join(".gitkeep").exists());
-    assert!(data_dir.join("accounts.toml").exists());
-    assert!(data_dir.join("collaborators.toml").exists());
-    assert!(data_dir.join("contacts.toml").exists());
+    // Config files at project root
+    assert!(path.join("accounts.toml").exists());
+    assert!(path.join("collaborators.toml").exists());
+    assert!(path.join("contacts.toml").exists());
+    assert!(path.join("voice.md").exists());
 }
 
 #[test]
 fn test_init_accounts_toml_content() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("initdata");
+    let path = tmp.path().join("initdata");
 
     run_init_isolated(
-        &tmp, &data_dir, "alice@gmail.com", "gmail",
+        &tmp, &path, "alice@gmail.com", "gmail",
         "pass show email/personal", "inbox, sent",
         "alicegh", "Alice", "test-init-acct", true,
     )
     .unwrap();
 
-    let accounts_path = data_dir.join("accounts.toml");
+    let accounts_path = path.join("accounts.toml");
     let accounts = load_accounts(Some(&accounts_path)).unwrap();
     assert!(accounts.contains_key("default"));
     let acct = accounts.get("default").unwrap();
@@ -93,15 +97,15 @@ fn test_init_accounts_toml_content() {
 #[test]
 fn test_init_with_custom_provider() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("pmdata");
+    let path = tmp.path().join("pmdata");
 
     run_init_isolated(
-        &tmp, &data_dir, "user@proton.me", "protonmail-bridge",
+        &tmp, &path, "user@proton.me", "protonmail-bridge",
         "", "correspondence", "", "", "test-init-pm", true,
     )
     .unwrap();
 
-    let accounts_path = data_dir.join("accounts.toml");
+    let accounts_path = path.join("accounts.toml");
     let accounts = load_accounts(Some(&accounts_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.provider, "protonmail-bridge");
@@ -111,16 +115,16 @@ fn test_init_with_custom_provider() {
 #[test]
 fn test_init_labels_parsing() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("lbldata");
+    let path = tmp.path().join("lbldata");
 
     run_init_isolated(
-        &tmp, &data_dir, "user@example.com", "imap",
+        &tmp, &path, "user@example.com", "imap",
         "", "inbox, sent, important", "", "",
         "test-init-labels", true,
     )
     .unwrap();
 
-    let accounts_path = data_dir.join("accounts.toml");
+    let accounts_path = path.join("accounts.toml");
     let accounts = load_accounts(Some(&accounts_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.labels.len(), 3);
@@ -132,18 +136,18 @@ fn test_init_labels_parsing() {
 #[test]
 fn test_init_force_overwrites() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("forcedata");
-    std::fs::create_dir_all(&data_dir).unwrap();
-    std::fs::write(data_dir.join("accounts.toml"), "# old config").unwrap();
+    let path = tmp.path().join("forcedata");
+    std::fs::create_dir_all(&path).unwrap();
+    std::fs::write(path.join("accounts.toml"), "# old config").unwrap();
 
     run_init_isolated(
-        &tmp, &data_dir, "new@example.com", "gmail",
+        &tmp, &path, "new@example.com", "gmail",
         "", "correspondence", "", "",
         "test-init-force", true,
     )
     .unwrap();
 
-    let content = std::fs::read_to_string(data_dir.join("accounts.toml")).unwrap();
+    let content = std::fs::read_to_string(path.join("accounts.toml")).unwrap();
     assert!(content.contains("new@example.com"));
     assert!(!content.contains("# old config"));
 }
@@ -151,54 +155,110 @@ fn test_init_force_overwrites() {
 #[test]
 fn test_init_preserves_existing_config_files() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("preservedata");
-    std::fs::create_dir_all(&data_dir).unwrap();
+    let path = tmp.path().join("preservedata");
+    std::fs::create_dir_all(&path).unwrap();
     std::fs::write(
-        data_dir.join("collaborators.toml"),
+        path.join("collaborators.toml"),
         "[alex]\nlabels = [\"for-alex\"]\n",
     )
     .unwrap();
 
     run_init_isolated(
-        &tmp, &data_dir, "user@example.com", "gmail",
+        &tmp, &path, "user@example.com", "gmail",
         "", "correspondence", "", "",
         "test-init-preserve", true,
     )
     .unwrap();
 
-    let content = std::fs::read_to_string(data_dir.join("collaborators.toml")).unwrap();
+    let content = std::fs::read_to_string(path.join("collaborators.toml")).unwrap();
     assert!(content.contains("alex"));
 }
 
 #[test]
 fn test_init_tilde_expansion() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("tildetest");
+    let path = tmp.path().join("tildetest");
 
     run_init_isolated(
-        &tmp, &data_dir, "user@example.com", "gmail",
+        &tmp, &path, "user@example.com", "gmail",
         "", "correspondence", "", "",
         "test-init-tilde", true,
     )
     .unwrap();
 
-    assert!(data_dir.join("accounts.toml").exists());
+    assert!(path.join("accounts.toml").exists());
 }
 
 #[test]
 fn test_init_empty_labels() {
     let tmp = TempDir::new().unwrap();
-    let data_dir = tmp.path().join("emptylbl");
+    let path = tmp.path().join("emptylbl");
 
     run_init_isolated(
-        &tmp, &data_dir, "user@example.com", "gmail",
+        &tmp, &path, "user@example.com", "gmail",
         "", "", "", "",
         "test-init-emptylbl", true,
     )
     .unwrap();
 
-    let accounts_path = data_dir.join("accounts.toml");
+    let accounts_path = path.join("accounts.toml");
     let accounts = load_accounts(Some(&accounts_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert!(acct.labels.is_empty());
+}
+
+#[test]
+fn test_init_gitignore_in_git_repo() {
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().join("gitproject");
+    std::fs::create_dir_all(&path).unwrap();
+    // Simulate a git repo
+    std::fs::create_dir_all(path.join(".git")).unwrap();
+
+    run_init_isolated(
+        &tmp, &path, "user@example.com", "gmail",
+        "", "correspondence", "", "",
+        "test-init-gitignore", true,
+    )
+    .unwrap();
+
+    let gitignore = std::fs::read_to_string(path.join(".gitignore")).unwrap();
+    assert!(gitignore.contains("correspondence"));
+}
+
+#[test]
+fn test_init_no_gitignore_without_git() {
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().join("nogit");
+
+    run_init_isolated(
+        &tmp, &path, "user@example.com", "gmail",
+        "", "correspondence", "", "",
+        "test-init-nogit", true,
+    )
+    .unwrap();
+
+    assert!(!path.join(".gitignore").exists());
+}
+
+#[test]
+fn test_init_with_skill() {
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().join("skillproject");
+
+    let _lock = ENV_MUTEX.lock().unwrap();
+    let old_home = std::env::var("HOME").ok();
+    std::env::set_var("HOME", tmp.path().to_string_lossy().as_ref());
+    let result = corrkit::init::run(
+        "user@example.com", &path, "gmail", "", "correspondence", "", "",
+        false, "test-init-skill", true,
+        true, // with_skill
+    );
+    if let Some(h) = old_home {
+        std::env::set_var("HOME", h);
+    }
+    result.unwrap();
+
+    assert!(path.join(".claude/skills/email/SKILL.md").exists());
+    assert!(path.join(".claude/skills/email/README.md").exists());
 }

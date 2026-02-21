@@ -7,6 +7,7 @@ pub mod contact;
 pub mod draft;
 pub mod init;
 pub mod resolve;
+pub mod skill;
 pub mod spaces;
 pub mod sync;
 pub mod util;
