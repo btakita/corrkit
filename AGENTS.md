@@ -15,7 +15,7 @@ working directory, which can be either:
 The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
 
 **General user workflow:** `corrkit init --user EMAIL` creates `correspondence/` in the current
-directory with config at the project root, and registers the project dir as a named space.
+directory with config inside it, and registers the project dir as a named space.
 Commands find the data dir via the resolution order in `src/resolve.rs`: local `correspondence/`,
 `CORRKIT_DATA` env, app config space, `~/Documents` fallback. Use `--space NAME` to select a
 specific space.
@@ -46,8 +46,8 @@ corrkit init --user you@gmail.com
 
 **Developer (from repo checkout):**
 ```sh
-cp .corrkit.toml.example .corrkit.toml   # configure your email accounts
-make release                              # build + symlink to .bin/corrkit
+cp .corrkit.toml.example correspondence/.corrkit.toml   # configure your email accounts
+make release                                              # build + symlink to .bin/corrkit
 ```
 
 See README.md for full config reference (.corrkit.toml, contacts.toml, Gmail OAuth).
@@ -114,7 +114,7 @@ update instruction files as part of the same change.
 - Use `std::process::Command` for git operations (not `git2`)
 - Use `regex` + `once_cell::Lazy` for compiled regex patterns
 - Keep sync, draft, mailbox, contact logic in separate modules
-- Do not commit `.env`, `.corrkit.toml`, `corrkit.toml`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
+- Do not commit `.env`, `accounts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes

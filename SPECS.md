@@ -45,8 +45,7 @@ The data directory is resolved at runtime in this order:
 
 ### 2.3 Config Directory
 
-- If `correspondence/` exists in cwd → `.` (current directory, developer workflow)
-- Otherwise → same as data directory (general user: config lives inside data dir)
+Config always lives inside the data directory (`correspondence/`).
 
 Config files: `.corrkit.toml`, `contacts.toml`, `voice.md`, `credentials.json`
 
@@ -297,8 +296,8 @@ corrkit init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
 
 - `PATH`: project directory (default: `.` — current directory)
 - Creates `{path}/correspondence/{conversations,drafts,contacts}/` with `.gitkeep` files
-- Generates `.corrkit.toml`, `contacts.toml` at `{path}/`
-- Installs `voice.md` at `{path}/` if not present
+- Generates `.corrkit.toml`, `contacts.toml` at `{path}/correspondence/`
+- Installs `voice.md` at `{path}/correspondence/` if not present
 - If inside a git repo: adds `correspondence` to `.gitignore`
 - `--with-skill`: install the email skill to `.claude/skills/email/`
 - Registers the project dir as a named space in app config

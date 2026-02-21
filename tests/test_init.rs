@@ -15,6 +15,7 @@ static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 /// Run init::run with HOME set to the temp dir parent, so
 /// app_config::add_space writes to an isolated config.
+#[allow(clippy::too_many_arguments)]
 fn run_init_isolated(
     tmp: &TempDir,
     path: &std::path::Path,
@@ -62,14 +63,14 @@ fn test_init_creates_directory_structure() {
     assert!(data_dir.join("conversations").join(".gitkeep").exists());
     assert!(data_dir.join("drafts").join(".gitkeep").exists());
     assert!(data_dir.join("contacts").join(".gitkeep").exists());
-    // Config at project root
-    assert!(path.join(".corrkit.toml").exists());
-    assert!(path.join("contacts.toml").exists());
-    assert!(path.join("voice.md").exists());
-    // No collaborators.toml (removed)
-    assert!(!path.join("collaborators.toml").exists());
-    // No accounts.toml (replaced by .corrkit.toml)
-    assert!(!path.join("accounts.toml").exists());
+    // Config inside correspondence/
+    assert!(data_dir.join(".corrkit.toml").exists());
+    assert!(data_dir.join("contacts.toml").exists());
+    assert!(data_dir.join("voice.md").exists());
+    // No config at project root
+    assert!(!path.join(".corrkit.toml").exists());
+    assert!(!path.join("contacts.toml").exists());
+    assert!(!path.join("voice.md").exists());
 }
 
 #[test]
@@ -84,7 +85,7 @@ fn test_init_corrkit_toml_content() {
     )
     .unwrap();
 
-    let config_path = path.join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corrkit.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     assert!(accounts.contains_key("default"));
     let acct = accounts.get("default").unwrap();
@@ -108,7 +109,7 @@ fn test_init_with_custom_provider() {
     )
     .unwrap();
 
-    let config_path = path.join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corrkit.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.provider, "protonmail-bridge");
@@ -127,7 +128,7 @@ fn test_init_labels_parsing() {
     )
     .unwrap();
 
-    let config_path = path.join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corrkit.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.labels.len(), 3);
@@ -140,8 +141,9 @@ fn test_init_labels_parsing() {
 fn test_init_force_overwrites() {
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().join("forcedata");
-    std::fs::create_dir_all(&path).unwrap();
-    std::fs::write(path.join(".corrkit.toml"), "# old config").unwrap();
+    let data_dir = path.join("correspondence");
+    std::fs::create_dir_all(&data_dir).unwrap();
+    std::fs::write(data_dir.join(".corrkit.toml"), "# old config").unwrap();
 
     run_init_isolated(
         &tmp, &path, "new@example.com", "gmail",
@@ -150,7 +152,7 @@ fn test_init_force_overwrites() {
     )
     .unwrap();
 
-    let content = std::fs::read_to_string(path.join(".corrkit.toml")).unwrap();
+    let content = std::fs::read_to_string(data_dir.join(".corrkit.toml")).unwrap();
     assert!(content.contains("new@example.com"));
     assert!(!content.contains("# old config"));
 }
@@ -167,7 +169,7 @@ fn test_init_tilde_expansion() {
     )
     .unwrap();
 
-    assert!(path.join(".corrkit.toml").exists());
+    assert!(path.join("correspondence").join(".corrkit.toml").exists());
 }
 
 #[test]
@@ -182,7 +184,7 @@ fn test_init_empty_labels() {
     )
     .unwrap();
 
-    let config_path = path.join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corrkit.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert!(acct.labels.is_empty());

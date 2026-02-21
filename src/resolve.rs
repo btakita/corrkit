@@ -28,12 +28,8 @@ pub fn data_dir() -> PathBuf {
 
 /// Return the config directory path.
 ///
-/// If correspondence/ exists in cwd, config lives in "." (developer workflow).
-/// Otherwise, config lives inside the data dir.
+/// Config always lives inside the data directory (correspondence/).
 pub fn config_dir() -> PathBuf {
-    if PathBuf::from("correspondence").is_dir() {
-        return PathBuf::from(".");
-    }
     data_dir()
 }
 

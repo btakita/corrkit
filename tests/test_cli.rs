@@ -139,8 +139,8 @@ fn test_cli_init_with_path() {
     cmd.assert().success();
 
     assert!(project_dir.join("correspondence/conversations").exists());
-    assert!(project_dir.join(".corrkit.toml").exists());
-    assert!(project_dir.join("voice.md").exists());
+    assert!(project_dir.join("correspondence/.corrkit.toml").exists());
+    assert!(project_dir.join("correspondence/voice.md").exists());
 }
 
 #[test]

@@ -143,7 +143,7 @@ pub fn run(
         .filter(|s| !s.is_empty())
         .collect();
 
-    let config_path = path.join(".corrkit.toml");
+    let config_path = data_dir.join(".corrkit.toml");
     if config_path.exists() && !force {
         eprintln!(".corrkit.toml already exists at {}", config_path.display());
         eprintln!("Use --force to overwrite.");
@@ -157,21 +157,21 @@ pub fn run(
         data_dir.display()
     );
 
-    // 3. Generate .corrkit.toml at project root
+    // 3. Generate .corrkit.toml inside correspondence/
     let content =
         generate_corrkit_toml(user, provider, password_cmd, &labels, github_user, name);
     std::fs::write(&config_path, &content)?;
     println!("Created {}", config_path.display());
 
-    // contacts.toml (still separate)
-    let contacts_path = path.join("contacts.toml");
+    // contacts.toml inside correspondence/
+    let contacts_path = data_dir.join("contacts.toml");
     if !contacts_path.exists() {
         std::fs::write(&contacts_path, "")?;
         println!("Created {}", contacts_path.display());
     }
 
-    // 4. Install voice.md
-    install_voice_md(&path)?;
+    // 4. Install voice.md inside correspondence/
+    install_voice_md(&data_dir)?;
 
     // 5. Add correspondence to .gitignore if in a git repo
     if let Some(repo_root) = find_git_root(&path) {
@@ -197,7 +197,7 @@ pub fn run(
         println!();
         println!("Gmail setup:");
         println!("  Option A: App password \u{2014} https://myaccount.google.com/apppasswords");
-        println!("    Add password_cmd = \"pass email/personal\" to .corrkit.toml");
+        println!("    Add password_cmd = \"pass email/personal\" to correspondence/.corrkit.toml");
         println!("  Option B: OAuth \u{2014} run 'corrkit sync-auth' after placing credentials.json");
     }
 
@@ -216,7 +216,7 @@ pub fn run(
             println!("  - Set up app password or OAuth (see above)");
         }
         if !presets.contains_key(provider) && provider == "imap" {
-            println!("  - Add imap_host, smtp_host to .corrkit.toml");
+            println!("  - Add imap_host, smtp_host to correspondence/.corrkit.toml");
         }
         println!("  - Run: corrkit sync");
         if !with_skill {

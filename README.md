@@ -48,17 +48,17 @@ corrkit init --user you@gmail.com
 ```
 
 This creates `~/Documents/correspondence` with directory structure, `.corrkit.toml`,
-and empty config files. Edit `.corrkit.toml` with credentials, then run `corrkit sync`.
+and empty config files inside it. Edit `correspondence/.corrkit.toml` with credentials, then run `corrkit sync`.
 
 **Developer setup (from repo checkout):**
 ```sh
-cp .corrkit.toml.example .corrkit.toml   # configure your email accounts
+cp .corrkit.toml.example correspondence/.corrkit.toml   # configure your email accounts
 cargo build
 ```
 
 ### Account configuration
 
-Define email accounts in `.corrkit.toml` with provider presets:
+Define email accounts in `correspondence/.corrkit.toml` with provider presets:
 
 ```toml
 [accounts.personal]
@@ -186,15 +186,12 @@ make init-python                  # Set up Python venv for wrapper development
 
 ```
 .env
-.corrkit.toml
-corrkit.toml
 accounts.toml
-contacts.toml
+credentials.json
+*.credentials.json
 CLAUDE.local.md
 AGENTS.local.md
 correspondence
-*.credentials.json
-credentials.json
 .idea/
 tmp/
 target/
@@ -205,6 +202,9 @@ target/
 skills/
 skills-lock.json
 ```
+
+Config files (`.corrkit.toml`, `contacts.toml`, `voice.md`) live inside `correspondence/`
+which is already gitignored. `credentials.json` is also gitignored in `correspondence/.gitignore`.
 
 ## Unified conversation directory
 
@@ -292,7 +292,7 @@ Correspondence-kit inverts this. You control what any agent or collaborator can 
 
 1. **You label threads in your email client.** Only threads you explicitly label get synced locally.
 2. **Labels route to scoped views.** Each mailbox gives the collaborator/agent a directory containing only the threads labeled for them — nothing else.
-3. **Credentials never leave your machine.** `.corrkit.toml` is gitignored. Agents draft replies in markdown; only you can push to your email.
+3. **Credentials never leave your machine.** Config lives inside `correspondence/` (your private data repo). Agents draft replies in markdown; only you can push to your email.
 
 An agent added with `corrkit mailbox add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
 
@@ -384,7 +384,7 @@ corrkit watch
 corrkit watch --interval 60
 ```
 
-Configure in `.corrkit.toml`:
+Configure in `correspondence/.corrkit.toml`:
 
 ```toml
 [watch]

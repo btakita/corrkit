@@ -1,13 +1,10 @@
 .env
-.corrkit.toml
-corrkit.toml
 accounts.toml
-contacts.toml
+credentials.json
+*.credentials.json
 AGENTS.local.md
 CLAUDE.local.md
 correspondence
-*.credentials.json
-credentials.json
 .idea/
 tmp/
 
