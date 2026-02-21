@@ -1,4 +1,4 @@
-"""Tests for collab-sync and collab-status commands."""
+"""Tests for 'corrkit for sync' and 'corrkit for status' commands."""
 
 import subprocess
 
@@ -170,7 +170,7 @@ def test_submodule_status_incoming(tmp_path, monkeypatch, capsys):
 
 
 def test_main_status_mode(tmp_path, monkeypatch, capsys):
-    """collab-sync --status prints status for each collaborator."""
+    """'for sync --status' prints status for each collaborator."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
         {
@@ -185,7 +185,7 @@ def test_main_status_mode(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("sys.argv", ["collab-sync", "--status"])
+    monkeypatch.setattr("sys.argv", ["for sync", "--status"])
 
     def fake_run(cmd, **kw):
         if "rev-list" in cmd:
@@ -201,7 +201,7 @@ def test_main_status_mode(tmp_path, monkeypatch, capsys):
 
 
 def test_main_unknown_collaborator(tmp_path, monkeypatch):
-    """collab-sync with unknown name exits."""
+    """'for sync' with unknown name exits."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
         {
@@ -212,7 +212,7 @@ def test_main_unknown_collaborator(tmp_path, monkeypatch):
         config_path,
     )
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("sys.argv", ["collab-sync", "nobody"])
+    monkeypatch.setattr("sys.argv", ["for sync", "nobody"])
 
     import pytest
 

@@ -2,7 +2,7 @@
 Rename a collaborator's local directory and config entry.
 
 Usage:
-  corrkit collab-rename old-name new-name
+  corrkit for rename old-name new-name
 """
 
 import argparse

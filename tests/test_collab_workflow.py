@@ -1,5 +1,5 @@
 """End-to-end tests for the collaborator workflow (sync routing, draft round-trip,
-corrkit commands, collab-sync)."""
+corrkit commands, for sync)."""
 
 import os
 import shutil
@@ -59,7 +59,7 @@ def test_sync_routes_to_collab_dir(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 2. collab-sync stages and commits conversations
+# 2. 'for sync' stages and commits conversations
 # ---------------------------------------------------------------------------
 
 
@@ -207,8 +207,8 @@ def test_agents_md_template_completeness():
     assert "git push" in md
 
     # Commands reference uvx corrkit, not scripts/
-    assert "uvx corrkit find-unanswered" in md
-    assert "uvx corrkit validate-draft" in md
+    assert "uvx corrkit by find-unanswered" in md
+    assert "uvx corrkit by validate-draft" in md
 
 
 def test_agents_md_uses_owner_name():
@@ -224,9 +224,9 @@ def test_agents_md_uses_owner_name():
 
 
 def test_find_unanswered_via_corrkit():
-    """corrkit find-unanswered --help exits 0."""
+    """corrkit by find-unanswered --help exits 0."""
     result = subprocess.run(
-        ["uv", "run", "corrkit", "find-unanswered", "--help"],
+        ["uv", "run", "corrkit", "by", "find-unanswered", "--help"],
         capture_output=True,
         text=True,
     )
@@ -235,9 +235,9 @@ def test_find_unanswered_via_corrkit():
 
 
 def test_validate_draft_via_corrkit():
-    """corrkit validate-draft --help exits 0."""
+    """corrkit by validate-draft --help exits 0."""
     result = subprocess.run(
-        ["uv", "run", "corrkit", "validate-draft", "--help"],
+        ["uv", "run", "corrkit", "by", "validate-draft", "--help"],
         capture_output=True,
         text=True,
     )
@@ -246,7 +246,7 @@ def test_validate_draft_via_corrkit():
 
 
 # ---------------------------------------------------------------------------
-# 6. collab-add creates correct files
+# 6. 'for add' creates correct files
 # ---------------------------------------------------------------------------
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "collab" / "templates"
@@ -254,7 +254,7 @@ VOICE_FILE = Path(__file__).resolve().parent.parent / "voice.md"
 
 
 def test_collab_add_creates_correct_files(tmp_path):
-    """collab-add file-creation logic produces all expected files."""
+    """'for add' file-creation logic produces all expected files."""
     name = "helper"
     owner_name = "Brian"
 
@@ -335,8 +335,8 @@ def test_readme_md_template_completeness():
     assert "**Status**: review" in md
 
     # Commands reference uvx corrkit
-    assert "uvx corrkit find-unanswered" in md
-    assert "uvx corrkit validate-draft" in md
+    assert "uvx corrkit by find-unanswered" in md
+    assert "uvx corrkit by validate-draft" in md
 
     # Reference section pointing to AGENTS.md
     assert "## Reference" in md

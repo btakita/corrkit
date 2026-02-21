@@ -16,12 +16,12 @@ def test_help_flag_shows_all_commands():
         "sync-gmail",
         "list-folders",
         "push-draft",
-        "collab-add",
-        "collab-sync",
-        "collab-status",
-        "collab-remove",
-        "find-unanswered",
-        "validate-draft",
+        "for add",
+        "for sync",
+        "for status",
+        "for remove",
+        "by find-unanswered",
+        "by validate-draft",
         "audit-docs",
         "help",
     ]:
@@ -70,3 +70,47 @@ def test_unknown_subcommand_exits_nonzero():
     )
     assert result.returncode != 0
     assert "Unknown command" in result.stderr
+
+
+def test_nested_for_add_help():
+    """corrkit for add --help exits 0."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "for", "add", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "collaborator" in result.stdout.lower()
+
+
+def test_nested_by_find_unanswered_help():
+    """corrkit by find-unanswered --help exits 0."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "by", "find-unanswered", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "reply" in result.stdout.lower()
+
+
+def test_unknown_nested_command_exits_nonzero():
+    """Unknown nested command exits with non-zero status."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "for", "no-such-sub"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "Unknown command: for no-such-sub" in result.stderr
+
+
+def test_nested_group_without_subcommand_shows_help():
+    """corrkit for (without subcommand) shows help."""
+    result = subprocess.run(
+        ["uv", "run", "corrkit", "for"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "for add" in result.stdout

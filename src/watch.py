@@ -6,7 +6,6 @@ import signal
 import subprocess
 import sys
 import threading
-from pathlib import Path
 
 import msgspec
 
@@ -80,12 +79,14 @@ def _save_state(state: SyncState) -> None:
 
 
 def _sync_collaborators() -> None:
-    """Run collab-sync for all collaborators with pending changes."""
+    """Run 'for sync' for all collaborators with pending changes."""
+    from collab import collab_dir
+
     collabs = load_collaborators()
     if not collabs:
         return
-    for name in collabs:
-        sub_path = Path("shared") / name
+    for name, collab in collabs.items():
+        sub_path = collab_dir(collab)
         if not sub_path.exists():
             continue
         # Check if submodule has changes
@@ -100,7 +101,7 @@ def _sync_collaborators() -> None:
 
 
 def _poll_once(*, notify_enabled: bool) -> int:
-    """One sync + collab-sync cycle. Returns count of labels with new messages."""
+    """One sync + 'for sync' cycle. Returns count of labels with new messages."""
     accounts = load_accounts_or_env()
     state = _load_state()
 

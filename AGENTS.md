@@ -53,13 +53,13 @@ regardless of how it is linked.
       push.py                      # Push draft to email (draft or send)
     collab/
       __init__.py                  # Collaborator config parser
-      add.py                       # collab-add command
-      sync.py                      # collab-sync / collab-status commands
-      remove.py                    # collab-remove command
-      rename.py                    # collab-rename command
-      reset.py                     # collab-reset command
-      find_unanswered.py           # find-unanswered command
-      validate_draft.py            # validate-draft command
+      add.py                       # for add command
+      sync.py                      # for sync / for status commands
+      remove.py                    # for remove command
+      rename.py                    # for rename command
+      reset.py                     # for reset command
+      find_unanswered.py           # by find-unanswered command
+      validate_draft.py            # by validate-draft command
     contact/
       __init__.py                  # Contact config parser
       add.py                       # contact-add command
@@ -214,6 +214,7 @@ update instruction files as part of the same change.
 - Do not commit `.env`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
 - Scripts must be runnable directly: `uv run src/sync/imap.py`
 - Commits that include a version change should include the version number in the commit message
+- Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes
 
 ## .gitignore
 

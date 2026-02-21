@@ -6,9 +6,9 @@ CLAUDE.md symlink, .gitignore, voice.md, and .github/workflows/notify.yml
 to match the current templates, then commits and pushes.
 
 Usage:
-  corrkit collab-reset alex          # Reset one collaborator
-  corrkit collab-reset               # Reset all collaborators
-  corrkit collab-reset --no-sync     # Regenerate without pull/push
+  corrkit for reset alex-gh         # Reset one collaborator
+  corrkit for reset                 # Reset all collaborators
+  corrkit for reset --no-sync       # Regenerate without pull/push
 """
 
 import argparse
@@ -18,19 +18,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import load_collaborators
+from . import collab_dir, load_collaborators
 from .add import _generate_agents_md, _generate_readme_md
 
-SHARED_DIR = Path("shared")
 VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 _TEMPLATE_WORKFLOW = "notify.yml"
 
 
-def _run(
-    cmd: list[str], check: bool = True, **kwargs
-) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], check: bool = True, **kwargs) -> subprocess.CompletedProcess:
     result = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
     if check and result.returncode != 0:
         print(f"  FAILED: {' '.join(cmd)}")
@@ -38,11 +35,11 @@ def _run(
     return result
 
 
-def _regenerate(name: str, sub_path: Path) -> None:
+def _regenerate(name: str, display_name: str, owner_name: str, sub_path: Path) -> None:
     """Regenerate template files for one collaborator."""
     # AGENTS.md
     (sub_path / "AGENTS.md").write_text(
-        _generate_agents_md(name), encoding="utf-8"
+        _generate_agents_md(display_name, owner_name), encoding="utf-8"
     )
     print("  Updated AGENTS.md")
 
@@ -55,7 +52,7 @@ def _regenerate(name: str, sub_path: Path) -> None:
 
     # README.md
     (sub_path / "README.md").write_text(
-        _generate_readme_md(name), encoding="utf-8"
+        _generate_readme_md(display_name, owner_name), encoding="utf-8"
     )
     print("  Updated README.md")
 
@@ -79,20 +76,18 @@ def _regenerate(name: str, sub_path: Path) -> None:
         print(f"  Updated .github/workflows/{_TEMPLATE_WORKFLOW}")
 
 
-def _reset_one(name: str, *, sync: bool = True) -> None:
+def _reset_one(name: str, collab, owner_name: str, *, sync: bool = True) -> None:
     """Pull, regenerate templates, commit, and push for one collaborator."""
-    sub_path = SHARED_DIR / name
+    sub_path = collab_dir(collab)
     if not sub_path.exists():
-        print(f"  {name}: submodule not found at shared/{name} -- skipping")
+        print(f"  {name}: submodule not found at {sub_path} -- skipping")
         return
 
     print(f"Resetting {name}...")
 
     # 1. Pull latest (rebase to keep collaborator changes)
     if sync:
-        result = _run(
-            ["git", "-C", str(sub_path), "pull", "--rebase"], check=False
-        )
+        result = _run(["git", "-C", str(sub_path), "pull", "--rebase"], check=False)
         if result.returncode == 0:
             pulled = result.stdout.strip()
             if "Already up to date" not in pulled:
@@ -101,7 +96,8 @@ def _reset_one(name: str, *, sync: bool = True) -> None:
             print("  Pull failed -- continuing with reset")
 
     # 2. Regenerate template files
-    _regenerate(name, sub_path)
+    display_name = collab.name or name
+    _regenerate(name, display_name, owner_name, sub_path)
 
     if not sync:
         return
@@ -109,9 +105,7 @@ def _reset_one(name: str, *, sync: bool = True) -> None:
     # 3. Stage, commit, push
     _run(["git", "-C", str(sub_path), "add", "-A"], check=False)
 
-    status = _run(
-        ["git", "-C", str(sub_path), "status", "--porcelain"], check=False
-    )
+    status = _run(["git", "-C", str(sub_path), "status", "--porcelain"], check=False)
     if status.stdout.strip():
         _run(
             [
@@ -133,15 +127,17 @@ def _reset_one(name: str, *, sync: bool = True) -> None:
         print("  Templates already up to date")
 
     # 4. Update submodule ref in parent
-    _run(["git", "add", f"shared/{name}"], check=False)
+    _run(["git", "add", str(sub_path)], check=False)
 
 
 def main() -> None:
+    from accounts import load_owner
+
     parser = argparse.ArgumentParser(
         description="Regenerate template files in shared collaborator repos"
     )
     parser.add_argument(
-        "name", nargs="?", help="Collaborator name (default: all)"
+        "name", nargs="?", help="Collaborator GitHub username (default: all)"
     )
     parser.add_argument(
         "--no-sync",
@@ -161,8 +157,11 @@ def main() -> None:
             print(f"Unknown collaborator: {name}")
             sys.exit(1)
 
+    owner = load_owner()
+    owner_name = owner.name or owner.github_user
+
     for name in names:
-        _reset_one(name, sync=not args.no_sync)
+        _reset_one(name, collabs[name], owner_name, sync=not args.no_sync)
 
 
 if __name__ == "__main__":

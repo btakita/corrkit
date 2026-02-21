@@ -1,5 +1,7 @@
 # Correspondence Kit
 
+> **Alpha software.** Expect breaking changes between minor versions. See [VERSIONS.md](VERSIONS.md) for migration notes.
+
 Consolidate conversations from multiple email accounts into a single flat directory of Markdown files. Draft replies with AI assistance. Push routing intelligence to Cloudflare.
 
 Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `correspondence/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
@@ -83,18 +85,18 @@ corrkit push-draft correspondence/drafts/FILE.md # Save a draft via IMAP
 corrkit push-draft correspondence/drafts/FILE.md --send  # Send via SMTP
 corrkit add-label LABEL --account NAME   # Add a label to an account's sync config
 corrkit contact-add NAME --email EMAIL    # Add a contact with context docs
-corrkit collab-add NAME --label LABEL     # Add a collaborator
-corrkit collab-sync [NAME]        # Push/pull shared submodules
-corrkit collab-status             # Check for pending changes
-corrkit collab-remove NAME        # Remove a collaborator
-corrkit collab-rename OLD NEW    # Rename a collaborator directory
-corrkit collab-reset [NAME]      # Pull, regenerate templates, commit & push
-corrkit find-unanswered           # Find threads awaiting a reply
-corrkit validate-draft FILE       # Validate draft markdown files
-corrkit watch                     # Poll IMAP and sync on an interval
-corrkit watch --interval 60      # Override poll interval (seconds)
-corrkit audit-docs                # Audit instruction files for staleness
-corrkit help                      # Show command reference
+corrkit for add NAME --label LABEL        # Add a collaborator
+corrkit for sync [NAME]                   # Push/pull shared submodules
+corrkit for status                        # Check for pending changes
+corrkit for remove NAME                   # Remove a collaborator
+corrkit for rename OLD NEW                # Rename a collaborator directory
+corrkit for reset [NAME]                  # Pull, regenerate templates, commit & push
+corrkit by find-unanswered                # Find threads awaiting a reply
+corrkit by validate-draft FILE            # Validate draft markdown files
+corrkit watch                             # Poll IMAP and sync on an interval
+corrkit watch --interval 60               # Override poll interval (seconds)
+corrkit audit-docs                        # Audit instruction files for staleness
+corrkit help                              # Show command reference
 ```
 
 Run with `uv run corrkit <subcommand>` if the package isn't installed globally.
@@ -153,7 +155,7 @@ Correspondence-kit inverts this. You control what any agent or collaborator can 
 2. **Labels route to scoped views.** Each collaborator/agent gets a submodule containing only the threads labeled for them — nothing else.
 3. **Credentials never leave your machine.** `accounts.toml` is gitignored. Agents draft replies in markdown; only you can push to your email.
 
-An agent added with `collab-add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
+An agent added with `corrkit for add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
 
 This works across multiple email accounts — Gmail, Protonmail, self-hosted — each with its own labels and routing rules, all funneling through the same scoped collaborator model.
 
@@ -198,19 +200,19 @@ Share specific email threads with people or AI agents via scoped GitHub repos.
 
 ```sh
 # Human collaborator (invited via GitHub)
-corrkit collab-add alex-gh --label for-alex --name "Alex"
+corrkit for add alex-gh --label for-alex --name "Alex"
 
 # AI agent (uses a PAT instead of GitHub invite)
-corrkit collab-add assistant-bot --label for-assistant --pat
+corrkit for add assistant-bot --label for-assistant --pat
 
 # Bind all labels to one account
-corrkit collab-add alex-gh --label for-alex --account personal
+corrkit for add alex-gh --label for-alex --account personal
 
 # Per-label account scoping (proton-dev account, INBOX folder)
 # Use account:label syntax in collaborators.toml directly
 ```
 
-This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with instructions, and adds it as a submodule under `for/{gh-user}/`. Collaborators use `uvx corrkit` for helper commands.
+This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with instructions, and adds it as a submodule under `for/{gh-user}/`. Collaborators use `uvx corrkit by ...` for helper commands.
 
 ### Daily workflow
 
@@ -219,10 +221,10 @@ This creates a private GitHub repo (`{owner}/to-{gh-user}`), initializes it with
 corrkit sync
 
 # 2. Push synced threads to collaborator repos & pull their drafts
-corrkit collab-sync
+corrkit for sync
 
 # 3. Check what's pending without pushing
-corrkit collab-status
+corrkit for status
 
 # 4. Review a collaborator's draft and push it as an email draft
 corrkit push-draft for/alex-gh/drafts/2026-02-19-reply.md
@@ -270,21 +272,21 @@ tail -f /tmp/corrkit-watch.log          # view logs
 
 - Read conversations labeled for them
 - Draft replies in `for/{gh-user}/drafts/` following the format in AGENTS.md
-- Run `uvx corrkit find-unanswered` and `uvx corrkit validate-draft` in their repo
+- Run `uvx corrkit by find-unanswered` and `uvx corrkit by validate-draft` in their repo
 - Push changes to their shared repo
 
 ### What only you can do
 
 - Sync new emails (`corrkit sync`)
-- Push synced threads to collaborator repos (`corrkit collab-sync`)
+- Push synced threads to collaborator repos (`corrkit for sync`)
 - Send emails (`corrkit push-draft --send`)
 - Change draft Status to `sent`
 
 ### Removing a collaborator
 
 ```sh
-corrkit collab-remove alex-gh
-corrkit collab-remove alex-gh --delete-repo  # also delete the GitHub repo
+corrkit for remove alex-gh
+corrkit for remove alex-gh --delete-repo  # also delete the GitHub repo
 ```
 
 ## Designed for humans and agents
@@ -298,12 +300,12 @@ and AI agents. No GUIs, no OAuth popups, no interactive prompts.
   them in any editor; agents read and write them natively.
 - **CLI is the interface.** Every operation is a single `corrkit` command. Scriptable, composable,
   works the same whether a human or agent is at the keyboard.
-- **Zero-install for collaborators.** `uvx corrkit find-unanswered` and `uvx corrkit validate-draft`
+- **Zero-install for collaborators.** `uvx corrkit by find-unanswered` and `uvx corrkit by validate-draft`
   work without cloning the main repo or setting up a dev environment.
 - **Self-documenting repos.** Each shared repo ships with `AGENTS.md` (full instructions),
   `CLAUDE.md` (symlink for Claude Code), `voice.md`, and a `README.md`. A new collaborator —
   human or agent — can start contributing immediately.
-- **Templates stay current.** `corrkit collab-reset` regenerates all template files in shared repos
+- **Templates stay current.** `corrkit for reset` regenerates all template files in shared repos
   when the tool evolves. No manual sync of instructions across collaborators.
 
 ### Owner workflow

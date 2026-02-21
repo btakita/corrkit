@@ -2,8 +2,8 @@
 Validate a draft markdown file has required fields and correct format.
 
 Usage:
-  corrkit validate-draft drafts/2026-02-19-example.md
-  corrkit validate-draft drafts/*.md
+  corrkit by validate-draft drafts/2026-02-19-example.md
+  corrkit by validate-draft drafts/*.md
 """
 
 import argparse
@@ -78,9 +78,7 @@ def validate_draft(path: Path) -> list[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Validate draft markdown files"
-    )
+    parser = argparse.ArgumentParser(description="Validate draft markdown files")
     parser.add_argument(
         "files",
         nargs="+",

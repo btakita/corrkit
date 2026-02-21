@@ -11,19 +11,25 @@ COMMANDS = [
         "push-draft FILE [--send]",
         "Save draft to Gmail (FILE: correspondence/drafts/*.md)",
     ),
-    ("collab-add NAME --label LABEL", "Add a collaborator"),
-    ("collab-sync [NAME]", "Push/pull shared submodules"),
-    ("collab-status", "Check for pending changes"),
-    ("collab-remove NAME [--delete-repo]", "Remove a collaborator"),
-    ("collab-rename OLD NEW", "Rename a collaborator directory"),
-    ("collab-reset [NAME] [--no-sync]", "Pull, regenerate templates, commit & push"),
     ("add-label LABEL --account NAME", "Add a label to an account's sync config"),
     ("contact-add NAME --email EMAIL", "Add a contact with context docs"),
-    ("find-unanswered [--from NAME]", "Find threads awaiting a reply"),
-    ("validate-draft FILE [FILE...]", "Validate draft markdown files"),
     ("watch [--interval N]", "Poll IMAP and sync on an interval"),
     ("audit-docs", "Audit instruction files"),
     ("help", "Show this reference"),
+]
+
+FOR_COMMANDS = [
+    ("for add NAME --label LABEL", "Add a collaborator"),
+    ("for sync [NAME]", "Push/pull shared submodules"),
+    ("for status", "Check for pending changes"),
+    ("for remove NAME [--delete-repo]", "Remove a collaborator"),
+    ("for rename OLD NEW", "Rename a collaborator directory"),
+    ("for reset [NAME] [--no-sync]", "Pull, regenerate templates, commit & push"),
+]
+
+BY_COMMANDS = [
+    ("by find-unanswered [--from NAME]", "Find threads awaiting a reply"),
+    ("by validate-draft FILE [FILE...]", "Validate draft markdown files"),
 ]
 
 DEV_COMMANDS = [
@@ -39,7 +45,8 @@ def main() -> None:
     filter_arg = sys.argv[1] if len(sys.argv) > 1 else None
 
     if filter_arg and filter_arg not in ("--dev",):
-        matches = [(n, d) for n, d in COMMANDS + DEV_COMMANDS if filter_arg in n]
+        all_cmds = COMMANDS + FOR_COMMANDS + BY_COMMANDS + DEV_COMMANDS
+        matches = [(n, d) for n, d in all_cmds if filter_arg in n]
         if matches:
             _print_table(matches)
         else:
@@ -49,6 +56,9 @@ def main() -> None:
 
     print("corrkit commands\n")
     _print_table(COMMANDS)
+
+    print("\ncollaborator commands (for = outbound, by = inbound)\n")
+    _print_table(FOR_COMMANDS + BY_COMMANDS)
 
     if filter_arg == "--dev" or not filter_arg:
         print("\ndev commands\n")

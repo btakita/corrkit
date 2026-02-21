@@ -1,4 +1,4 @@
-"""Tests for collab-remove command."""
+"""Tests for 'corrkit for remove' command."""
 
 import subprocess
 
@@ -33,7 +33,7 @@ def test_remove_deletes_config_entry(tmp_path, monkeypatch):
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("collab.remove.subprocess.run", lambda cmd, **kw: _ok())
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
+    monkeypatch.setattr("sys.argv", ["for remove", "alex-gh"])
 
     main()
 
@@ -64,7 +64,7 @@ def test_remove_runs_submodule_deinit(tmp_path, monkeypatch):
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
+    monkeypatch.setattr("sys.argv", ["for remove", "alex-gh"])
 
     main()
 
@@ -90,7 +90,7 @@ def test_remove_skips_git_when_no_submodule_dir(tmp_path, monkeypatch, capsys):
         "collab.remove.subprocess.run",
         lambda cmd, **kw: _ok(),
     )
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh"])
+    monkeypatch.setattr("sys.argv", ["for remove", "alex-gh"])
 
     main()
 
@@ -102,7 +102,7 @@ def test_remove_unknown_name_exits(tmp_path, monkeypatch):
     config_path = tmp_path / "collaborators.toml"
     config_path.write_text("", encoding="utf-8")
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("sys.argv", ["collab-remove", "ghost"])
+    monkeypatch.setattr("sys.argv", ["for remove", "ghost"])
 
     with pytest.raises(SystemExit):
         main()
@@ -130,7 +130,7 @@ def test_remove_delete_repo_prompts(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh", "--delete-repo"])
+    monkeypatch.setattr("sys.argv", ["for remove", "alex-gh", "--delete-repo"])
 
     main()
 
@@ -160,7 +160,7 @@ def test_remove_delete_repo_declined(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.remove.subprocess.run", capture)
     monkeypatch.setattr("builtins.input", lambda _: "n")
-    monkeypatch.setattr("sys.argv", ["collab-remove", "alex-gh", "--delete-repo"])
+    monkeypatch.setattr("sys.argv", ["for remove", "alex-gh", "--delete-repo"])
 
     main()
 

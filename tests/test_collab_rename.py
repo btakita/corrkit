@@ -1,4 +1,4 @@
-"""Tests for collab-rename command."""
+"""Tests for 'corrkit for rename' command."""
 
 import subprocess
 
@@ -29,7 +29,7 @@ def test_rename_updates_config(tmp_path, monkeypatch):
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("collab.rename.subprocess.run", lambda cmd, **kw: _ok())
-    monkeypatch.setattr("sys.argv", ["collab-rename", "old-gh", "new-gh"])
+    monkeypatch.setattr("sys.argv", ["for rename", "old-gh", "new-gh"])
 
     main()
 
@@ -63,7 +63,7 @@ def test_rename_runs_git_mv(tmp_path, monkeypatch):
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.rename.subprocess.run", capture)
-    monkeypatch.setattr("sys.argv", ["collab-rename", "old-gh", "new-gh"])
+    monkeypatch.setattr("sys.argv", ["for rename", "old-gh", "new-gh"])
 
     main()
 
@@ -80,7 +80,7 @@ def test_rename_old_not_found_exits(tmp_path, monkeypatch):
     config_path = tmp_path / "collaborators.toml"
     config_path.write_text("", encoding="utf-8")
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("sys.argv", ["collab-rename", "ghost", "new-gh"])
+    monkeypatch.setattr("sys.argv", ["for rename", "ghost", "new-gh"])
 
     with pytest.raises(SystemExit):
         main()
@@ -100,7 +100,7 @@ def test_rename_new_already_exists_exits(tmp_path, monkeypatch):
         config_path,
     )
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
-    monkeypatch.setattr("sys.argv", ["collab-rename", "old-gh", "new-gh"])
+    monkeypatch.setattr("sys.argv", ["for rename", "old-gh", "new-gh"])
 
     with pytest.raises(SystemExit):
         main()
@@ -119,7 +119,7 @@ def test_rename_skips_git_mv_when_no_dir(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.rename.subprocess.run", lambda cmd, **kw: _ok())
-    monkeypatch.setattr("sys.argv", ["collab-rename", "old-gh", "new-gh"])
+    monkeypatch.setattr("sys.argv", ["for rename", "old-gh", "new-gh"])
 
     main()
 
@@ -148,9 +148,7 @@ def test_rename_repo_flag(tmp_path, monkeypatch):
 
     monkeypatch.setattr("collab.CONFIG_PATH", config_path)
     monkeypatch.setattr("collab.rename.subprocess.run", capture)
-    monkeypatch.setattr(
-        "sys.argv", ["collab-rename", "old-gh", "new-gh", "--rename-repo"]
-    )
+    monkeypatch.setattr("sys.argv", ["for rename", "old-gh", "new-gh", "--rename-repo"])
 
     main()
 

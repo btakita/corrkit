@@ -2,10 +2,10 @@
 Sync shared collaborator submodules: pull changes, push updates.
 
 Usage:
-  uv run collab-sync              # Sync all collaborators
-  uv run collab-sync alex         # Sync one collaborator
-  uv run collab-sync --status     # Quick status check (no push/pull)
-  uv run collab-status            # Alias for --status
+  corrkit for sync              # Sync all collaborators
+  corrkit for sync alex-gh      # Sync one collaborator
+  corrkit for sync --status     # Quick status check (no push/pull)
+  corrkit for status            # Alias for --status
 """
 
 import argparse
@@ -14,9 +14,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import load_collaborators
+from . import collab_dir, load_collaborators
 
-SHARED_DIR = Path("shared")
 VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -62,9 +61,15 @@ def _submodule_status(name: str, sub_path: Path) -> None:
 
 def _sync_one(name: str) -> None:
     """Full sync for one collaborator submodule."""
-    sub_path = SHARED_DIR / name
+    collabs = load_collaborators()
+    collab = collabs.get(name)
+    if collab is None:
+        print(f"  {name}: not found in collaborators.toml -- skipping")
+        return
+
+    sub_path = collab_dir(collab)
     if not sub_path.exists():
-        print(f"  {name}: submodule not found at shared/{name} -- skipping")
+        print(f"  {name}: submodule not found at {sub_path} -- skipping")
         return
 
     print(f"Syncing {name}...")
@@ -118,12 +123,14 @@ def _sync_one(name: str) -> None:
         print("  No local changes to push")
 
     # Update submodule ref in parent
-    _run(["git", "add", f"shared/{name}"], check=False)
+    _run(["git", "add", str(sub_path)], check=False)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync collaborator submodules")
-    parser.add_argument("name", nargs="?", help="Collaborator name (default: all)")
+    parser.add_argument(
+        "name", nargs="?", help="Collaborator GitHub username (default: all)"
+    )
     parser.add_argument(
         "--status",
         action="store_true",
@@ -145,7 +152,7 @@ def main() -> None:
     if args.status:
         print("Collaborator status:")
         for name in names:
-            sub_path = SHARED_DIR / name
+            sub_path = collab_dir(collabs[name])
             if sub_path.exists():
                 _submodule_status(name, sub_path)
             else:
@@ -155,8 +162,8 @@ def main() -> None:
             _sync_one(name)
 
 
-def status() -> None:
-    """Entry point for collab-status (shortcut for collab-sync --status)."""
+def status_main() -> None:
+    """Entry point for 'corrkit for status' (shortcut for 'for sync --status')."""
     sys.argv = [sys.argv[0], "--status", *sys.argv[1:]]
     main()
 

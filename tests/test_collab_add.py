@@ -1,4 +1,4 @@
-"""Tests for collab-add command."""
+"""Tests for 'corrkit for add' command."""
 
 import subprocess
 
@@ -36,7 +36,7 @@ def _fake_run_ok(*args, **kwargs):
 
 
 def test_add_creates_config_entry(tmp_path, monkeypatch):
-    """collab-add writes correct entry to collaborators.toml."""
+    """'for add' writes correct entry to collaborators.toml."""
     config_path = tmp_path / "collaborators.toml"
     config_path.write_text("", encoding="utf-8")
     voice = tmp_path / "voice.md"
@@ -50,7 +50,7 @@ def test_add_creates_config_entry(tmp_path, monkeypatch):
     # Simulate argparse
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex-gh", "--label", "for-alex", "--name", "Alex"],
+        ["for add", "alex-gh", "--label", "for-alex", "--name", "Alex"],
     )
 
     # Create the submodule dir that git submodule add would create
@@ -74,7 +74,7 @@ def test_add_creates_config_entry(tmp_path, monkeypatch):
 
 
 def test_add_exits_if_already_exists(tmp_path, monkeypatch):
-    """collab-add rejects duplicate collaborator names."""
+    """'for add' rejects duplicate collaborator names."""
     config_path = tmp_path / "collaborators.toml"
     save_collaborators(
         {
@@ -90,7 +90,7 @@ def test_add_exits_if_already_exists(tmp_path, monkeypatch):
     _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex-gh", "--label", "for-alex"],
+        ["for add", "alex-gh", "--label", "for-alex"],
     )
 
     import pytest
@@ -124,7 +124,7 @@ def test_add_private_by_default(tmp_path, monkeypatch):
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "newuser", "--label", "for-new"],
+        ["for add", "newuser", "--label", "for-new"],
     )
 
     main()
@@ -161,7 +161,7 @@ def test_add_public_flag(tmp_path, monkeypatch):
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "pub", "--label", "for-pub", "--public"],
+        ["for add", "pub", "--label", "for-pub", "--public"],
     )
 
     main()
@@ -194,7 +194,7 @@ def test_add_multiple_labels(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "collab-add",
+            "for add",
             "dana-gh",
             "--label",
             "for-dana",
@@ -236,7 +236,7 @@ def test_add_custom_org(tmp_path, monkeypatch):
     monkeypatch.setattr("collab.add.subprocess.run", capture_run)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "eve", "--label", "for-eve", "--org", "myorg"],
+        ["for add", "eve", "--label", "for-eve", "--org", "myorg"],
     )
 
     main()
@@ -249,7 +249,7 @@ def test_add_custom_org(tmp_path, monkeypatch):
 
 
 def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
-    """collab-add rejects if for/{gh_user} directory already exists on disk."""
+    """'for add' rejects if for/{gh_user} directory already exists on disk."""
     config_path = tmp_path / "collaborators.toml"
     config_path.write_text("", encoding="utf-8")
 
@@ -260,7 +260,7 @@ def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
     _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
-        ["collab-add", "alex-gh", "--label", "for-alex"],
+        ["for add", "alex-gh", "--label", "for-alex"],
     )
 
     import pytest
@@ -269,12 +269,12 @@ def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
         main()
 
 
-def test_collab_add_listed_in_help():
-    """corrkit --help includes the collab-add command."""
+def test_for_add_listed_in_help():
+    """corrkit --help includes the 'for add' command."""
     result = subprocess.run(
         ["uv", "run", "corrkit", "--help"],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "collab-add" in result.stdout
+    assert "for add" in result.stdout

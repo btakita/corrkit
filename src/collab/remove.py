@@ -2,8 +2,8 @@
 Remove a collaborator: deinit submodule, remove from config.
 
 Usage:
-  uv run collab-remove alex
-  uv run collab-remove alex --delete-repo   # Also delete the GitHub repo
+  corrkit for remove alex-gh
+  corrkit for remove alex-gh --delete-repo   # Also delete the GitHub repo
 """
 
 import argparse
@@ -11,9 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import load_collaborators, save_collaborators
-
-SHARED_DIR = Path("shared")
+from . import collab_dir, load_collaborators, save_collaborators
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -26,7 +24,7 @@ def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Remove a collaborator")
-    parser.add_argument("name", help="Collaborator name to remove")
+    parser.add_argument("name", help="Collaborator GitHub username to remove")
     parser.add_argument(
         "--delete-repo",
         action="store_true",
@@ -42,18 +40,18 @@ def main() -> None:
         sys.exit(1)
 
     collab = collabs[name]
-    sub_path = SHARED_DIR / name
+    sub_path = collab_dir(collab)
 
     # 1. Deinit and remove submodule
     if sub_path.exists():
-        print(f"Removing submodule: shared/{name}")
-        _run(["git", "submodule", "deinit", "-f", f"shared/{name}"])
-        _run(["git", "rm", "-f", f"shared/{name}"])
+        print(f"Removing submodule: {sub_path}")
+        _run(["git", "submodule", "deinit", "-f", str(sub_path)])
+        _run(["git", "rm", "-f", str(sub_path)])
     else:
-        print(f"Submodule shared/{name} not found on disk -- skipping git cleanup")
+        print(f"Submodule {sub_path} not found on disk -- skipping git cleanup")
 
     # Clean up .git/modules entry
-    modules_path = Path(".git/modules") / "shared" / name
+    modules_path = Path(".git/modules") / str(sub_path)
     if modules_path.exists():
         _run(["rm", "-rf", str(modules_path)])
 

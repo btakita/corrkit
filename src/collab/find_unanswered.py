@@ -3,8 +3,8 @@ Find threads where the last message is not from Brian --
 i.e. threads awaiting a reply.
 
 Usage:
-  corrkit find-unanswered
-  corrkit find-unanswered --from "Brian"
+  corrkit by find-unanswered
+  corrkit by find-unanswered --from "Brian"
 """
 
 import argparse
@@ -20,7 +20,6 @@ DATE_RE = re.compile(r"\*\*Last updated\*\*:\s*(\S+)")
 
 # Labels from **Labels**: or legacy **Label**: line
 LABELS_RE = re.compile(r"\*\*Labels?\*\*:\s*(.+)")
-
 
 
 def last_sender(text: str) -> str:
@@ -39,9 +38,7 @@ def thread_labels(text: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Find threads awaiting a reply"
-    )
+    parser = argparse.ArgumentParser(description="Find threads awaiting a reply")
     parser.add_argument(
         "--from",
         dest="from_name",
