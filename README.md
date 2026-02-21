@@ -6,6 +6,19 @@ Consolidate conversations from multiple email accounts into a single flat direct
 
 Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `correspondence/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
 
+## Tech Stack
+
+- **Language**: Rust (2021 edition)
+- **Build**: `cargo build`, `cargo test`, `cargo clippy`
+- **CLI**: `clap` (derive macros)
+- **Serialization**: `serde` + `toml` / `toml_edit` (format-preserving) / `serde_json`
+- **IMAP**: `imap` + `native-tls`
+- **Email parsing**: `mailparse`
+- **SMTP**: `lettre`
+- **Dates**: `chrono`
+- **Storage**: Markdown files (one flat directory, one file per conversation thread)
+- **Sources**: Any IMAP provider (Gmail, Protonmail Bridge, generic IMAP); Slack and social media planned
+
 ## Install
 
 **Quick install (Linux & macOS):**
@@ -157,9 +170,35 @@ Synced threads are written to `correspondence/conversations/[slug].md` (flat, on
 ## Development
 
 ```sh
-cargo test                        # Run tests
-cargo clippy -- -D warnings       # Lint
-cargo build --release             # Release build
+make build                        # Debug build
+make release                      # Release build + symlink to .bin/corrkit
+make test                         # Run tests
+make clippy                       # Lint
+make check                        # Lint + test
+make install                      # Install to ~/.cargo/bin
+make init-python                  # Set up Python venv for wrapper development
+```
+
+### .gitignore
+
+```
+.env
+accounts.toml
+contacts.toml
+CLAUDE.local.md
+AGENTS.local.md
+correspondence
+*.credentials.json
+credentials.json
+.idea/
+tmp/
+target/
+.bin/
+.agents/
+.junie/
+.kilocode/
+skills/
+skills-lock.json
 ```
 
 ## Unified conversation directory
@@ -193,6 +232,52 @@ Agents read the manifest for discovery, then go straight to the file for content
 
 **Extensible to new sources.** The flat model means adding Slack or social media sync doesn't change
 the directory layout — new messages merge into the same directory with their source tracked in metadata.
+
+### Conversation markdown format
+
+```markdown
+# [Subject]
+
+**Labels**: [label1, label2]
+**Accounts**: [account1, account2]
+**Thread ID**: [thread key]
+**Last updated**: [RFC 2822 date]
+
+---
+
+## [Sender Name] — [Date]
+
+[Body text]
+
+---
+
+## [Reply sender] — [Date]
+
+[Body text]
+```
+
+### Draft format
+
+Drafts live in `correspondence/drafts/` (private) or `correspondence/for/{gh-user}/drafts/` (collaborator).
+Filename convention: `[YYYY-MM-DD]-[slug].md`.
+
+```markdown
+# [Subject]
+
+**To**: [recipient]
+**CC**: (optional)
+**Status**: draft
+**Author**: brian
+**Account**: (optional — account name from accounts.toml, e.g. "personal")
+**From**: (optional — email address, used to resolve account if Account not set)
+**In-Reply-To**: (optional — message ID)
+
+---
+
+[Draft body]
+```
+
+Status values: `draft` -> `review` -> `approved` -> `sent`
 
 ## Sandboxing
 

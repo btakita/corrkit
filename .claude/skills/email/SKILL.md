@@ -9,7 +9,7 @@ Manage and draft correspondence using locally synced email threads.
 - **Use context** — always read the relevant thread in `conversations/` before drafting a reply
 - **Be concise** — prefer shorter responses; ask before writing anything long
 
-## Available Tools
+## Use These Paths and Commands
 
 - `correspondence/conversations/` — synced email threads as Markdown (flat, one file per thread)
 - `correspondence/contacts/{name}/AGENTS.md` — per-contact context for drafting

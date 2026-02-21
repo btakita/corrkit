@@ -11,6 +11,7 @@ tmp/
 
 # Rust
 target/
+.bin/
 
 # Skills / agent tools
 .agents/
