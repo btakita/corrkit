@@ -33,7 +33,7 @@ def test_sync_routes_to_collab_dir(tmp_path, monkeypatch):
         },
         config,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config)
 
     routes = _build_label_routes()
     assert "for-drafter" in routes
@@ -78,7 +78,7 @@ def test_collab_sync_stages_and_commits(tmp_path, monkeypatch, capsys):
         },
         config_path,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
 
     sub = tmp_path / "correspondence" / "for" / "drafter-gh"
     sub.mkdir(parents=True)
@@ -87,7 +87,7 @@ def test_collab_sync_stages_and_commits(tmp_path, monkeypatch, capsys):
 
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice\n", encoding="utf-8")
-    monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
+    monkeypatch.setattr("resolve.voice_md", lambda: root_voice)
 
     # Make TEMPLATES_DIR point to a temp dir so workflow sync doesn't fail
     templates = tmp_path / "templates"

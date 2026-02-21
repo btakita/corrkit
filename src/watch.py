@@ -9,10 +9,11 @@ import threading
 
 import msgspec
 
+import resolve
 from accounts import load_accounts_or_env, load_watch_config, resolve_password
 from collab import load_collaborators
 from collab.sync import _sync_one
-from sync.imap import STATE_FILE, sync_account
+from sync.imap import sync_account
 from sync.types import SyncState
 from sync.types import load_state as _decode_state
 
@@ -68,14 +69,15 @@ def _count_new_messages(
 
 def _load_state() -> SyncState:
     """Load sync state from disk, or return empty state."""
-    if STATE_FILE.exists():
-        return _decode_state(STATE_FILE.read_bytes())
+    sf = resolve.sync_state_file()
+    if sf.exists():
+        return _decode_state(sf.read_bytes())
     return SyncState()
 
 
 def _save_state(state: SyncState) -> None:
     """Write sync state to disk."""
-    STATE_FILE.write_bytes(msgspec.json.encode(state))
+    resolve.sync_state_file().write_bytes(msgspec.json.encode(state))
 
 
 def _sync_collaborators() -> None:

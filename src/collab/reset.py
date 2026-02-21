@@ -18,10 +18,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import resolve
+
 from . import collab_dir, load_collaborators
 from .add import _generate_agents_md, _generate_readme_md
 
-VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 _TEMPLATE_WORKFLOW = "notify.yml"
@@ -63,8 +64,9 @@ def _regenerate(name: str, display_name: str, owner_name: str, sub_path: Path) -
     print("  Updated .gitignore")
 
     # voice.md
-    if VOICE_FILE.exists():
-        shutil.copy2(VOICE_FILE, sub_path / "voice.md")
+    voice_file = resolve.voice_md()
+    if voice_file.exists():
+        shutil.copy2(voice_file, sub_path / "voice.md")
         print("  Updated voice.md")
 
     # .github/workflows/notify.yml

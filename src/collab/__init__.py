@@ -5,7 +5,7 @@ from pathlib import Path
 
 import msgspec
 
-CONFIG_PATH = Path("collaborators.toml")
+import resolve
 
 
 class Collaborator(msgspec.Struct):
@@ -18,7 +18,7 @@ class Collaborator(msgspec.Struct):
 
 def collab_dir(collab: Collaborator) -> Path:
     """Return the local collab directory (correspondence/for/{gh_user}/)."""
-    return Path("correspondence") / "for" / collab.github_user.lower()
+    return resolve.collab_for_dir(collab.github_user)
 
 
 def _auto_repo(owner_gh: str, collab_gh: str) -> str:
@@ -33,7 +33,7 @@ def load_collaborators(path: Path | None = None) -> dict[str, Collaborator]:
     ``repo`` is auto-derived from owner config if not explicitly set.
     """
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.collaborators_toml()
     if not path.exists():
         return {}
     with open(path, "rb") as f:
@@ -65,7 +65,7 @@ def save_collaborators(
 ) -> None:
     """Write collaborators back to TOML. Simple serializer — no third-party dep."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.collaborators_toml()
     lines: list[str] = []
     for gh_user, c in sorted(collabs.items()):
         lines.append(f"[{gh_user}]")

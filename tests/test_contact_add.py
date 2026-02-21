@@ -25,8 +25,8 @@ def test_add_creates_directory_and_config(tmp_path, monkeypatch):
     contacts_dir = tmp_path / "correspondence" / "contacts"
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: config_path)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -62,8 +62,8 @@ def test_add_multiple_emails(tmp_path, monkeypatch):
     contacts_dir = tmp_path / "correspondence" / "contacts"
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: config_path)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -89,8 +89,8 @@ def test_add_with_account(tmp_path, monkeypatch):
     contacts_dir = tmp_path / "correspondence" / "contacts"
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: config_path)
     monkeypatch.setattr(
         "sys.argv",
         ["contact-add", "alex", "--email", "alex@example.com", "--account", "personal"],
@@ -112,8 +112,8 @@ def test_add_exits_if_already_exists(tmp_path, monkeypatch):
     contacts_dir = tmp_path / "correspondence" / "contacts"
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: config_path)
     monkeypatch.setattr(
         "sys.argv",
         ["contact-add", "alex", "--email", "alex@example.com"],
@@ -133,8 +133,8 @@ def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
     (contacts_dir / "alex").mkdir(parents=True)
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: config_path)
     monkeypatch.setattr(
         "sys.argv",
         ["contact-add", "alex", "--email", "alex@example.com"],
@@ -169,9 +169,9 @@ def test_add_with_label_and_account_updates_accounts_toml(tmp_path, monkeypatch)
     )
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("contact.add.CONTACTS_DIR", contacts_dir)
-    monkeypatch.setattr("contact.CONFIG_PATH", contacts_config)
-    monkeypatch.setattr("accounts.CONFIG_PATH", accounts_config)
+    monkeypatch.setattr("resolve.contacts_dir", lambda: contacts_dir)
+    monkeypatch.setattr("resolve.contacts_toml", lambda: contacts_config)
+    monkeypatch.setattr("resolve.accounts_toml", lambda: accounts_config)
     monkeypatch.setattr(
         "sys.argv",
         [

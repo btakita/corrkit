@@ -17,11 +17,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+import resolve
+
 from . import Collaborator, collab_dir, load_collaborators, save_collaborators
 
 load_dotenv()
 
-VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
@@ -320,8 +321,9 @@ def main() -> None:
         )
 
         # voice.md
-        if VOICE_FILE.exists():
-            shutil.copy2(VOICE_FILE, tmp / "voice.md")
+        voice_file = resolve.voice_md()
+        if voice_file.exists():
+            shutil.copy2(voice_file, tmp / "voice.md")
 
         # directories
         (tmp / "conversations").mkdir(exist_ok=True)

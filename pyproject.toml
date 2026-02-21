@@ -10,11 +10,13 @@ packages = ["src/sync", "src/draft", "src/cloudflare", "src/collab", "src/contac
 "src/help.py" = "help.py"
 "src/corrkit.py" = "corrkit.py"
 "src/accounts.py" = "accounts.py"
+"src/resolve.py" = "resolve.py"
+"src/init.py" = "init.py"
 "src/watch.py" = "watch.py"
 
 [project]
 name = "corrkit"
-version = "0.5.0"
+version = "0.6.0"
 description = "Sync email threads from IMAP to Markdown, draft replies, push routing intelligence to Cloudflare"
 readme = "README.md"
 license = "Apache-2.0"
@@ -24,6 +26,7 @@ dependencies = [
     "httpx>=0.28.0",
     "imapclient>=3.1.0",
     "msgspec>=0.20.0",
+
     "python-dotenv>=1.0.0",
     "tomli-w>=1.0.0",
 ]
@@ -44,6 +47,7 @@ dev = ["corrkit[dev]"]
 
 [project.scripts]
 corrkit = "corrkit:main"
+init = "init:main"
 sync-auth = "sync.auth:main"
 sync = "sync.imap:main"
 sync-gmail = "sync.imap:main"

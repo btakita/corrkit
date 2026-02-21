@@ -24,7 +24,7 @@ def test_sync_one_skips_missing_submodule(tmp_path, monkeypatch, capsys):
         },
         config_path,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _sync_one("nobody")
     out = capsys.readouterr().out
     assert "not found" in out
@@ -41,7 +41,7 @@ def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
         },
         config_path,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
 
     sub = tmp_path / "correspondence" / "for" / "alex-gh"
     sub.mkdir(parents=True)
@@ -52,7 +52,7 @@ def test_sync_one_pulls_and_pushes(tmp_path, monkeypatch, capsys):
     sub_voice.write_text("# Voice v1\n", encoding="utf-8")
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice v2\n", encoding="utf-8")
-    monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
+    monkeypatch.setattr("resolve.voice_md", lambda: root_voice)
 
     # Templates for workflow sync
     templates = tmp_path / "templates"
@@ -98,7 +98,7 @@ def test_sync_one_no_changes(tmp_path, monkeypatch, capsys):
         },
         config_path,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
 
     sub = tmp_path / "correspondence" / "for" / "alex-gh"
     sub.mkdir(parents=True)
@@ -107,7 +107,7 @@ def test_sync_one_no_changes(tmp_path, monkeypatch, capsys):
 
     root_voice = tmp_path / "voice.md"
     root_voice.write_text("# Voice\n", encoding="utf-8")
-    monkeypatch.setattr("collab.sync.VOICE_FILE", root_voice)
+    monkeypatch.setattr("resolve.voice_md", lambda: root_voice)
 
     # Templates for workflow sync
     templates = tmp_path / "templates"
@@ -184,7 +184,7 @@ def test_main_status_mode(tmp_path, monkeypatch, capsys):
     sub.mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
 
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     monkeypatch.setattr("sys.argv", ["for sync", "--status"])
 
     def fake_run(cmd, **kw):
@@ -211,7 +211,7 @@ def test_main_unknown_collaborator(tmp_path, monkeypatch):
         },
         config_path,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     monkeypatch.setattr("sys.argv", ["for sync", "nobody"])
 
     import pytest

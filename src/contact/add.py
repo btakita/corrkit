@@ -10,11 +10,10 @@ Usage:
 import argparse
 import os
 import sys
-from pathlib import Path
+
+import resolve
 
 from . import Contact, load_contacts, save_contacts
-
-CONTACTS_DIR = Path("correspondence/contacts")
 
 
 def _generate_agents_md(name: str) -> str:
@@ -75,7 +74,7 @@ def main() -> None:
         print(f"Contact '{name}' already exists in contacts.toml")
         sys.exit(1)
 
-    contact_dir = CONTACTS_DIR / name
+    contact_dir = resolve.contacts_dir() / name
     if contact_dir.exists():
         print(f"Directory {contact_dir} already exists")
         sys.exit(1)

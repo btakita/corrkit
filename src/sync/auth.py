@@ -8,16 +8,16 @@ Requires credentials.json downloaded from Google Cloud Console:
 Usage: uv run sync-auth
 """
 
-from pathlib import Path
-
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+import resolve
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-CREDENTIALS_FILE = Path("credentials.json")
 
 
 def main() -> None:
-    if not CREDENTIALS_FILE.exists():
+    creds_file = resolve.credentials_json()
+    if not creds_file.exists():
         raise SystemExit(
             "credentials.json not found.\n"
             "Download it from Google Cloud Console → Clients →"
@@ -25,7 +25,7 @@ def main() -> None:
             "and save it as credentials.json in the project root."
         )
 
-    flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
+    flow = InstalledAppFlow.from_client_secrets_file(str(creds_file), SCOPES)
     flow.redirect_uri = "http://localhost:3000/"
     print(f"Using redirect URI: {flow.redirect_uri}")
     creds = flow.run_local_server(

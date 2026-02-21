@@ -378,7 +378,7 @@ def test_build_label_routes_with_collaborators(tmp_path, monkeypatch):
         },
         config,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config)
 
     routes = _build_label_routes()
 
@@ -402,7 +402,7 @@ def test_build_label_routes_account_scoped_labels(tmp_path, monkeypatch):
         },
         config,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config)
 
     # When syncing personal: only for-bot (plain label), not INBOX
     routes_personal = _build_label_routes("personal")
@@ -437,7 +437,7 @@ def test_build_label_routes_account_scoped_with_collab_account(tmp_path, monkeyp
         },
         config,
     )
-    monkeypatch.setattr("collab.CONFIG_PATH", config)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config)
 
     # personal: for-bot (bound by collab.account) + not INBOX
     routes = _build_label_routes("personal")
@@ -452,7 +452,7 @@ def test_build_label_routes_account_scoped_with_collab_account(tmp_path, monkeyp
 
 def test_build_label_routes_empty(tmp_path, monkeypatch):
     config = tmp_path / "nonexistent.toml"
-    monkeypatch.setattr("collab.CONFIG_PATH", config)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config)
 
     routes = _build_label_routes()
     assert routes == {}

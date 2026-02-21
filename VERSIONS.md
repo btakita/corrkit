@@ -4,6 +4,17 @@ Corrkit is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.6.0
+
+Path resolution, `corrkit init`, and functional specification.
+
+- **`corrkit init`**: New command to initialize a data directory for general users. `corrkit init --user you@gmail.com` creates `~/Documents/correspondence` with directory structure, `accounts.toml`, and empty config files. Supports `--provider`, `--password-cmd`, `--labels`, `--github-user`, `--name`, `--sync`, `--force`, `--data-dir` flags.
+- **Path resolution (`src/resolve.py`)**: New module centralizes all path resolution. Data directory resolves in order: `correspondence/` in cwd (developer), `CORRKIT_DATA` env, `~/Documents/correspondence` (general user). Config directory: `.` if local `correspondence/` exists, otherwise same as data dir.
+- **BREAKING CHANGE: Removed module-level path constants**: `CONFIG_PATH` removed from `accounts.py`, `collab/__init__.py`, `contact/__init__.py`. `CONTACTS_DIR` removed from `contact/add.py`. `STATE_FILE` and `CONVERSATIONS_DIR` removed from `sync/imap.py`. `CREDENTIALS_FILE` removed from `sync/auth.py`. `VOICE_FILE` removed from `collab/add.py`, `collab/sync.py`, `collab/reset.py`. `_DIR_PREFIXES` removed from `collab/rename.py`. All replaced by `resolve.*()` function calls. Tests that monkeypatched these constants must now patch `resolve.<function>` instead.
+- **`SPECS.md`**: Language-independent functional specification for an eventual Rust port. Covers file formats, algorithms (slugify, thread key, dedup, label routing), all 18 commands, sync algorithm, collaborator lifecycle, provider presets.
+
+**Migration from 0.5.x**: If your code or tests monkeypatch `CONFIG_PATH`, `CONTACTS_DIR`, `STATE_FILE`, `CONVERSATIONS_DIR`, `CREDENTIALS_FILE`, `VOICE_FILE`, or `_DIR_PREFIXES`, switch to patching `resolve.accounts_toml`, `resolve.contacts_dir`, `resolve.sync_state_file`, `resolve.conversations_dir`, `resolve.credentials_json`, `resolve.voice_md`, or `resolve.data_dir` respectively.
+
 ## 0.5.0
 
 Directional collaborator repos, nested CLI, owner identity, GitHub username keys.

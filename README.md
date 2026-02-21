@@ -10,6 +10,15 @@ Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hos
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
+**Quick start (general user):**
+```sh
+uvx corrkit init --user you@gmail.com
+```
+
+This creates `~/Documents/correspondence` with directory structure, `accounts.toml`,
+and empty config files. Edit `accounts.toml` with credentials, then run `corrkit sync`.
+
+**Developer setup (from repo checkout):**
 ```sh
 cp accounts.toml.example accounts.toml   # configure your email accounts
 uv sync
@@ -76,6 +85,7 @@ All commands are available through the `corrkit` CLI:
 
 ```sh
 corrkit --help                    # Show all commands
+corrkit init --user EMAIL        # Initialize a new data directory
 corrkit sync                     # Sync all accounts
 corrkit sync --account personal  # Sync one account
 corrkit sync --full              # Full re-sync (ignore saved state)
@@ -379,7 +389,6 @@ for real-time workflows.
 
 - **Slack sync**: Pull conversations from Slack channels/DMs into the flat conversations/ directory
 - **Social media sync**: Pull DMs and threads from social platforms into conversations/
-- **Project setup script**: Interactive `collab-init` or `setup` command that configures accounts.toml
 - **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from Python
 - **Local MCP server**: Live email access during Claude sessions without Pipedream
 - **Multi-user**: Per-user credential flow when shared with another developer

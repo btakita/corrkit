@@ -14,9 +14,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import resolve
+
 from . import collab_dir, load_collaborators
 
-VOICE_FILE = Path("voice.md")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 _TEMPLATE_WORKFLOW = "notify.yml"
@@ -84,11 +85,12 @@ def _sync_one(name: str) -> None:
         print("  Pull failed -- continuing with push")
 
     # Copy voice.md if root copy is newer
+    voice_file = resolve.voice_md()
     sub_voice = sub_path / "voice.md"
-    if VOICE_FILE.exists():
-        root_newer = VOICE_FILE.stat().st_mtime > sub_voice.stat().st_mtime
+    if voice_file.exists():
+        root_newer = voice_file.stat().st_mtime > sub_voice.stat().st_mtime
         if not sub_voice.exists() or root_newer:
-            shutil.copy2(VOICE_FILE, sub_voice)
+            shutil.copy2(voice_file, sub_voice)
             print("  Updated voice.md")
 
     # Sync GitHub Actions workflow

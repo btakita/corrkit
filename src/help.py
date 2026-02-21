@@ -3,6 +3,7 @@
 import sys
 
 COMMANDS = [
+    ("init --user EMAIL [--data-dir PATH]", "Initialize a new data directory"),
     ("sync [--full] [--account NAME]", "Sync email threads to markdown"),
     ("sync-auth", "Gmail OAuth setup"),
     ("list-folders [ACCOUNT]", "List IMAP folders for an account"),

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import msgspec
 
-CONFIG_PATH = Path("contacts.toml")
+import resolve
 
 
 class Contact(msgspec.Struct):
@@ -17,7 +17,7 @@ class Contact(msgspec.Struct):
 def load_contacts(path: Path | None = None) -> dict[str, Contact]:
     """Load contacts.toml and return {name: Contact} mapping."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.contacts_toml()
     if not path.exists():
         return {}
     with open(path, "rb") as f:
@@ -31,7 +31,7 @@ def load_contacts(path: Path | None = None) -> dict[str, Contact]:
 def save_contacts(contacts: dict[str, Contact], path: Path | None = None) -> None:
     """Write contacts back to TOML. Simple serializer — no third-party dep."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.contacts_toml()
     lines: list[str] = []
     for name, c in sorted(contacts.items()):
         lines.append(f"[{name}]")

@@ -10,10 +10,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import load_collaborators, save_collaborators
+import resolve
 
-# Prefixes to check for the collaborator directory
-_DIR_PREFIXES = [Path("correspondence/for"), Path("correspondence/by")]
+from . import load_collaborators, save_collaborators
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -27,7 +26,8 @@ def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
 
 def _find_collab_dir(name: str) -> Path | None:
     """Find the collaborator directory (for/ or by/ inside correspondence)."""
-    for prefix in _DIR_PREFIXES:
+    dd = resolve.data_dir()
+    for prefix in [dd / "for", dd / "by"]:
         candidate = prefix / name.lower()
         if candidate.exists():
             return candidate

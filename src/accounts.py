@@ -10,7 +10,7 @@ from pathlib import Path
 
 import msgspec
 
-CONFIG_PATH = Path("accounts.toml")
+import resolve
 
 PROVIDER_PRESETS: dict[str, dict[str, object]] = {
     "gmail": {
@@ -96,7 +96,7 @@ def resolve_password(account: Account) -> str:
 def load_accounts(path: Path | None = None) -> dict[str, Account]:
     """Parse accounts.toml → {name: Account} mapping."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.accounts_toml()
     if not path.exists():
         return {}
     with open(path, "rb") as f:
@@ -152,7 +152,7 @@ def load_accounts_or_env(path: Path | None = None) -> dict[str, Account]:
 def load_owner(path: Path | None = None) -> OwnerConfig:
     """Load [owner] section from accounts.toml."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.accounts_toml()
     if not path.exists():
         raise SystemExit(
             f"accounts.toml not found at {path}.\n"
@@ -201,7 +201,7 @@ def add_label_to_account(
     Returns True if the label was added, False if already present.
     """
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.accounts_toml()
     if not path.exists():
         print(
             f"accounts.toml not found at {path}",
@@ -306,7 +306,7 @@ def add_label_main() -> None:
 def load_watch_config(path: Path | None = None) -> WatchConfig:
     """Load [watch] section from accounts.toml. Returns defaults if missing."""
     if path is None:
-        path = CONFIG_PATH
+        path = resolve.accounts_toml()
     if not path.exists():
         return WatchConfig()
     with open(path, "rb") as f:

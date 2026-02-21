@@ -22,12 +22,10 @@ from pathlib import Path
 import msgspec
 from imapclient import IMAPClient
 
+import resolve
+
 from .types import AccountSyncState, LabelState, Message, SyncState, Thread
 from .types import load_state as _load_state
-
-STATE_FILE = Path("correspondence") / ".sync-state.json"
-CONVERSATIONS_DIR = Path("correspondence") / "conversations"
-
 
 # ---------------------------------------------------------------------------
 # State persistence
@@ -35,13 +33,14 @@ CONVERSATIONS_DIR = Path("correspondence") / "conversations"
 
 
 def load_state() -> SyncState:
-    if STATE_FILE.exists():
-        return _load_state(STATE_FILE.read_bytes())
+    sf = resolve.sync_state_file()
+    if sf.exists():
+        return _load_state(sf.read_bytes())
     return SyncState()
 
 
 def save_state(state: SyncState) -> None:
-    STATE_FILE.write_bytes(msgspec.json.encode(state))
+    resolve.sync_state_file().write_bytes(msgspec.json.encode(state))
 
 
 # ---------------------------------------------------------------------------
@@ -376,7 +375,7 @@ def sync_label(
     print(f"  Fetching {len(uids)} message(s)")
 
     if out_dir is None:
-        out_dir = CONVERSATIONS_DIR
+        out_dir = resolve.conversations_dir()
     max_uid = prior.last_uid if prior else 0
 
     for uid in uids:
@@ -473,10 +472,12 @@ def sync_account(
     sync_days: int,
     state: SyncState,
     full: bool,
-    base_dir: Path = CONVERSATIONS_DIR,
+    base_dir: Path | None = None,
     touched: set[Path] | None = None,
 ) -> None:
     """Sync all labels for one account."""
+    if base_dir is None:
+        base_dir = resolve.conversations_dir()
     acct_state = state.accounts.setdefault(account_name, AccountSyncState())
 
     # Build label routing from collaborators.toml
@@ -568,11 +569,12 @@ def main() -> None:
         )
 
     # Orphan cleanup on --full
+    conv_dir = resolve.conversations_dir()
     if touched is not None:
-        _cleanup_orphans(CONVERSATIONS_DIR, touched)
+        _cleanup_orphans(conv_dir, touched)
 
     # Generate manifest
-    _generate_manifest(CONVERSATIONS_DIR)
+    _generate_manifest(conv_dir)
 
     save_state(state)
     print("\nSync complete.")

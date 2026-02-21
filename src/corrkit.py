@@ -11,6 +11,7 @@ import importlib
 import sys
 
 SUBCOMMANDS: dict[str, tuple[str, str]] = {
+    "init": ("init", "main"),
     "sync": ("sync.imap", "main"),
     "sync-auth": ("sync.auth", "main"),
     "list-folders": ("sync.folders", "main"),

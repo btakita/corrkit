@@ -21,15 +21,19 @@ working directory, which can be either:
 - A **symlink** to an external clone (e.g. `correspondence -> ~/data/correspondence`)
 - A **subdirectory** or nested clone inside the corrkit checkout
 
-All corrkit commands assume `correspondence/` exists at the working directory root.
-The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history
-regardless of how it is linked.
+**Developer workflow:** `correspondence/` exists at the working directory root (symlink or subdirectory).
+The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
+
+**General user workflow:** `corrkit init --user EMAIL` creates `~/Documents/correspondence` with
+config and data. Commands find the data dir via `CORRKIT_DATA` env or the `~/Documents` default.
+See `src/resolve.py` for the full resolution order.
 
 ## Project Structure
 
 ```
 ./                                 # Tool repo (this repo)
   AGENTS.md                        # Project instructions (CLAUDE.md symlinks here)
+  SPECS.md                         # Functional specification (for Rust port)
   pyproject.toml
   voice.md                         # Writing voice guidelines (committed)
   accounts.toml                    # Multi-account IMAP config (gitignored)
@@ -44,6 +48,8 @@ regardless of how it is linked.
         SKILL.md                   # Email drafting & management skill
         find_unanswered.py         # Find threads needing a reply
   src/
+    resolve.py                     # Path resolution (data dir, config dir)
+    init.py                        # Initialize a new data directory
     accounts.py                    # Account config parser (accounts.toml)
     sync/
       imap.py                      # Multi-account IMAP sync logic
@@ -103,6 +109,13 @@ See `voice.md` (committed) for tone, style, and formatting guidelines.
 
 ## Environment Setup
 
+**New user (general):**
+```sh
+pip install corrkit   # or: uvx corrkit init --user you@gmail.com
+corrkit init --user you@gmail.com
+```
+
+**Developer (from repo checkout):**
 ```sh
 cp accounts.toml.example accounts.toml   # configure your email accounts
 uv sync

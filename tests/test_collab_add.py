@@ -43,8 +43,8 @@ def test_add_creates_config_entry(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.voice_md", lambda: voice)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
 
     # Simulate argparse
@@ -86,7 +86,7 @@ def test_add_exits_if_already_exists(tmp_path, monkeypatch):
     )
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
@@ -107,8 +107,8 @@ def test_add_private_by_default(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.voice_md", lambda: voice)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
@@ -144,8 +144,8 @@ def test_add_public_flag(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.voice_md", lambda: voice)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
@@ -179,8 +179,8 @@ def test_add_multiple_labels(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.voice_md", lambda: voice)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
 
     def fake_run(cmd, **kw):
@@ -219,8 +219,8 @@ def test_add_custom_org(tmp_path, monkeypatch):
     voice.write_text("# Voice\n", encoding="utf-8")
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.add.VOICE_FILE", voice)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.voice_md", lambda: voice)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
 
     captured_cmds: list[list[str]] = []
@@ -256,7 +256,7 @@ def test_add_exits_if_directory_exists(tmp_path, monkeypatch):
     (tmp_path / "correspondence" / "for" / "alex-gh").mkdir(parents=True)
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("collab.CONFIG_PATH", config_path)
+    monkeypatch.setattr("resolve.collaborators_toml", lambda: config_path)
     _patch_owner(monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
