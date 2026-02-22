@@ -670,11 +670,11 @@ fn test_manifest_generation() {
     let conv_dir = data_dir.join("conversations");
     std::fs::create_dir_all(&conv_dir).unwrap();
 
-    // Set CORKY_DATA so contacts.toml resolution works
+    // Set CORKY_DATA so .corky.toml resolution works
     std::env::set_var("CORKY_DATA", data_dir.to_string_lossy().as_ref());
 
-    // Create a contacts.toml
-    std::fs::write(data_dir.join("contacts.toml"), "").unwrap();
+    // Create a .corky.toml (contacts section is optional)
+    std::fs::write(data_dir.join(".corky.toml"), "").unwrap();
 
     // Create a conversation file
     let thread = Thread {

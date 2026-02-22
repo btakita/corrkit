@@ -1,4 +1,4 @@
-//! manifest.toml generation from conversation files + contacts.toml.
+//! manifest.toml generation from conversation files + .corky.toml contacts.
 
 use anyhow::Result;
 use once_cell::sync::Lazy;
@@ -11,7 +11,7 @@ use crate::config::contact;
 
 static EMAIL_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"<([^>]+)>").unwrap());
 
-/// Generate manifest.toml from conversation files + contacts.toml.
+/// Generate manifest.toml from conversation files + .corky.toml contacts.
 pub fn generate_manifest(conversations_dir: &Path) -> Result<()> {
     if !conversations_dir.exists() {
         return Ok(());

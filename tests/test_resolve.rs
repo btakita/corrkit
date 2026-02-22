@@ -145,11 +145,9 @@ fn test_config_paths() {
     let data = tmp.path().to_path_buf();
     std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
-    let ct = resolve::contacts_toml();
     let vm = resolve::voice_md();
     let cj = resolve::credentials_json();
 
-    assert!(ct.to_string_lossy().ends_with("contacts.toml"));
     assert!(vm.to_string_lossy().ends_with("voice.md"));
     assert!(cj.to_string_lossy().ends_with("credentials.json"));
 

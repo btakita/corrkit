@@ -36,7 +36,3 @@ default = true
     std::fs::write(dir.join(".corky.toml"), content).unwrap();
 }
 
-/// Create an empty contacts.toml.
-pub fn write_empty_contacts(dir: &Path) {
-    std::fs::write(dir.join("contacts.toml"), "").unwrap();
-}

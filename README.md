@@ -189,7 +189,7 @@ skills/
 skills-lock.json
 ```
 
-Config files (`.corky.toml`, `contacts.toml`, `voice.md`) live inside `mail/`
+Config files (`.corky.toml`, `voice.md`) live inside `mail/`
 which is already gitignored. `credentials.json` is also gitignored in `mail/.gitignore`.
 
 ## Unified conversation directory
@@ -294,7 +294,7 @@ Per-contact directories give Claude context when drafting emails — relationshi
 corky contact-add alex --email alex@example.com --email alex@work.com --label correspondence --account personal
 ```
 
-This creates `mail/contacts/alex/` with an AGENTS.md template (+ CLAUDE.md symlink) and updates `contacts.toml`.
+This creates `mail/contacts/alex/` with an AGENTS.md template (+ CLAUDE.md symlink) and updates `.corky.toml`.
 
 ### Contact context
 
@@ -304,18 +304,14 @@ Edit `mail/contacts/{name}/AGENTS.md` with:
 - **Topics**: Recurring subjects, current projects
 - **Notes**: Freeform context — preferences, pending items, important dates
 
-### contacts.toml
-
-Maps contacts to email addresses and conversation labels (for lookup, not sync routing):
+Contact metadata in `.corky.toml` maps names to email addresses (for manifest tagging, not sync routing):
 
 ```toml
-[alex]
+[contacts.alex]
 emails = ["alex@example.com", "alex@work.com"]
 labels = ["correspondence"]
 account = "personal"
 ```
-
-Copy `contacts.toml.example` to `contacts.toml` to get started.
 
 ## Mailboxes
 

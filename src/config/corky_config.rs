@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::accounts::{Account, OwnerConfig, WatchConfig};
+use crate::config::contact::Contact;
 use crate::resolve;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -14,6 +15,8 @@ pub struct CorkyConfig {
     pub owner: Option<OwnerConfig>,
     #[serde(default)]
     pub accounts: HashMap<String, Account>,
+    #[serde(default)]
+    pub contacts: HashMap<String, Contact>,
     #[serde(default)]
     pub routing: HashMap<String, Vec<String>>,
     #[serde(default)]
@@ -49,7 +52,7 @@ pub fn load_config(path: Option<&Path>) -> Result<CorkyConfig> {
         .unwrap_or_else(resolve::corky_toml);
     if !path.exists() {
         bail!(
-            ".corky.toml not found at {}.\nRun 'corky init' or 'corky migrate' to create it.",
+            ".corky.toml not found at {}.\nRun 'corky init' to create it.",
             path.display()
         );
     }

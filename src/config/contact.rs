@@ -1,4 +1,4 @@
-//! Contact configuration — parse contacts.toml.
+//! Contact configuration — parse [contacts.*] from .corky.toml.
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -17,11 +17,11 @@ pub struct Contact {
     pub account: String,
 }
 
-/// Load contacts.toml and return {name: Contact} mapping.
+/// Load contacts from [contacts.*] in .corky.toml and return {name: Contact} mapping.
 pub fn load_contacts(path: Option<&Path>) -> Result<BTreeMap<String, Contact>> {
     let path = path
         .map(PathBuf::from)
-        .unwrap_or_else(resolve::contacts_toml);
+        .unwrap_or_else(resolve::corky_toml);
     if !path.exists() {
         return Ok(BTreeMap::new());
     }
@@ -30,40 +30,73 @@ pub fn load_contacts(path: Option<&Path>) -> Result<BTreeMap<String, Contact>> {
         return Ok(BTreeMap::new());
     }
     let raw: toml::Value = toml::from_str(&content)?;
-    let table = raw.as_table().ok_or_else(|| anyhow::anyhow!("Invalid contacts.toml"))?;
-
-    let mut result = BTreeMap::new();
-    for (name, data) in table {
-        let contact: Contact = data.clone().try_into()?;
-        result.insert(name.clone(), contact);
+    let contacts_table = raw
+        .as_table()
+        .and_then(|t| t.get("contacts"))
+        .and_then(|v| v.as_table());
+    match contacts_table {
+        Some(table) => {
+            let mut result = BTreeMap::new();
+            for (name, data) in table {
+                let contact: Contact = data.clone().try_into()?;
+                result.insert(name.clone(), contact);
+            }
+            Ok(result)
+        }
+        None => Ok(BTreeMap::new()),
     }
-    Ok(result)
 }
 
-/// Write contacts back to TOML.
-pub fn save_contacts(
-    contacts: &BTreeMap<String, Contact>,
+/// Write a single contact to [contacts.{name}] in .corky.toml (format-preserving).
+///
+/// Not concurrency-safe: uses read-modify-write without file locking.
+/// This is fine for a single-user CLI — the only concurrent scenario would
+/// be `corky watch` (background) while the user runs another command, but
+/// watch only reads config, never writes. If corky ever becomes multi-process
+/// with concurrent writers, add file locking here and in the other
+/// .corky.toml writers (accounts::add_label_to_account, mailbox add/remove/rename).
+pub fn save_contact(
+    name: &str,
+    contact: &Contact,
     path: Option<&Path>,
 ) -> Result<()> {
     let path = path
         .map(PathBuf::from)
-        .unwrap_or_else(resolve::contacts_toml);
-    let mut lines = Vec::new();
-    for (name, c) in contacts {
-        lines.push(format!("[{}]", name));
-        if !c.emails.is_empty() {
-            let emails: Vec<String> = c.emails.iter().map(|e| format!("\"{}\"", e)).collect();
-            lines.push(format!("emails = [{}]", emails.join(", ")));
-        }
-        if !c.labels.is_empty() {
-            let labels: Vec<String> = c.labels.iter().map(|l| format!("\"{}\"", l)).collect();
-            lines.push(format!("labels = [{}]", labels.join(", ")));
-        }
-        if !c.account.is_empty() {
-            lines.push(format!("account = \"{}\"", c.account));
-        }
-        lines.push(String::new());
+        .unwrap_or_else(resolve::corky_toml);
+    let content = if path.exists() {
+        std::fs::read_to_string(&path)?
+    } else {
+        String::new()
+    };
+    let mut doc = content.parse::<toml_edit::DocumentMut>()?;
+
+    // Ensure [contacts] table exists
+    if doc.get("contacts").is_none() {
+        doc.insert("contacts", toml_edit::Item::Table(toml_edit::Table::new()));
     }
-    std::fs::write(&path, lines.join("\n"))?;
+    let contacts = doc["contacts"].as_table_mut().unwrap();
+
+    // Build contact table
+    let mut table = toml_edit::Table::new();
+    if !contact.emails.is_empty() {
+        let mut arr = toml_edit::Array::new();
+        for e in &contact.emails {
+            arr.push(e.as_str());
+        }
+        table.insert("emails", toml_edit::value(arr));
+    }
+    if !contact.labels.is_empty() {
+        let mut arr = toml_edit::Array::new();
+        for l in &contact.labels {
+            arr.push(l.as_str());
+        }
+        table.insert("labels", toml_edit::value(arr));
+    }
+    if !contact.account.is_empty() {
+        table.insert("account", toml_edit::value(&contact.account));
+    }
+    contacts.insert(name, toml_edit::Item::Table(table));
+
+    std::fs::write(&path, doc.to_string())?;
     Ok(())
 }

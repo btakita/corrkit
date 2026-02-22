@@ -50,7 +50,7 @@ cp .corky.toml.example mail/.corky.toml   # configure your email accounts
 make release                                              # build + symlink to .bin/corky
 ```
 
-See README.md for full config reference (.corky.toml, contacts.toml, Gmail OAuth).
+See README.md for full config reference (.corky.toml, Gmail OAuth).
 
 ## Sync Behavior
 

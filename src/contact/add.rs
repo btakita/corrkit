@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 
-use crate::config::contact::{load_contacts, save_contacts, Contact};
+use crate::config::contact::{load_contacts, save_contact, Contact};
 use crate::resolve;
 
 fn generate_agents_md(name: &str) -> String {
@@ -35,9 +35,9 @@ Context for drafting emails to or about {name}.
 
 pub fn run(name: &str, emails: &[String], labels: &[String], account: &str) -> Result<()> {
     // Check not already configured
-    let mut contacts = load_contacts(None)?;
+    let contacts = load_contacts(None)?;
     if contacts.contains_key(name) {
-        anyhow::bail!("Contact '{}' already exists in contacts.toml", name);
+        anyhow::bail!("Contact '{}' already exists in .corky.toml", name);
     }
 
     let contact_dir = resolve::contacts_dir().join(name);
@@ -55,17 +55,14 @@ pub fn run(name: &str, emails: &[String], labels: &[String], account: &str) -> R
 
     println!("Created {}/AGENTS.md", contact_dir.display());
 
-    // 2. Update contacts.toml
-    contacts.insert(
-        name.to_string(),
-        Contact {
-            emails: emails.to_vec(),
-            labels: labels.to_vec(),
-            account: account.to_string(),
-        },
-    );
-    save_contacts(&contacts, None)?;
-    println!("Updated contacts.toml");
+    // 2. Update .corky.toml
+    let contact = Contact {
+        emails: emails.to_vec(),
+        labels: labels.to_vec(),
+        account: account.to_string(),
+    };
+    save_contact(name, &contact, None)?;
+    println!("Updated .corky.toml");
 
     // 3. Add labels to account sync config if both --label and --account given
     if !labels.is_empty() && !account.is_empty() {
@@ -73,7 +70,7 @@ pub fn run(name: &str, emails: &[String], labels: &[String], account: &str) -> R
             match crate::accounts::add_label_to_account(account, label, None) {
                 Ok(true) => {
                     println!(
-                        "Added label '{}' to account '{}' in accounts.toml",
+                        "Added label '{}' to account '{}' in .corky.toml",
                         label, account
                     );
                 }
@@ -93,7 +90,7 @@ pub fn run(name: &str, emails: &[String], labels: &[String], account: &str) -> R
         contact_dir.display()
     );
     if labels.is_empty() {
-        println!("  - Add --label flags or edit contacts.toml to map conversation labels");
+        println!("  - Add --label flags or edit .corky.toml to map conversation labels");
     }
 
     Ok(())

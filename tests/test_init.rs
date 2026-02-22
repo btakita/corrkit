@@ -65,11 +65,9 @@ fn test_init_creates_directory_structure() {
     assert!(data_dir.join("contacts").join(".gitkeep").exists());
     // Config inside mail/
     assert!(data_dir.join(".corky.toml").exists());
-    assert!(data_dir.join("contacts.toml").exists());
     assert!(data_dir.join("voice.md").exists());
     // No config at project root
     assert!(!path.join(".corky.toml").exists());
-    assert!(!path.join("contacts.toml").exists());
     assert!(!path.join("voice.md").exists());
 }
 

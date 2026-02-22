@@ -76,10 +76,6 @@ pub fn corky_toml() -> PathBuf {
     dotfile
 }
 
-pub fn contacts_toml() -> PathBuf {
-    config_dir().join("contacts.toml")
-}
-
 pub fn voice_md() -> PathBuf {
     config_dir().join("voice.md")
 }

@@ -163,13 +163,6 @@ pub fn run(
     std::fs::write(&config_path, &content)?;
     println!("Created {}", config_path.display());
 
-    // contacts.toml inside mail/
-    let contacts_path = data_dir.join("contacts.toml");
-    if !contacts_path.exists() {
-        std::fs::write(&contacts_path, "")?;
-        println!("Created {}", contacts_path.display());
-    }
-
     // 4. Install voice.md inside mail/
     install_voice_md(&data_dir)?;
 

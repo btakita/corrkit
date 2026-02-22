@@ -28,6 +28,13 @@ default = true
 # password_cmd = "pass email/selfhosted"
 # labels = ["important"]
 
+# Contact metadata — maps names to email addresses for manifest tagging.
+# Labels are for lookup only — they do NOT affect sync routing.
+# [contacts.alex]
+# emails = ["alex@example.com", "alex@work.com"]
+# labels = ["correspondence"]
+# account = "personal"
+
 # Label routing: map labels to mailbox directories.
 # Each label can fan out to multiple mailboxes.
 # Use "account:label" syntax to scope a label to one account.

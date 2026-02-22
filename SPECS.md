@@ -47,7 +47,7 @@ The data directory is resolved at runtime in this order:
 
 Config always lives inside the data directory (`mail/`).
 
-Config files: `.corky.toml`, `contacts.toml`, `voice.md`, `credentials.json`
+Config files: `.corky.toml`, `voice.md`, `credentials.json`
 
 ### 2.4 App Config
 
@@ -137,6 +137,11 @@ drafts_folder = "Drafts"
 sync_days = 3650            # How far back to sync
 default = false             # Mark one account as default
 
+[contacts.{name}]
+emails = ["addr@example.com"]
+labels = ["correspondence"]         # For lookup, not sync routing
+account = "personal"                # Optional
+
 [routing]
 for-alex = ["mailboxes/alex"]
 shared = ["mailboxes/alice", "mailboxes/bob"]
@@ -155,15 +160,6 @@ Password resolution order:
 3. Error if neither set
 
 Label scoping syntax: `account:label` (e.g. `"proton-dev:INBOX"`) binds a label to a specific account.
-
-### 3.5 contacts.toml
-
-```toml
-[{name}]
-emails = ["addr@example.com"]
-labels = ["correspondence"]         # For lookup, not sync routing
-account = "personal"                # Optional
-```
 
 ### 3.6 .sync-state.json
 
@@ -194,7 +190,7 @@ last_updated = "RFC 2822 date"
 contacts = ["contact-name"]
 ```
 
-Generated after each sync by scanning conversation files and matching sender emails against contacts.toml.
+Generated after each sync by scanning conversation files and matching sender emails against `[contacts]` in `.corky.toml`.
 
 ### 3.8 config.toml (App Config)
 
@@ -267,7 +263,7 @@ Account:label syntax (`"proton-dev:INBOX"`):
 After sync, scan all `.md` files in `conversations/`:
 1. Parse each file back into a Thread object
 2. For each message, extract email from sender (`<email>` regex)
-3. Match against contacts.toml email→name mapping
+3. Match against `[contacts]` email→name mapping in `.corky.toml`
 4. Write `manifest.toml` with thread metadata and matched contacts
 
 ## 5. Commands
@@ -282,7 +278,7 @@ corky init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
 
 - `PATH`: project directory (default: `.` — current directory)
 - Creates `{path}/mail/{conversations,drafts,contacts}/` with `.gitkeep` files
-- Generates `.corky.toml`, `contacts.toml` at `{path}/mail/`
+- Generates `.corky.toml` at `{path}/mail/`
 - Installs `voice.md` at `{path}/mail/` if not present
 - If inside a git repo: adds `mail` to `.gitignore`
 - `--with-skill`: install the email skill to `.claude/skills/email/`
@@ -373,7 +369,7 @@ corky contact-add NAME --email EMAIL [--email EMAIL2] [--label LABEL] [--account
 ```
 
 Creates `{data_dir}/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink.
-Updates `contacts.toml`. If both `--label` and `--account` given, adds label to account config.
+Updates `.corky.toml`. If both `--label` and `--account` given, adds label to account config.
 
 ### 5.8 watch
 

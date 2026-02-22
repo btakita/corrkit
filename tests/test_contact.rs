@@ -2,7 +2,6 @@
 
 mod common;
 
-use std::collections::BTreeMap;
 use tempfile::TempDir;
 
 use corky::config::contact::{self, Contact};
@@ -10,7 +9,7 @@ use corky::config::contact::{self, Contact};
 #[test]
 fn test_load_contacts_empty_file() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(&path, "").unwrap();
 
     let contacts = contact::load_contacts(Some(&path)).unwrap();
@@ -29,11 +28,11 @@ fn test_load_contacts_missing_file() {
 #[test]
 fn test_load_contacts_basic() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[alice]
+[contacts.alice]
 emails = ["alice@example.com", "alice@work.com"]
 labels = ["correspondence"]
 account = "personal"
@@ -53,18 +52,18 @@ account = "personal"
 #[test]
 fn test_load_contacts_multiple() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[alice]
+[contacts.alice]
 emails = ["alice@example.com"]
 
-[bob]
+[contacts.bob]
 emails = ["bob@example.com"]
 labels = ["work"]
 
-[charlie]
+[contacts.charlie]
 emails = ["charlie@example.com"]
 account = "work"
 "#,
@@ -81,11 +80,11 @@ account = "work"
 #[test]
 fn test_load_contacts_default_fields() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[minimal]
+[contacts.minimal]
 emails = ["min@example.com"]
 "#,
     )
@@ -99,48 +98,42 @@ emails = ["min@example.com"]
 }
 
 #[test]
-fn test_save_contacts() {
+fn test_save_contact() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(&path, "").unwrap();
 
-    let mut contacts = BTreeMap::new();
-    contacts.insert(
-        "alice".to_string(),
-        Contact {
-            emails: vec!["alice@example.com".to_string()],
-            labels: vec!["correspondence".to_string()],
-            account: "personal".to_string(),
-        },
-    );
+    let alice = Contact {
+        emails: vec!["alice@example.com".to_string()],
+        labels: vec!["correspondence".to_string()],
+        account: "personal".to_string(),
+    };
 
-    contact::save_contacts(&contacts, Some(&path)).unwrap();
+    contact::save_contact("alice", &alice, Some(&path)).unwrap();
 
     let content = std::fs::read_to_string(&path).unwrap();
-    assert!(content.contains("[alice]"));
+    assert!(content.contains("[contacts.alice]"));
     assert!(content.contains("\"alice@example.com\""));
     assert!(content.contains("\"correspondence\""));
     assert!(content.contains("account = \"personal\""));
 }
 
 #[test]
-fn test_save_contacts_multiple_emails() {
+fn test_save_contact_multiple_emails() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(&path, "").unwrap();
 
-    let mut contacts = BTreeMap::new();
-    contacts.insert(
-        "bob".to_string(),
-        Contact {
-            emails: vec![
-                "bob@work.com".to_string(),
-                "bob@personal.com".to_string(),
-            ],
-            labels: vec![],
-            account: String::new(),
-        },
-    );
+    let bob = Contact {
+        emails: vec![
+            "bob@work.com".to_string(),
+            "bob@personal.com".to_string(),
+        ],
+        labels: vec![],
+        account: String::new(),
+    };
 
-    contact::save_contacts(&contacts, Some(&path)).unwrap();
+    contact::save_contact("bob", &bob, Some(&path)).unwrap();
 
     let content = std::fs::read_to_string(&path).unwrap();
     assert!(content.contains("\"bob@work.com\""));
@@ -150,27 +143,22 @@ fn test_save_contacts_multiple_emails() {
 #[test]
 fn test_save_and_reload_contacts() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(&path, "").unwrap();
 
-    let mut contacts = BTreeMap::new();
-    contacts.insert(
-        "alice".to_string(),
-        Contact {
-            emails: vec!["alice@example.com".to_string()],
-            labels: vec!["inbox".to_string(), "vip".to_string()],
-            account: "personal".to_string(),
-        },
-    );
-    contacts.insert(
-        "bob".to_string(),
-        Contact {
-            emails: vec!["bob@work.com".to_string()],
-            labels: vec![],
-            account: String::new(),
-        },
-    );
+    let alice = Contact {
+        emails: vec!["alice@example.com".to_string()],
+        labels: vec!["inbox".to_string(), "vip".to_string()],
+        account: "personal".to_string(),
+    };
+    let bob = Contact {
+        emails: vec!["bob@work.com".to_string()],
+        labels: vec![],
+        account: String::new(),
+    };
 
-    contact::save_contacts(&contacts, Some(&path)).unwrap();
+    contact::save_contact("alice", &alice, Some(&path)).unwrap();
+    contact::save_contact("bob", &bob, Some(&path)).unwrap();
     let reloaded = contact::load_contacts(Some(&path)).unwrap();
 
     assert_eq!(reloaded.len(), 2);
@@ -187,25 +175,30 @@ fn test_save_and_reload_contacts() {
 }
 
 #[test]
-fn test_save_contacts_empty() {
+fn test_load_contacts_no_contacts_section() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(
+        &path,
+        r#"
+[owner]
+github_user = "testuser"
+"#,
+    )
+    .unwrap();
 
-    let contacts = BTreeMap::new();
-    contact::save_contacts(&contacts, Some(&path)).unwrap();
-
-    let content = std::fs::read_to_string(&path).unwrap();
-    assert!(content.trim().is_empty());
+    let contacts = contact::load_contacts(Some(&path)).unwrap();
+    assert!(contacts.is_empty());
 }
 
 #[test]
 fn test_contact_no_emails() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[no-email]
+[contacts.no-email]
 labels = ["test"]
 "#,
     )
@@ -218,33 +211,34 @@ labels = ["test"]
 }
 
 #[test]
-fn test_contact_sorted_output() {
+fn test_save_contact_preserves_existing_config() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("contacts.toml");
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(
+        &path,
+        r#"[owner]
+github_user = "testuser"
 
-    let mut contacts = BTreeMap::new();
-    contacts.insert(
-        "zara".to_string(),
-        Contact {
-            emails: vec!["zara@example.com".to_string()],
-            labels: vec![],
-            account: String::new(),
-        },
-    );
-    contacts.insert(
-        "adam".to_string(),
-        Contact {
-            emails: vec!["adam@example.com".to_string()],
-            labels: vec![],
-            account: String::new(),
-        },
-    );
+[accounts.personal]
+provider = "gmail"
+user = "test@gmail.com"
+"#,
+    )
+    .unwrap();
 
-    contact::save_contacts(&contacts, Some(&path)).unwrap();
+    let alice = Contact {
+        emails: vec!["alice@example.com".to_string()],
+        labels: vec![],
+        account: String::new(),
+    };
+    contact::save_contact("alice", &alice, Some(&path)).unwrap();
 
     let content = std::fs::read_to_string(&path).unwrap();
-    let adam_pos = content.find("[adam]").unwrap();
-    let zara_pos = content.find("[zara]").unwrap();
-    // BTreeMap iteration is sorted, so adam should appear before zara
-    assert!(adam_pos < zara_pos);
+    // Existing config preserved
+    assert!(content.contains("[owner]"));
+    assert!(content.contains("github_user = \"testuser\""));
+    assert!(content.contains("[accounts.personal]"));
+    // New contact added
+    assert!(content.contains("[contacts.alice]"));
+    assert!(content.contains("\"alice@example.com\""));
 }
