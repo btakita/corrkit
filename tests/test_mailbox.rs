@@ -163,7 +163,7 @@ fn test_corky_toml_resolution() {
     std::fs::write(tmp.path().join(".corky.toml"), "").unwrap();
     let path = resolve::corky_toml();
     assert!(path.to_string_lossy().ends_with(".corky.toml"));
-    // data_dir() gives precedence to local correspondence/ when present,
+    // data_dir() gives precedence to local mail/ when present,
     // so the env var path may not be used in the dev checkout.
     if resolve::data_dir() == tmp.path().to_path_buf() {
         assert!(path.exists());

@@ -38,14 +38,14 @@ and pushes routing intelligence to Cloudflare.
 ### 2.2 Resolution Order
 
 The data directory is resolved at runtime in this order:
-1. `correspondence/` directory in current working directory (developer workflow)
+1. `mail/` directory in current working directory (developer workflow)
 2. `CORKY_DATA` environment variable
 3. App config mailbox (see §2.4)
-4. `~/Documents/correspondence` (hardcoded fallback)
+4. `~/Documents/mail` (hardcoded fallback)
 
 ### 2.3 Config Directory
 
-Config always lives inside the data directory (`correspondence/`).
+Config always lives inside the data directory (`mail/`).
 
 Config files: `.corky.toml`, `contacts.toml`, `voice.md`, `credentials.json`
 
@@ -202,17 +202,17 @@ Generated after each sync by scanning conversation files and matching sender ema
 default_mailbox = "personal"
 
 [mailboxes.personal]
-path = "~/Documents/correspondence"
+path = "~/Documents/mail"
 
 [mailboxes.work]
-path = "~/work/correspondence"
+path = "~/work/mail"
 ```
 
 Top-level fields:
 - `default_mailbox`: name of the default mailbox (set automatically to the first mailbox added)
 
 Mailbox fields:
-- `path`: absolute or `~`-relative path to a correspondence data directory
+- `path`: absolute or `~`-relative path to a mail data directory
 
 ## 4. Algorithms
 
@@ -281,10 +281,10 @@ corky init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
 ```
 
 - `PATH`: project directory (default: `.` — current directory)
-- Creates `{path}/correspondence/{conversations,drafts,contacts}/` with `.gitkeep` files
-- Generates `.corky.toml`, `contacts.toml` at `{path}/correspondence/`
-- Installs `voice.md` at `{path}/correspondence/` if not present
-- If inside a git repo: adds `correspondence` to `.gitignore`
+- Creates `{path}/mail/{conversations,drafts,contacts}/` with `.gitkeep` files
+- Generates `.corky.toml`, `contacts.toml` at `{path}/mail/`
+- Installs `voice.md` at `{path}/mail/` if not present
+- If inside a git repo: adds `mail` to `.gitignore`
 - `--with-skill`: install the email skill to `.claude/skills/email/`
 - Registers the project dir as a named mailbox in app config
 - `--force`: overwrite existing config; without it, exit 1 if `.corky.toml` exists

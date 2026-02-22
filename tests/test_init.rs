@@ -56,14 +56,14 @@ fn test_init_creates_directory_structure() {
     )
     .unwrap();
 
-    let data_dir = path.join("correspondence");
+    let data_dir = path.join("mail");
     assert!(data_dir.join("conversations").is_dir());
     assert!(data_dir.join("drafts").is_dir());
     assert!(data_dir.join("contacts").is_dir());
     assert!(data_dir.join("conversations").join(".gitkeep").exists());
     assert!(data_dir.join("drafts").join(".gitkeep").exists());
     assert!(data_dir.join("contacts").join(".gitkeep").exists());
-    // Config inside correspondence/
+    // Config inside mail/
     assert!(data_dir.join(".corky.toml").exists());
     assert!(data_dir.join("contacts.toml").exists());
     assert!(data_dir.join("voice.md").exists());
@@ -85,7 +85,7 @@ fn test_init_corky_toml_content() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corky.toml");
+    let config_path = path.join("mail").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     assert!(accounts.contains_key("default"));
     let acct = accounts.get("default").unwrap();
@@ -109,7 +109,7 @@ fn test_init_with_custom_provider() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corky.toml");
+    let config_path = path.join("mail").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.provider, "protonmail-bridge");
@@ -128,7 +128,7 @@ fn test_init_labels_parsing() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corky.toml");
+    let config_path = path.join("mail").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.labels.len(), 3);
@@ -141,7 +141,7 @@ fn test_init_labels_parsing() {
 fn test_init_force_overwrites() {
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().join("forcedata");
-    let data_dir = path.join("correspondence");
+    let data_dir = path.join("mail");
     std::fs::create_dir_all(&data_dir).unwrap();
     std::fs::write(data_dir.join(".corky.toml"), "# old config").unwrap();
 
@@ -169,7 +169,7 @@ fn test_init_tilde_expansion() {
     )
     .unwrap();
 
-    assert!(path.join("correspondence").join(".corky.toml").exists());
+    assert!(path.join("mail").join(".corky.toml").exists());
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn test_init_empty_labels() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corky.toml");
+    let config_path = path.join("mail").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert!(acct.labels.is_empty());
@@ -206,7 +206,7 @@ fn test_init_gitignore_in_git_repo() {
     .unwrap();
 
     let gitignore = std::fs::read_to_string(path.join(".gitignore")).unwrap();
-    assert!(gitignore.contains("correspondence"));
+    assert!(gitignore.contains("mail"));
 }
 
 #[test]

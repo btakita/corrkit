@@ -1,16 +1,16 @@
 //! Path resolution for corky data and config directories.
 //!
 //! Resolution order for data directory:
-//!   1. correspondence/ in cwd (developer workflow)
+//!   1. mail/ in cwd (developer workflow)
 //!   2. CORKY_DATA environment variable
 //!   3. App config mailbox (via app_config::resolve_mailbox)
-//!   4. ~/Documents/correspondence (general user default)
+//!   4. ~/Documents/mail (general user default)
 
 use std::path::PathBuf;
 
 /// Return the data directory path.
 pub fn data_dir() -> PathBuf {
-    let local = PathBuf::from("correspondence");
+    let local = PathBuf::from("mail");
     if local.is_dir() {
         return local;
     }
@@ -23,12 +23,12 @@ pub fn data_dir() -> PathBuf {
     if let Ok(Some(mailbox_path)) = crate::app_config::resolve_mailbox(None) {
         return mailbox_path;
     }
-    home_dir().join("Documents").join("correspondence")
+    home_dir().join("Documents").join("mail")
 }
 
 /// Return the config directory path.
 ///
-/// Config always lives inside the data directory (correspondence/).
+/// Config always lives inside the data directory (mail/).
 pub fn config_dir() -> PathBuf {
     data_dir()
 }

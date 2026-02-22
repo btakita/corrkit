@@ -4,19 +4,19 @@
 
 **corky** is the tool — Rust source, tests, config templates. It is a public repo.
 
-**correspondence** is the data — synced threads, drafts, contacts, mailboxes.
-It is a separate, private repo. corky accesses it via a `correspondence/` path in the
+**mail** is the data — synced threads, drafts, contacts, mailboxes.
+It is a separate, private repo. corky accesses it via a `mail/` path in the
 working directory, which can be either:
 
-- A **symlink** to an external clone (e.g. `correspondence -> ~/data/correspondence`)
+- A **symlink** to an external clone (e.g. `mail -> ~/data/mail`)
 - A **subdirectory** or nested clone inside the corky checkout
 
-**Developer workflow:** `correspondence/` exists at the working directory root (symlink or subdirectory).
-The `correspondence` entry in `.gitignore` keeps the data repo out of corky's git history.
+**Developer workflow:** `mail/` exists at the working directory root (symlink or subdirectory).
+The `mail` entry in `.gitignore` keeps the data repo out of corky's git history.
 
-**General user workflow:** `corky init --user EMAIL` creates `correspondence/` in the current
+**General user workflow:** `corky init --user EMAIL` creates `mail/` in the current
 directory with config inside it, and registers the project dir as a named mailbox.
-Commands find the data dir via the resolution order in `src/resolve.rs`: local `correspondence/`,
+Commands find the data dir via the resolution order in `src/resolve.rs`: local `mail/`,
 `CORKY_DATA` env, app config mailbox, `~/Documents` fallback. Use `--mailbox NAME` to select a
 specific mailbox.
 
@@ -46,7 +46,7 @@ corky init --user you@gmail.com
 
 **Developer (from repo checkout):**
 ```sh
-cp .corky.toml.example correspondence/.corky.toml   # configure your email accounts
+cp .corky.toml.example mail/.corky.toml   # configure your email accounts
 make release                                              # build + symlink to .bin/corky
 ```
 
@@ -60,7 +60,7 @@ See README.md for full config reference (.corky.toml, contacts.toml, Gmail OAuth
 - **Multi-label accumulation**: Thread fetched from multiple labels/accounts accumulates all in metadata.
 - **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json`. `sync full` re-fetches everything.
 - **Streaming writes**: Each message merged immediately. If sync crashes, state is not saved; next run re-fetches.
-- **Shared label routing**: Labels in `[routing]` section of `.corky.toml` route to `correspondence/mailboxes/{name}/conversations/`.
+- **Shared label routing**: Labels in `[routing]` section of `.corky.toml` route to `mail/mailboxes/{name}/conversations/`.
   One label can fan-out to multiple mailboxes.
 - **Dedup**: Messages deduplicated by `(sender, date)` tuple when merging into existing files.
 - **Slug collisions**: Different threads with same slug get `-2`, `-3` suffix.
@@ -131,7 +131,7 @@ Follow a research → plan → implement cycle. Never write code until the plan 
 - Use `std::process::Command` for git operations (not `git2`)
 - Use `regex` + `once_cell::Lazy` for compiled regex patterns
 - Keep sync, draft, mailbox, contact logic in separate modules
-- Do not commit `.env`, `accounts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
+- Do not commit `.env`, `accounts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `mail`
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes

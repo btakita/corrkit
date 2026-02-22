@@ -4,7 +4,7 @@
 
 Consolidate conversations from multiple email accounts into a single flat directory of Markdown files. Draft replies with AI assistance. Push routing intelligence to Cloudflare.
 
-Corky syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `correspondence/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
+Corky syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `mail/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
 
 ## Tech Stack
 
@@ -47,18 +47,18 @@ cargo install --path .
 corky init --user you@gmail.com
 ```
 
-This creates `~/Documents/correspondence` with directory structure, `.corky.toml`,
-and empty config files inside it. Edit `correspondence/.corky.toml` with credentials, then run `corky sync`.
+This creates `~/Documents/mail` with directory structure, `.corky.toml`,
+and empty config files inside it. Edit `mail/.corky.toml` with credentials, then run `corky sync`.
 
 **Developer setup (from repo checkout):**
 ```sh
-cp .corky.toml.example correspondence/.corky.toml   # configure your email accounts
+cp .corky.toml.example mail/.corky.toml   # configure your email accounts
 cargo build
 ```
 
 ### Account configuration
 
-Define email accounts in `correspondence/.corky.toml` with provider presets:
+Define email accounts in `mail/.corky.toml` with provider presets:
 
 ```toml
 [accounts.personal]
@@ -112,8 +112,8 @@ corky sync account personal    # Sync one account
 corky sync routes              # Apply routing rules to existing conversations
 corky sync mailbox [NAME]      # Push/pull shared mailboxes
 corky list-folders [ACCOUNT]   # List IMAP folders for an account
-corky push-draft correspondence/drafts/FILE.md # Save a draft via IMAP
-corky push-draft correspondence/drafts/FILE.md --send  # Send via SMTP
+corky push-draft mail/drafts/FILE.md # Save a draft via IMAP
+corky push-draft mail/drafts/FILE.md --send  # Send via SMTP
 corky add-label LABEL --account NAME   # Add a label to an account's sync config
 corky contact-add NAME --email EMAIL    # Add a contact with context docs
 corky mailbox add NAME --label LABEL        # Add a mailbox
@@ -154,7 +154,7 @@ corky --mailbox personal mailbox status
 
 Mailboxes are stored in `~/.config/corky/config.toml` (Linux), `~/Library/Application Support/corky/config.toml` (macOS), or `%APPDATA%/corky/config.toml` (Windows). The first mailbox added becomes the default. With one mailbox configured, `--mailbox` is optional.
 
-Synced threads are written to `correspondence/conversations/[slug].md` (flat, one file per thread). Labels and accounts are metadata inside each file. A `manifest.toml` index is generated after each sync.
+Synced threads are written to `mail/conversations/[slug].md` (flat, one file per thread). Labels and accounts are metadata inside each file. A `manifest.toml` index is generated after each sync.
 
 ## Development
 
@@ -177,7 +177,7 @@ credentials.json
 *.credentials.json
 CLAUDE.local.md
 AGENTS.local.md
-correspondence
+mail
 .idea/
 tmp/
 target/
@@ -189,15 +189,15 @@ skills/
 skills-lock.json
 ```
 
-Config files (`.corky.toml`, `contacts.toml`, `voice.md`) live inside `correspondence/`
-which is already gitignored. `credentials.json` is also gitignored in `correspondence/.gitignore`.
+Config files (`.corky.toml`, `contacts.toml`, `voice.md`) live inside `mail/`
+which is already gitignored. `credentials.json` is also gitignored in `mail/.gitignore`.
 
 ## Unified conversation directory
 
 All synced threads live in one flat directory:
 
 ```
-correspondence/
+mail/
   conversations/          # one file per thread, all sources merged
     project-update.md     # immutable slug filename
     lunch-plans.md        # mtime = last message date (ls -t sorts by activity)
@@ -249,7 +249,7 @@ the directory layout — new messages merge into the same directory with their s
 
 ### Draft format
 
-Drafts live in `correspondence/drafts/` (private) or `correspondence/mailboxes/{name}/drafts/` (collaborator).
+Drafts live in `mail/drafts/` (private) or `mail/mailboxes/{name}/drafts/` (collaborator).
 Filename convention: `[YYYY-MM-DD]-[slug].md`.
 
 ```markdown
@@ -278,7 +278,7 @@ Correspondence-kit inverts this. You control what any agent or collaborator can 
 
 1. **You label threads in your email client.** Only threads you explicitly label get synced locally.
 2. **Labels route to scoped views.** Each mailbox gives the collaborator/agent a directory containing only the threads labeled for them — nothing else.
-3. **Credentials never leave your machine.** Config lives inside `correspondence/` (your private data repo). Agents draft replies in markdown; only you can push to your email.
+3. **Credentials never leave your machine.** Config lives inside `mail/` (your private data repo). Agents draft replies in markdown; only you can push to your email.
 
 An agent added with `corky mailbox add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
 
@@ -294,11 +294,11 @@ Per-contact directories give Claude context when drafting emails — relationshi
 corky contact-add alex --email alex@example.com --email alex@work.com --label correspondence --account personal
 ```
 
-This creates `correspondence/contacts/alex/` with an AGENTS.md template (+ CLAUDE.md symlink) and updates `contacts.toml`.
+This creates `mail/contacts/alex/` with an AGENTS.md template (+ CLAUDE.md symlink) and updates `contacts.toml`.
 
 ### Contact context
 
-Edit `correspondence/contacts/{name}/AGENTS.md` with:
+Edit `mail/contacts/{name}/AGENTS.md` with:
 - **Relationship**: How you know this person, shared history
 - **Tone**: Communication style overrides (defaults to voice.md)
 - **Topics**: Recurring subjects, current projects
@@ -370,7 +370,7 @@ corky watch
 corky watch --interval 60
 ```
 
-Configure in `correspondence/.corky.toml`:
+Configure in `mail/.corky.toml`:
 
 ```toml
 [watch]

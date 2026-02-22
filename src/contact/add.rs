@@ -1,4 +1,4 @@
-//! Add a new contact: scaffold correspondence/contacts/{name}/ with AGENTS.md.
+//! Add a new contact: scaffold mail/contacts/{name}/ with AGENTS.md.
 
 use anyhow::Result;
 

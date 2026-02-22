@@ -90,7 +90,7 @@ fn test_corky_toml_finds_dotfile() {
     std::fs::write(data.join(".corky.toml"), "").unwrap();
     let path = resolve::corky_toml();
     assert!(path.to_string_lossy().ends_with(".corky.toml"));
-    // data_dir() gives precedence to local correspondence/ when present,
+    // data_dir() gives precedence to local mail/ when present,
     // so the env var path may not be used in the dev checkout.
     if resolve::data_dir() == data {
         assert!(path.exists());
@@ -101,8 +101,8 @@ fn test_corky_toml_finds_dotfile() {
 
 #[test]
 fn test_corky_toml_finds_plain() {
-    // This test requires no correspondence/ in cwd so config_dir() uses CORKY_DATA.
-    // Since the dev repo may have correspondence/ symlink, we test with an explicit
+    // This test requires no mail/ in cwd so config_dir() uses CORKY_DATA.
+    // Since the dev repo may have mail/ symlink, we test with an explicit
     // path lookup instead of relying on global resolution.
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();

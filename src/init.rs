@@ -135,7 +135,7 @@ pub fn run(
     std::fs::create_dir_all(&path)?;
     let path = path.canonicalize()?;
 
-    let data_dir = path.join("correspondence");
+    let data_dir = path.join("mail");
 
     let labels: Vec<String> = labels_str
         .split(',')
@@ -150,32 +150,32 @@ pub fn run(
         std::process::exit(1);
     }
 
-    // 2. Create correspondence/{conversations,drafts,contacts}/
+    // 2. Create mail/{conversations,drafts,contacts}/
     create_dirs(&data_dir)?;
     println!(
         "Created {}/{{conversations,drafts,contacts}}/",
         data_dir.display()
     );
 
-    // 3. Generate .corky.toml inside correspondence/
+    // 3. Generate .corky.toml inside mail/
     let content =
         generate_corky_toml(user, provider, password_cmd, &labels, github_user, name);
     std::fs::write(&config_path, &content)?;
     println!("Created {}", config_path.display());
 
-    // contacts.toml inside correspondence/
+    // contacts.toml inside mail/
     let contacts_path = data_dir.join("contacts.toml");
     if !contacts_path.exists() {
         std::fs::write(&contacts_path, "")?;
         println!("Created {}", contacts_path.display());
     }
 
-    // 4. Install voice.md inside correspondence/
+    // 4. Install voice.md inside mail/
     install_voice_md(&data_dir)?;
 
-    // 5. Add correspondence to .gitignore if in a git repo
+    // 5. Add mail to .gitignore if in a git repo
     if let Some(repo_root) = find_git_root(&path) {
-        ensure_gitignore_entry(&repo_root, "correspondence")?;
+        ensure_gitignore_entry(&repo_root, "mail")?;
     }
 
     // 6. Install email skill if requested
@@ -197,7 +197,7 @@ pub fn run(
         println!();
         println!("Gmail setup:");
         println!("  Option A: App password \u{2014} https://myaccount.google.com/apppasswords");
-        println!("    Add password_cmd = \"pass email/personal\" to correspondence/.corky.toml");
+        println!("    Add password_cmd = \"pass email/personal\" to mail/.corky.toml");
         println!("  Option B: OAuth \u{2014} run 'corky sync-auth' after placing credentials.json");
     }
 
@@ -216,7 +216,7 @@ pub fn run(
             println!("  - Set up app password or OAuth (see above)");
         }
         if !presets.contains_key(provider) && provider == "imap" {
-            println!("  - Add imap_host, smtp_host to correspondence/.corky.toml");
+            println!("  - Add imap_host, smtp_host to mail/.corky.toml");
         }
         println!("  - Run: corky sync");
         if !with_skill {

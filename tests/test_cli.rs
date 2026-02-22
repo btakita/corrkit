@@ -109,7 +109,7 @@ fn test_cli_mb_alias() {
 fn test_cli_sync_routes() {
     let tmp = tempfile::TempDir::new().unwrap();
     let project_dir = tmp.path().to_path_buf();
-    let data_dir = project_dir.join("correspondence");
+    let data_dir = project_dir.join("mail");
 
     // Create conversations dir with a thread that has a routed label
     std::fs::create_dir_all(data_dir.join("conversations")).unwrap();
@@ -174,9 +174,9 @@ fn test_cli_init_with_path() {
     ]);
     cmd.assert().success();
 
-    assert!(project_dir.join("correspondence/conversations").exists());
-    assert!(project_dir.join("correspondence/.corky.toml").exists());
-    assert!(project_dir.join("correspondence/voice.md").exists());
+    assert!(project_dir.join("mail/conversations").exists());
+    assert!(project_dir.join("mail/.corky.toml").exists());
+    assert!(project_dir.join("mail/voice.md").exists());
 }
 
 #[test]
