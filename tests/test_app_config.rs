@@ -1,4 +1,4 @@
-//! Integration tests for app config / spaces (src/app_config.rs).
+//! Integration tests for app config / mailbox registry (src/app_config.rs).
 
 mod common;
 
@@ -18,17 +18,17 @@ fn test_app_config_path_returns_toml() {
 }
 
 #[test]
-fn test_resolve_space_no_config() {
-    // When asked for a nonexistent space, should error or return None
+fn test_resolve_mailbox_no_config() {
+    // When asked for a nonexistent mailbox, should error or return None
     // Either way, it shouldn't panic
-    let result = app_config::resolve_space(Some("nonexistent-space-xyz"));
+    let result = app_config::resolve_mailbox(Some("nonexistent-mailbox-xyz"));
     let _ = result;
 }
 
 #[test]
-fn test_list_spaces_no_panic() {
+fn test_list_mailboxes_no_panic() {
     // Should not panic even if config doesn't exist or is corrupted
-    let _ = app_config::list_spaces();
+    let _ = app_config::list_mailboxes();
 }
 
 #[test]

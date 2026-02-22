@@ -1,4 +1,4 @@
-//! App-level config for corrkit (spaces, defaults).
+//! App-level config for corrkit (mailbox registry, defaults).
 //!
 //! Reads/writes {user_config_dir}/corrkit/config.toml.
 
@@ -44,35 +44,56 @@ pub fn save(config: &toml::Value) -> Result<()> {
     Ok(())
 }
 
-/// Resolve a space name to a data directory path.
+/// Read the mailboxes table, with backward-compat fallback to `[spaces]`.
+fn read_mailboxes(table: &toml::map::Map<String, toml::Value>) -> toml::map::Map<String, toml::Value> {
+    if let Some(toml::Value::Table(m)) = table.get("mailboxes") {
+        return m.clone();
+    }
+    // Backward compat: read from [spaces] if [mailboxes] is missing
+    if let Some(toml::Value::Table(s)) = table.get("spaces") {
+        return s.clone();
+    }
+    toml::map::Map::new()
+}
+
+/// Read the default mailbox name, with backward-compat fallback to `default_space`.
+fn read_default(table: &toml::map::Map<String, toml::Value>) -> Option<String> {
+    if let Some(toml::Value::String(d)) = table.get("default_mailbox") {
+        return Some(d.clone());
+    }
+    // Backward compat: read from default_space
+    if let Some(toml::Value::String(d)) = table.get("default_space") {
+        return Some(d.clone());
+    }
+    None
+}
+
+/// Resolve a mailbox name to a data directory path.
 ///
 /// - If name given: look up, error if not found.
-/// - No name + default_space set: use default.
-/// - No name + exactly 1 space: use it implicitly.
-/// - No name + multiple spaces, no default: error with list.
-/// - No spaces configured: return None.
-pub fn resolve_space(name: Option<&str>) -> Result<Option<PathBuf>> {
+/// - No name + default_mailbox set: use default.
+/// - No name + exactly 1 mailbox: use it implicitly.
+/// - No name + multiple mailboxes, no default: error with list.
+/// - No mailboxes configured: return None.
+pub fn resolve_mailbox(name: Option<&str>) -> Result<Option<PathBuf>> {
     let config = load()?;
     let table = config.as_table().cloned().unwrap_or_default();
-    let spaces = match table.get("spaces") {
-        Some(toml::Value::Table(s)) => s.clone(),
-        _ => return Ok(None),
-    };
+    let mailboxes = read_mailboxes(&table);
 
-    if spaces.is_empty() {
+    if mailboxes.is_empty() {
         return Ok(None);
     }
 
     if let Some(name) = name {
-        match spaces.get(name) {
-            Some(space_val) => {
-                let path = space_path(space_val)?;
+        match mailboxes.get(name) {
+            Some(mailbox_val) => {
+                let path = mailbox_path(mailbox_val)?;
                 return Ok(Some(path));
             }
             None => {
-                let available: Vec<&String> = spaces.keys().collect();
+                let available: Vec<&String> = mailboxes.keys().collect();
                 bail!(
-                    "Unknown space '{}'. Available: {}",
+                    "Unknown mailbox '{}'. Available: {}",
                     name,
                     available.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
                 );
@@ -81,48 +102,48 @@ pub fn resolve_space(name: Option<&str>) -> Result<Option<PathBuf>> {
     }
 
     // No name given — try defaults
-    if let Some(toml::Value::String(default)) = table.get("default_space") {
-        if let Some(space_val) = spaces.get(default.as_str()) {
-            let path = space_path(space_val)?;
+    if let Some(default) = read_default(&table) {
+        if let Some(mailbox_val) = mailboxes.get(default.as_str()) {
+            let path = mailbox_path(mailbox_val)?;
             return Ok(Some(path));
         }
     }
 
-    if spaces.len() == 1 {
-        let (_, space_val) = spaces.iter().next().unwrap();
-        let path = space_path(space_val)?;
+    if mailboxes.len() == 1 {
+        let (_, mailbox_val) = mailboxes.iter().next().unwrap();
+        let path = mailbox_path(mailbox_val)?;
         return Ok(Some(path));
     }
 
-    // Multiple spaces, no default
-    eprintln!("Multiple spaces configured. Use --space NAME or set default_space.");
+    // Multiple mailboxes, no default
+    eprintln!("Multiple mailboxes configured. Use --mailbox NAME or set default_mailbox.");
     eprintln!();
-    for (sname, sconf) in &spaces {
-        if let Some(p) = sconf.get("path").and_then(|v| v.as_str()) {
-            eprintln!("  {}  {}", sname, p);
+    for (mname, mconf) in &mailboxes {
+        if let Some(p) = mconf.get("path").and_then(|v| v.as_str()) {
+            eprintln!("  {}  {}", mname, p);
         }
     }
     std::process::exit(1);
 }
 
-/// Register a space, auto-default if first.
-pub fn add_space(name: &str, path: &str) -> Result<()> {
+/// Register a mailbox, auto-default if first.
+pub fn add_mailbox(name: &str, path: &str) -> Result<()> {
     let mut config = load()?;
     let table = config.as_table_mut().unwrap();
 
-    let spaces = table
-        .entry("spaces")
+    let mailboxes = table
+        .entry("mailboxes")
         .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
         .as_table_mut()
         .unwrap();
 
-    let mut space_entry = toml::map::Map::new();
-    space_entry.insert("path".to_string(), toml::Value::String(path.to_string()));
-    spaces.insert(name.to_string(), toml::Value::Table(space_entry));
+    let mut mailbox_entry = toml::map::Map::new();
+    mailbox_entry.insert("path".to_string(), toml::Value::String(path.to_string()));
+    mailboxes.insert(name.to_string(), toml::Value::Table(mailbox_entry));
 
-    if spaces.len() == 1 {
+    if mailboxes.len() == 1 {
         table.insert(
-            "default_space".to_string(),
+            "default_mailbox".to_string(),
             toml::Value::String(name.to_string()),
         );
     }
@@ -130,23 +151,17 @@ pub fn add_space(name: &str, path: &str) -> Result<()> {
     save(&config)
 }
 
-/// List all configured spaces as (name, path, is_default).
-pub fn list_spaces() -> Result<Vec<(String, String, bool)>> {
+/// List all configured mailboxes as (name, path, is_default).
+pub fn list_mailboxes() -> Result<Vec<(String, String, bool)>> {
     let config = load()?;
     let table = config.as_table().cloned().unwrap_or_default();
-    let default = table
-        .get("default_space")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let default = read_default(&table).unwrap_or_default();
 
-    let spaces = match table.get("spaces") {
-        Some(toml::Value::Table(s)) => s.clone(),
-        _ => return Ok(vec![]),
-    };
+    let mailboxes = read_mailboxes(&table);
 
     let mut result = vec![];
     // Use BTreeMap for sorted output
-    let sorted: BTreeMap<_, _> = spaces.into_iter().collect();
+    let sorted: BTreeMap<_, _> = mailboxes.into_iter().collect();
     for (name, val) in sorted {
         let path = val
             .get("path")
@@ -159,8 +174,8 @@ pub fn list_spaces() -> Result<Vec<(String, String, bool)>> {
     Ok(result)
 }
 
-fn space_path(space_val: &toml::Value) -> Result<PathBuf> {
-    let path_str = space_val
+fn mailbox_path(mailbox_val: &toml::Value) -> Result<PathBuf> {
+    let path_str = mailbox_val
         .get("path")
         .and_then(|v| v.as_str())
         .unwrap_or("");

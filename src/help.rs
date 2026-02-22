@@ -16,7 +16,6 @@ const COMMANDS: &[(&str, &str)] = &[
     ("add-label LABEL --account NAME", "Add a label to an account's sync config"),
     ("contact-add NAME --email EMAIL", "Add a contact with context docs"),
     ("watch [--interval N]", "Poll IMAP and sync on an interval"),
-    ("spaces", "List configured spaces"),
     ("find-unanswered [--from NAME]", "Find threads awaiting a reply"),
     ("validate-draft FILE [FILE...]", "Validate draft markdown files"),
     ("audit-docs", "Audit instruction files"),
@@ -25,6 +24,7 @@ const COMMANDS: &[(&str, &str)] = &[
 ];
 
 const MAILBOX_COMMANDS: &[(&str, &str)] = &[
+    ("mailbox list", "List registered mailboxes"),
     ("mailbox add NAME --label LABEL", "Add a mailbox (--github for shared repo)"),
     ("mailbox sync [NAME]", "Push/pull shared mailboxes"),
     ("mailbox status", "Check for pending changes"),

@@ -122,7 +122,7 @@ pub fn run(
     github_user: &str,
     name: &str,
     sync: bool,
-    space: &str,
+    mailbox: &str,
     force: bool,
     with_skill: bool,
 ) -> Result<()> {
@@ -183,11 +183,11 @@ pub fn run(
         crate::skill::install("email", &path)?;
     }
 
-    // 7. Register space in app config
-    app_config::add_space(space, &path.to_string_lossy())?;
+    // 7. Register mailbox in app config
+    app_config::add_mailbox(mailbox, &path.to_string_lossy())?;
     println!(
-        "Registered space '{}' \u{2192} {}",
-        space,
+        "Registered mailbox '{}' \u{2192} {}",
+        mailbox,
         path.display()
     );
 

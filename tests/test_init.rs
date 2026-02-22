@@ -14,7 +14,7 @@ use corrkit::accounts::{load_accounts, load_owner};
 static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 /// Run init::run with HOME set to the temp dir parent, so
-/// app_config::add_space writes to an isolated config.
+/// app_config::add_mailbox writes to an isolated config.
 #[allow(clippy::too_many_arguments)]
 fn run_init_isolated(
     tmp: &TempDir,
@@ -25,7 +25,7 @@ fn run_init_isolated(
     labels: &str,
     github_user: &str,
     name: &str,
-    space: &str,
+    mailbox: &str,
     force: bool,
 ) -> anyhow::Result<()> {
     let _lock = ENV_MUTEX.lock().unwrap();
@@ -34,7 +34,7 @@ fn run_init_isolated(
     let result = corrkit::init::run(
         user, path, provider, password_cmd, labels, github_user, name,
         false, // sync
-        space, force,
+        mailbox, force,
         false, // with_skill
     );
     // Restore HOME
@@ -52,7 +52,7 @@ fn test_init_creates_directory_structure() {
     run_init_isolated(
         &tmp, &path, "test@example.com", "gmail", "",
         "correspondence", "testgh", "Test User",
-        "test-init-space", true,
+        "test-init-mb", true,
     )
     .unwrap();
 
@@ -81,7 +81,7 @@ fn test_init_corrkit_toml_content() {
     run_init_isolated(
         &tmp, &path, "alice@gmail.com", "gmail",
         "pass show email/personal", "inbox, sent",
-        "alicegh", "Alice", "test-init-acct", true,
+        "alicegh", "Alice", "test-init-mb-acct", true,
     )
     .unwrap();
 
@@ -105,7 +105,7 @@ fn test_init_with_custom_provider() {
 
     run_init_isolated(
         &tmp, &path, "user@proton.me", "protonmail-bridge",
-        "", "correspondence", "", "", "test-init-pm", true,
+        "", "correspondence", "", "", "test-init-mb-pm", true,
     )
     .unwrap();
 
@@ -124,7 +124,7 @@ fn test_init_labels_parsing() {
     run_init_isolated(
         &tmp, &path, "user@example.com", "imap",
         "", "inbox, sent, important", "", "",
-        "test-init-labels", true,
+        "test-init-mb-labels", true,
     )
     .unwrap();
 
@@ -148,7 +148,7 @@ fn test_init_force_overwrites() {
     run_init_isolated(
         &tmp, &path, "new@example.com", "gmail",
         "", "correspondence", "", "",
-        "test-init-force", true,
+        "test-init-mb-force", true,
     )
     .unwrap();
 
@@ -165,7 +165,7 @@ fn test_init_tilde_expansion() {
     run_init_isolated(
         &tmp, &path, "user@example.com", "gmail",
         "", "correspondence", "", "",
-        "test-init-tilde", true,
+        "test-init-mb-tilde", true,
     )
     .unwrap();
 
@@ -180,7 +180,7 @@ fn test_init_empty_labels() {
     run_init_isolated(
         &tmp, &path, "user@example.com", "gmail",
         "", "", "", "",
-        "test-init-emptylbl", true,
+        "test-init-mb-emptylbl", true,
     )
     .unwrap();
 
@@ -201,7 +201,7 @@ fn test_init_gitignore_in_git_repo() {
     run_init_isolated(
         &tmp, &path, "user@example.com", "gmail",
         "", "correspondence", "", "",
-        "test-init-gitignore", true,
+        "test-init-mb-gitignore", true,
     )
     .unwrap();
 
@@ -217,7 +217,7 @@ fn test_init_no_gitignore_without_git() {
     run_init_isolated(
         &tmp, &path, "user@example.com", "gmail",
         "", "correspondence", "", "",
-        "test-init-nogit", true,
+        "test-init-mb-nogit", true,
     )
     .unwrap();
 
@@ -234,7 +234,7 @@ fn test_init_with_skill() {
     std::env::set_var("HOME", tmp.path().to_string_lossy().as_ref());
     let result = corrkit::init::run(
         "user@example.com", &path, "gmail", "", "correspondence", "", "",
-        false, "test-init-skill", true,
+        false, "test-init-mb-skill", true,
         true, // with_skill
     );
     if let Some(h) = old_home {

@@ -40,7 +40,7 @@ and pushes routing intelligence to Cloudflare.
 The data directory is resolved at runtime in this order:
 1. `correspondence/` directory in current working directory (developer workflow)
 2. `CORRKIT_DATA` environment variable
-3. App config space (see §2.4)
+3. App config mailbox (see §2.4)
 4. `~/Documents/correspondence` (hardcoded fallback)
 
 ### 2.3 Config Directory
@@ -56,13 +56,13 @@ Location: `{platformdirs.user_config_dir("corrkit")}/config.toml`
 - macOS: `~/Library/Application Support/corrkit/config.toml`
 - Windows: `%APPDATA%/corrkit/config.toml`
 
-Stores named spaces (data directory references) and a default. Used in resolution step 3.
+Stores named mailboxes (data directory references) and a default. Used in resolution step 3.
 
-Space resolution (when no explicit name given):
-1. `default_space` set → use that space
-2. Exactly one space → use it implicitly
-3. Multiple spaces, no default → error with list
-4. No spaces → return None (fall through to step 4)
+Mailbox resolution (when no explicit name given):
+1. `default_mailbox` set → use that mailbox
+2. Exactly one mailbox → use it implicitly
+3. Multiple mailboxes, no default → error with list
+4. No mailboxes → return None (fall through to step 4)
 
 ## 3. File Formats
 
@@ -213,20 +213,22 @@ Generated after each sync by scanning conversation files and matching sender ema
 ### 3.8 config.toml (App Config)
 
 ```toml
-default_space = "personal"
+default_mailbox = "personal"
 
-[spaces.personal]
+[mailboxes.personal]
 path = "~/Documents/correspondence"
 
-[spaces.work]
+[mailboxes.work]
 path = "~/work/correspondence"
 ```
 
 Top-level fields:
-- `default_space`: name of the default space (set automatically to the first space added)
+- `default_mailbox`: name of the default mailbox (set automatically to the first mailbox added)
 
-Space fields:
+Mailbox fields:
 - `path`: absolute or `~`-relative path to a correspondence data directory
+
+Backward compat: if `[mailboxes]` is missing but `[spaces]` exists, reads from `[spaces]` (and `default_space`).
 
 ## 4. Algorithms
 
@@ -291,7 +293,7 @@ After sync, scan all `.md` files in `conversations/`:
 ```
 corrkit init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
              [--password-cmd CMD] [--labels LABEL,...] [--github-user USER]
-             [--name NAME] [--space-name NAME] [--sync] [--force]
+             [--name NAME] [--mailbox-name NAME] [--sync] [--force]
 ```
 
 - `PATH`: project directory (default: `.` — current directory)
@@ -300,12 +302,12 @@ corrkit init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
 - Installs `voice.md` at `{path}/correspondence/` if not present
 - If inside a git repo: adds `correspondence` to `.gitignore`
 - `--with-skill`: install the email skill to `.claude/skills/email/`
-- Registers the project dir as a named space in app config
+- Registers the project dir as a named mailbox in app config
 - `--force`: overwrite existing config; without it, exit 1 if `.corrkit.toml` exists
 - `--sync`: set `CORRKIT_DATA` env, run sync
 - `--provider`: `gmail` (default), `protonmail-bridge`, `imap`
 - `--labels`: default `correspondence` (comma-separated)
-- `--space-name`: space name to register (default: `"default"`)
+- `--mailbox-name`: mailbox name to register (default: `"default"`)
 
 ### 5.1.1 install-skill
 
@@ -513,21 +515,21 @@ Validates draft files. Checks: subject heading, required fields (To), recommende
 
 Exit code: 0 if all valid, 1 if any errors.
 
-### 5.19 spaces
+### 5.19 mailbox list
 
 ```
-corrkit spaces
+corrkit mailbox list
 ```
 
-Lists all configured spaces with paths. Marks the default space. If no spaces configured, prints setup instructions.
+Lists all registered mailboxes with paths. Marks the default mailbox. If no mailboxes configured, prints setup instructions.
 
-### 5.20 Global `--space` Flag
+### 5.20 Global `--mailbox` Flag
 
 ```
-corrkit --space NAME <subcommand> [args...]
+corrkit --mailbox NAME <subcommand> [args...]
 ```
 
-Available on all commands. Resolves the named space via app config and sets `CORRKIT_DATA` before dispatching to the subcommand.
+Available on all commands. Resolves the named mailbox via app config and sets `CORRKIT_DATA` before dispatching to the subcommand.
 
 ### 5.21 migrate
 

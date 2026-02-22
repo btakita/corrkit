@@ -4,9 +4,9 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "corrkit", version, about = "Sync email threads from IMAP to Markdown, draft replies, manage mailboxes", disable_help_subcommand = true)]
 pub struct Cli {
-    /// Use a named space from app config
+    /// Use a named mailbox from app config
     #[arg(long, global = true)]
-    pub space: Option<String>,
+    pub mailbox: Option<String>,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -52,9 +52,9 @@ pub enum Commands {
         #[arg(long)]
         sync: bool,
 
-        /// Space name to register
-        #[arg(long = "space-name", default_value = "default")]
-        space_name: String,
+        /// Mailbox name to register
+        #[arg(long = "mailbox-name", default_value = "default")]
+        mailbox_name: String,
 
         /// Overwrite existing .corrkit.toml
         #[arg(long)]
@@ -120,9 +120,6 @@ pub enum Commands {
         #[arg(long)]
         interval: Option<u64>,
     },
-
-    /// List configured spaces
-    Spaces,
 
     /// Install an agent skill
     InstallSkill {
@@ -253,6 +250,9 @@ pub enum MailboxCommands {
         #[arg(long)]
         rename_repo: bool,
     },
+
+    /// List registered mailboxes
+    List,
 
     /// Pull, regenerate templates, commit & push
     Reset {

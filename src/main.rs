@@ -6,13 +6,13 @@ use corrkit::cli::{Cli, Commands, MailboxCommands, SyncCommands};
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Handle --space: resolve named space and set CORRKIT_DATA
-    if let Some(ref space_name) = cli.space {
-        let path = corrkit::app_config::resolve_space(Some(space_name))?;
+    // Handle --mailbox: resolve named mailbox and set CORRKIT_DATA
+    if let Some(ref mailbox_name) = cli.mailbox {
+        let path = corrkit::app_config::resolve_mailbox(Some(mailbox_name))?;
         if let Some(p) = path {
             std::env::set_var("CORRKIT_DATA", p.to_string_lossy().as_ref());
         } else {
-            eprintln!("No spaces configured. Run 'corrkit init' first.");
+            eprintln!("No mailboxes configured. Run 'corrkit init' first.");
             std::process::exit(1);
         }
     }
@@ -28,7 +28,7 @@ fn main() -> Result<()> {
             github_user,
             name,
             sync,
-            space_name,
+            mailbox_name,
             force,
         } => corrkit::init::run(
             &user,
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
             &github_user,
             &name,
             sync,
-            &space_name,
+            &mailbox_name,
             force,
             with_skill,
         ),
@@ -62,7 +62,6 @@ fn main() -> Result<()> {
         } => corrkit::contact::add::run(&name, &emails, &labels, &account),
         Commands::Watch { interval } => corrkit::watch::run(interval),
         Commands::InstallSkill { name } => corrkit::skill::run(&name),
-        Commands::Spaces => corrkit::spaces::run(),
         Commands::AuditDocs => corrkit::audit_docs::run(),
         Commands::Help { filter } => corrkit::help::run(filter.as_deref()),
         Commands::FindUnanswered { from_name } => {
@@ -70,6 +69,7 @@ fn main() -> Result<()> {
         }
         Commands::ValidateDraft { files } => corrkit::mailbox::validate_draft::run(&files),
         Commands::Mailbox(cmd) => match cmd {
+            MailboxCommands::List => corrkit::mailbox::list::run(),
             MailboxCommands::Add {
                 name,
                 labels,

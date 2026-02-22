@@ -141,8 +141,8 @@ corrkit find-unanswered                   # Find threads awaiting a reply
 corrkit validate-draft FILE               # Validate draft markdown files
 corrkit watch                             # Poll IMAP and sync on an interval
 corrkit watch --interval 60               # Override poll interval (seconds)
-corrkit spaces                            # List configured spaces
-corrkit --space work sync                 # Sync a specific space
+corrkit mailbox list                     # List registered mailboxes
+corrkit --mailbox work sync              # Sync a specific mailbox
 corrkit audit-docs                        # Audit instruction files for staleness
 corrkit help                              # Show command reference
 ```
@@ -150,24 +150,24 @@ corrkit help                              # Show command reference
 Windows users can download `.zip` from [GitHub Releases](https://github.com/btakita/corrkit/releases)
 or build from source with `cargo install --path .`.
 
-### Spaces
+### Multiple mailboxes
 
-Manage multiple correspondence directories (personal, work, etc.) with named spaces:
+Manage multiple correspondence directories (personal, work, etc.) with named mailboxes:
 
 ```sh
-# Init creates a space automatically
+# Init registers a mailbox automatically
 corrkit init --user you@gmail.com                                   # init in cwd
-corrkit init --user work@company.com ~/work/project --space-name work  # init at path
+corrkit init --user work@company.com ~/work/project --mailbox-name work  # init at path
 
-# List configured spaces
-corrkit spaces
+# List registered mailboxes
+corrkit mailbox list
 
-# Use a specific space for any command
-corrkit --space work sync
-corrkit --space personal mailbox status
+# Use a specific mailbox for any command
+corrkit --mailbox work sync
+corrkit --mailbox personal mailbox status
 ```
 
-Spaces are stored in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), or `%APPDATA%/corrkit/config.toml` (Windows). The first space added becomes the default. With one space configured, `--space` is optional.
+Mailboxes are stored in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), or `%APPDATA%/corrkit/config.toml` (Windows). The first mailbox added becomes the default. With one mailbox configured, `--mailbox` is optional.
 
 Synced threads are written to `correspondence/conversations/[slug].md` (flat, one file per thread). Labels and accounts are metadata inside each file. A `manifest.toml` index is generated after each sync.
 

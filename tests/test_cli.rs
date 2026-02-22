@@ -45,9 +45,9 @@ fn test_cli_help_subcommand() {
 }
 
 #[test]
-fn test_cli_spaces_subcommand() {
+fn test_cli_mailbox_list_subcommand() {
     let mut cmd = corrkit_cmd();
-    cmd.arg("spaces");
+    cmd.args(["mailbox", "list"]);
     // May succeed or fail depending on config, but should not panic
     let output = cmd.output().unwrap();
     assert!(output.status.code().is_some());

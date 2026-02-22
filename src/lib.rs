@@ -9,7 +9,6 @@ pub mod mailbox;
 pub mod migrate;
 pub mod resolve;
 pub mod skill;
-pub mod spaces;
 pub mod sync;
 pub mod util;
 pub mod watch;

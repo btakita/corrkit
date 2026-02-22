@@ -3,7 +3,7 @@
 //! Resolution order for data directory:
 //!   1. correspondence/ in cwd (developer workflow)
 //!   2. CORRKIT_DATA environment variable
-//!   3. App config space (via app_config::resolve_space)
+//!   3. App config mailbox (via app_config::resolve_mailbox)
 //!   4. ~/Documents/correspondence (general user default)
 
 use std::path::PathBuf;
@@ -19,9 +19,9 @@ pub fn data_dir() -> PathBuf {
             return PathBuf::from(env);
         }
     }
-    // Try app config space
-    if let Ok(Some(space_path)) = crate::app_config::resolve_space(None) {
-        return space_path;
+    // Try app config mailbox
+    if let Ok(Some(mailbox_path)) = crate::app_config::resolve_mailbox(None) {
+        return mailbox_path;
     }
     home_dir().join("Documents").join("correspondence")
 }
