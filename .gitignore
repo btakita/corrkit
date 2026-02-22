@@ -1,12 +1,22 @@
 .env
 accounts.toml
-contacts.toml
+credentials.json
+*.credentials.json
 AGENTS.local.md
 CLAUDE.local.md
-correspondence
-*.credentials.json
-credentials.json
-.venv/
-__pycache__/
+plan.md
+research.md
+mail
 .idea/
 tmp/
+
+# Rust
+target/
+.bin/
+
+# Skills / agent tools
+.agents/
+.junie/
+.kilocode/
+skills/
+skills-lock.json

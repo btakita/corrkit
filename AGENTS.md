@@ -1,104 +1,24 @@
 # Correspondence Kit
 
-## Tech Stack
-
-- **Runtime**: Python 3.11+ via `uv`
-- **Linter/formatter**: `ruff`
-- **Type checker**: `ty`
-- **Types/serialization**: `msgspec` (Struct instead of dataclasses)
-- **Storage**: Markdown files (one flat directory, one file per conversation thread)
-- **Sources**: Any IMAP provider (Gmail, Protonmail Bridge, generic IMAP); Slack and social media planned
-- **Cloudflare** (routing layer): TypeScript Workers reading from D1/KV populated by Python
-
 ## Two Repos
 
-**corrkit** is the tool — Python source, tests, config templates. It is a public repo.
+**corky** is the tool — Rust source, tests, config templates. It is a public repo.
 
-**correspondence** is the data — synced threads, drafts, contacts, collaborator submodules.
-It is a separate, private repo. corrkit accesses it via a `correspondence/` path in the
+**mail** is the data — synced threads, drafts, contacts, mailboxes.
+It is a separate, private repo. corky accesses it via a `mail/` path in the
 working directory, which can be either:
 
-- A **symlink** to an external clone (e.g. `correspondence -> ~/data/correspondence`)
-- A **subdirectory** or nested clone inside the corrkit checkout
+- A **symlink** to an external clone (e.g. `mail -> ~/data/mail`)
+- A **subdirectory** or nested clone inside the corky checkout
 
-**Developer workflow:** `correspondence/` exists at the working directory root (symlink or subdirectory).
-The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
+**Developer workflow:** `mail/` exists at the working directory root (symlink or subdirectory).
+The `mail` entry in `.gitignore` keeps the data repo out of corky's git history.
 
-**General user workflow:** `corrkit init --user EMAIL` creates `~/Documents/correspondence` with
-config and data, and registers it as a named space. Commands find the data dir via the resolution
-order in `src/resolve.py`: local `correspondence/`, `CORRKIT_DATA` env, app config space,
-`~/Documents` fallback. Use `--space NAME` to select a specific space.
-
-## Project Structure
-
-```
-./                                 # Tool repo (this repo)
-  AGENTS.md                        # Project instructions (CLAUDE.md symlinks here)
-  SPECS.md                         # Functional specification (for Rust port)
-  pyproject.toml
-  voice.md                         # Writing voice guidelines (committed)
-  accounts.toml                    # Multi-account IMAP config (gitignored)
-  accounts.toml.example            # Template with provider presets (committed)
-  contacts.toml                    # Contact metadata (gitignored)
-  contacts.toml.example            # Template (committed)
-  collaborators.toml               # Collaborator config (committed)
-  .env                             # Legacy credentials fallback (gitignored)
-  .claude/
-    skills/
-      email/
-        SKILL.md                   # Email drafting & management skill
-        find_unanswered.py         # Find threads needing a reply
-  src/
-    resolve.py                     # Path resolution (data dir, config dir)
-    init.py                        # Initialize a new data directory
-    app_config.py                  # App config (spaces, config.toml)
-    spaces.py                      # spaces command
-    accounts.py                    # Account config parser (accounts.toml)
-    sync/
-      imap.py                      # Multi-account IMAP sync logic
-      types.py                     # msgspec Structs
-      auth.py                      # One-time Gmail OAuth flow
-    draft/
-      push.py                      # Push draft to email (draft or send)
-    collab/
-      __init__.py                  # Collaborator config parser
-      add.py                       # for add command
-      sync.py                      # for sync / for status commands
-      remove.py                    # for remove command
-      rename.py                    # for rename command
-      reset.py                     # for reset command
-      find_unanswered.py           # by find-unanswered command
-      validate_draft.py            # by validate-draft command
-    contact/
-      __init__.py                  # Contact config parser
-      add.py                       # contact-add command
-    cloudflare/
-      __init__.py                  # Push intelligence to Cloudflare (planned)
-    watch.py                       # IMAP polling daemon (corrkit watch)
-  services/
-    corrkit-watch.service          # systemd user unit template
-    com.corrkit.watch.plist        # launchd agent template
-  tests/
-
-correspondence/                    # Data repo (separate, gitignored)
-  conversations/                   # Synced threads (flat, one file per thread)
-    [subject-slug].md              # Immutable filename, mtime = last message date
-  contacts/                        # Per-contact context docs
-    [name]/
-      AGENTS.md                    # Relationship, tone, topics, notes
-      CLAUDE.md                    # Symlink → AGENTS.md
-  drafts/                          # Outgoing email drafts
-    [YYYY-MM-DD]-[subject].md
-  for/                             # Collaborator submodules (outgoing)
-    [gh-user]/                     # submodule → {owner}/to-{collab-gh}
-      conversations/*.md
-      drafts/*.md
-      AGENTS.md
-      voice.md
-  by/                              # Collaborator submodules (incoming, planned)
-  manifest.toml                    # Thread index (generated by sync)
-  .sync-state.json                 # IMAP sync state
-```
+**General user workflow:** `corky init --user EMAIL` creates `mail/` in the current
+directory with config inside it, and registers the project dir as a named mailbox.
+Commands find the data dir via the resolution order in `src/resolve.rs`: local `mail/`,
+`CORKY_DATA` env, app config mailbox, `~/Documents` fallback. Use `--mailbox NAME` to select a
+specific mailbox.
 
 ## Writing Voice
 
@@ -112,101 +32,66 @@ See `voice.md` (committed) for tone, style, and formatting guidelines.
 
 ## Environment Setup
 
-**New user (general):**
+**New user (quick install):**
 ```sh
-pip install corrkit   # or: uvx corrkit init --user you@gmail.com
-corrkit init --user you@gmail.com
+curl -sSf https://raw.githubusercontent.com/btakita/corky/main/install.sh | sh
+corky init --user you@gmail.com
+```
+
+**New user (from source):**
+```sh
+cargo install --path .
+corky init --user you@gmail.com
 ```
 
 **Developer (from repo checkout):**
 ```sh
-cp accounts.toml.example accounts.toml   # configure your email accounts
-uv sync
+cp .corky.toml.example mail/.corky.toml   # configure your email accounts
+make release                                              # build + symlink to .bin/corky
 ```
 
-See README.md for full config reference (accounts.toml, contacts.toml, Gmail OAuth).
+See README.md for full config reference (.corky.toml, Gmail OAuth).
 
 ## Sync Behavior
 
 - **Immutable filenames**: Slug derived from subject on first write, never changes.
   Thread identity tracked by `**Thread ID**` metadata inside the file.
-- **File mtime**: Set to last message date via `os.utime()`.
+- **File mtime**: Set to last message date via `libc::utime()`.
 - **Multi-label accumulation**: Thread fetched from multiple labels/accounts accumulates all in metadata.
-- **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json`. `--full` re-fetches everything.
+- **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json`. `sync full` re-fetches everything.
 - **Streaming writes**: Each message merged immediately. If sync crashes, state is not saved; next run re-fetches.
-- **Shared label routing**: Labels in `collaborators.toml` route to `correspondence/for/{gh-user}/conversations/`.
-  Supports `account:label` syntax for per-label account binding.
+- **Shared label routing**: Labels in `[routing]` section of `.corky.toml` route to `mail/mailboxes/{name}/conversations/`.
+  One label can fan-out to multiple mailboxes.
 - **Dedup**: Messages deduplicated by `(sender, date)` tuple when merging into existing files.
 - **Slug collisions**: Different threads with same slug get `-2`, `-3` suffix.
-- **Orphan cleanup**: On `--full`, files not touched during sync are deleted.
+- **Orphan cleanup**: On `sync full`, files not touched during sync are deleted.
 
-## Conversation Markdown Format
+## File Formats
 
-```markdown
-# [Subject]
+See README.md for conversation markdown format, draft format, and status values.
 
-**Labels**: [label1, label2]
-**Accounts**: [account1, account2]
-**Thread ID**: [thread key]
-**Last updated**: [RFC 2822 date]
+## Mailbox Config
 
----
-
-## [Sender Name] — [Date]
-
-[Body text]
-
----
-
-## [Reply sender] — [Date]
-
-[Body text]
-```
-
-## Draft Format
-
-Drafts live in `correspondence/drafts/` (private) or `correspondence/for/{gh-user}/drafts/` (collaborator).
-Filename convention: `[YYYY-MM-DD]-[slug].md`.
-
-```markdown
-# [Subject]
-
-**To**: [recipient]
-**CC**: (optional)
-**Status**: draft
-**Author**: brian
-**Account**: (optional — account name from accounts.toml, e.g. "personal")
-**From**: (optional — email address, used to resolve account if Account not set)
-**In-Reply-To**: (optional — message ID)
-
----
-
-[Draft body]
-```
-
-Status values: `draft` -> `review` -> `approved` -> `sent`
-
-## Collaborators Config
-
-The TOML section key is the collaborator's GitHub username. `repo` is auto-derived as
-`{owner_gh}/to-{collab_gh}` if omitted.
+Use `[routing]` for label-to-mailbox mapping and `[mailboxes.*]` for per-mailbox settings in `.corky.toml`:
 
 ```toml
-[alex-gh]
-labels = ["for-alex"]
-name = "Alex"
-account = "personal"                    # optional — bind ALL plain labels to one account
+[routing]
+for-alex = ["mailboxes/alex"]
+shared = ["mailboxes/alice", "mailboxes/bob"]
 
-[bot-agent]
-labels = ["for-bot", "proton-dev:INBOX"]   # account:label scopes to one account
+[mailboxes.alex]
+auto_send = false
+
+[mailboxes.bob]
+auto_send = true
 ```
 
-**Label scoping**: `account:label` syntax binds a label to one account.
-Plain labels use the collaborator-level `account` field, or match all accounts if unset.
+**Label scoping**: `account:label` syntax binds a label to one account (e.g. `"proton-dev:INBOX"`).
+Plain labels match all accounts.
 
 ## Package-Level Instruction Files
 
-Each subpackage can contain its own `AGENTS.md` with package-specific conventions.
+Each module directory can contain its own `AGENTS.md` with package-specific conventions.
 Keep the root `AGENTS.md` focused on cross-cutting concerns.
 
 **Dual-name convention:** `AGENTS.md` is canonical (committed). `CLAUDE.md` is a symlink.
@@ -220,31 +105,36 @@ update instruction files as part of the same change.
 
 **Stay concise.** Combined root + package files should stay well under 1000 lines.
 
+## Workflow
+
+Follow a research → plan → implement cycle. Never write code until the plan is reviewed.
+([Reference](https://boristane.com/blog/how-i-use-claude-code/))
+
+1. **Research** — Read the relevant code deeply. Document findings in `research.md`.
+   Iterate with the user until misunderstandings are resolved.
+2. **Plan** — Write a detailed implementation plan in `plan.md` with file paths and
+   code snippets. Reference existing patterns in the codebase as guides. Iterate with
+   the user — they add inline notes, reject approaches, inject domain knowledge.
+   Repeat until the plan is solid ("don't implement yet").
+3. **Todo** — Produce a granular todo list from the approved plan before writing any code.
+4. **Implement** — Execute the plan. Mark completed tasks, maintain strict typing,
+   and continuously run checks (`make check`). Terse single-sentence feedback is fine
+   during this phase.
+5. **Precommit** — Run `make precommit` and `corky audit-docs` before committing.
+
 ## Conventions
 
-- Use `uv run` for script execution, never bare `python`
-- Use `msgspec.Struct` for all data types — not dataclasses or TypedDict
-- Use `ruff` for linting and formatting
-- Use `ty` for type checking
-- Keep sync, draft, and cloudflare logic in separate subpackages
-- Do not commit `.env`, `accounts.toml`, `contacts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `correspondence`
-- Scripts must be runnable directly: `uv run src/sync/imap.py`
+- Use `make check` (clippy + test), `make release` (build + .bin symlink) for development
+- Use `serde` derive for all data types
+- Use `anyhow` for application errors, `thiserror` for domain errors
+- Use `toml_edit` for format-preserving TOML edits (add-label)
+- Use `std::process::Command` for git operations (not `git2`)
+- Use `regex` + `once_cell::Lazy` for compiled regex patterns
+- Keep sync, draft, mailbox, contact logic in separate modules
+- Do not commit `.env`, `accounts.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `mail`
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes
-- Update `SPECS.md` when corrkit functionality changes (commands, formats, algorithms)
-- Commits must be clean — no dangling unstaged files. When splitting work across commits, stage all related files (including generated files like `uv.lock`)
+- Update `SPECS.md` when corky functionality changes (commands, formats, algorithms)
+- Commits must be clean — no dangling unstaged files. When splitting work across commits, stage all related files (including `Cargo.lock`)
 
-## .gitignore
-
-```
-.env
-accounts.toml
-contacts.toml
-CLAUDE.local.md
-AGENTS.local.md
-correspondence
-*.credentials.json
-.venv/
-__pycache__/
-```

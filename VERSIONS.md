@@ -1,24 +1,37 @@
 # Versions
 
-Corrkit is alpha software. Expect breaking changes between minor versions.
+Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
+
+## 0.7.0
+
+BREAKING CHANGE: Rust rewrite. Complete port from Python to Rust.
+
+- **Rust rewrite**: All ~3,750 LOC of Python replaced with ~6,700 LOC of Rust. Single crate, no workspace. All 25 CLI commands ported with identical behavior and file formats.
+- **BREAKING CHANGE: Python removal**: `pyproject.toml`, `uv.lock`, and all `.py` files removed. Install via `cargo install corky` instead of `pip install corky`.
+- **Dependencies**: clap (CLI), serde/toml/toml_edit (config), imap/native-tls (IMAP), mailparse (email parsing), lettre (SMTP), chrono (dates), directories (platform dirs), tokio (watch daemon), anyhow/thiserror (errors).
+- **Format-preserving TOML**: `add-label` now uses `toml_edit` crate (cleaner than Python's regex approach).
+- **Gmail OAuth**: Stub that prints instructions to use Python `corky sync-auth` for one-time setup. Full OAuth port deferred.
+- **No behavioral changes**: All file formats, sync algorithms, collaborator workflows, and CLI interfaces are identical to 0.6.1. Existing `mail/` data repos are fully compatible.
+
+**Migration from 0.6.x**: Uninstall Python corky (`pip uninstall corky`), install Rust binary (`cargo install corky` or download from releases). No data migration needed — all file formats are unchanged.
 
 ## 0.6.1
 
 Lower Python requirement to 3.11+, app config with multi-space support.
 
 - **Python 3.11+**: Lowered minimum from 3.12. No 3.12-specific features were used; `tomllib` and `datetime.UTC` (3.11+) are the actual floor.
-- **App config (`src/app_config.py`)**: New module for persistent configuration via `platformdirs`. Stores named spaces in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), `%APPDATA%/corrkit/config.toml` (Windows).
-- **Spaces**: `corrkit spaces` lists configured spaces. `corrkit init` registers a space automatically. `corrkit --space NAME <cmd>` selects a specific space for any command.
-- **Data dir resolution updated**: New 4-step order: `correspondence/` in cwd → `CORRKIT_DATA` env → app config space → `~/Documents/correspondence` fallback.
+- **App config (`src/app_config.py`)**: New module for persistent configuration via `platformdirs`. Stores named spaces in `~/.config/corky/config.toml` (Linux), `~/Library/Application Support/corky/config.toml` (macOS), `%APPDATA%/corky/config.toml` (Windows).
+- **Spaces**: `corky spaces` lists configured spaces. `corky init` registers a space automatically. `corky --space NAME <cmd>` selects a specific space for any command.
+- **Data dir resolution updated**: New 4-step order: `mail/` in cwd → `CORKY_DATA` env → app config space → `~/Documents/mail` fallback.
 
 ## 0.6.0
 
-Path resolution, `corrkit init`, and functional specification.
+Path resolution, `corky init`, and functional specification.
 
-- **`corrkit init`**: New command to initialize a data directory for general users. `corrkit init --user you@gmail.com` creates `~/Documents/correspondence` with directory structure, `accounts.toml`, and empty config files. Supports `--provider`, `--password-cmd`, `--labels`, `--github-user`, `--name`, `--sync`, `--force`, `--data-dir` flags.
-- **Path resolution (`src/resolve.py`)**: New module centralizes all path resolution. Data directory resolves in order: `correspondence/` in cwd (developer), `CORRKIT_DATA` env, `~/Documents/correspondence` (general user). Config directory: `.` if local `correspondence/` exists, otherwise same as data dir.
+- **`corky init`**: New command to initialize a data directory for general users. `corky init --user you@gmail.com` creates `~/Documents/mail` with directory structure, `accounts.toml`, and empty config files. Supports `--provider`, `--password-cmd`, `--labels`, `--github-user`, `--name`, `--sync`, `--force`, `--data-dir` flags.
+- **Path resolution (`src/resolve.py`)**: New module centralizes all path resolution. Data directory resolves in order: `mail/` in cwd (developer), `CORKY_DATA` env, `~/Documents/mail` (general user). Config directory: `.` if local `mail/` exists, otherwise same as data dir.
 - **BREAKING CHANGE: Removed module-level path constants**: `CONFIG_PATH` removed from `accounts.py`, `collab/__init__.py`, `contact/__init__.py`. `CONTACTS_DIR` removed from `contact/add.py`. `STATE_FILE` and `CONVERSATIONS_DIR` removed from `sync/imap.py`. `CREDENTIALS_FILE` removed from `sync/auth.py`. `VOICE_FILE` removed from `collab/add.py`, `collab/sync.py`, `collab/reset.py`. `_DIR_PREFIXES` removed from `collab/rename.py`. All replaced by `resolve.*()` function calls. Tests that monkeypatched these constants must now patch `resolve.<function>` instead.
 - **`SPECS.md`**: Language-independent functional specification for an eventual Rust port. Covers file formats, algorithms (slugify, thread key, dedup, label routing), all 18 commands, sync algorithm, collaborator lifecycle, provider presets.
 
@@ -28,23 +41,23 @@ Path resolution, `corrkit init`, and functional specification.
 
 Directional collaborator repos, nested CLI, owner identity, GitHub username keys.
 
-- **Rename `shared/` to `for/{gh-user}/`**: Collaborator submodules now live under `for/{github_user}/` instead of `shared/{name}/`. Repo naming: `{owner}/to-{collab-gh}`. This supports multi-user corrkit setups where each party has directional directories (`for/` outgoing, `by/` incoming).
+- **Rename `shared/` to `for/{gh-user}/`**: Collaborator submodules now live under `for/{github_user}/` instead of `shared/{name}/`. Repo naming: `{owner}/to-{collab-gh}`. This supports multi-user corky setups where each party has directional directories (`for/` outgoing, `by/` incoming).
 - **BREAKING CHANGE: `collab-*` → `for *` / `by *`**: Flat `collab-add`, `collab-sync`, `collab-remove`, `collab-rename`, `collab-reset`, `collab-status` replaced with nested `for add`, `for sync`, `for remove`, `for rename`, `for reset`, `for status`. `find-unanswered` and `validate-draft` moved to `by find-unanswered` and `by validate-draft`. Standalone `find-unanswered` and `validate-draft` entry points kept for `uvx` use.
 - **Owner identity**: New `[owner]` section in `accounts.toml` with `github_user` and optional `name`. Required for collaborator features.
 - **GitHub username as collaborator key**: `collaborators.toml` section keys are now GitHub usernames (was display names). `github_user` is derived from the key. Optional `name` field stores display name.
 - **Auto-derived repo**: `repo` field in `collaborators.toml` is auto-derived as `{owner_gh}/to-{collab_gh}` if omitted.
 - **`for add` CLI change** (was `collab-add`): Positional arg is now `GITHUB_USER` (was `NAME`). `--github-user` flag removed (redundant). Added `--name` flag for display name.
 - **Parameterized templates**: AGENTS.md and README.md templates use owner name from config instead of hardcoded "Brian".
-- Help output now groups commands into sections: corrkit commands, collaborator commands (for/by), dev commands.
+- Help output now groups commands into sections: corky commands, collaborator commands (for/by), dev commands.
 - `.gitignore`: `shared/` replaced with `for/` and `by/`.
 
-**Migration from 0.4.x**: Remove existing `shared/` submodules (`git submodule deinit -f shared/{name} && git rm -f shared/{name}`), update `collaborators.toml` keys to GitHub usernames, add `[owner]` section to `accounts.toml`, re-add collaborators with `corrkit for add`. Replace `collab-*` with `for *` and `find-unanswered` / `validate-draft` with `by find-unanswered` / `by validate-draft` in scripts and aliases. Run `for reset` to update shared repo templates.
+**Migration from 0.4.x**: Remove existing `shared/` submodules (`git submodule deinit -f shared/{name} && git rm -f shared/{name}`), update `collaborators.toml` keys to GitHub usernames, add `[owner]` section to `accounts.toml`, re-add collaborators with `corky for add`. Replace `collab-*` with `for *` and `find-unanswered` / `validate-draft` with `by find-unanswered` / `by validate-draft` in scripts and aliases. Run `for reset` to update shared repo templates.
 
 ## 0.4.1
 
 Add-label command and audit-docs fixes.
 
-- `corrkit add-label LABEL --account NAME`: Add a label to an account's sync config via text-level TOML edit (preserves comments).
+- `corky add-label LABEL --account NAME`: Add a label to an account's sync config via text-level TOML edit (preserves comments).
 - `contact-add` integration: `--label` + `--account` automatically adds label to account sync config.
 - audit-docs: Fix tree parser for symlink-to-directory entries.
 - SKILL.md: Updated to reflect flat conversation directory, contacts, manifest.
@@ -53,13 +66,13 @@ Add-label command and audit-docs fixes.
 
 Flat conversation directory, contacts, manifest.
 
-- **Flat conversations**: All threads in `correspondence/conversations/` as `[slug].md`. No account or label subdirectories. Consolidates correspondence across multiple email accounts into one directory.
+- **Flat conversations**: All threads in `mail/conversations/` as `[slug].md`. No account or label subdirectories. Consolidates correspondence across multiple email accounts into one directory.
 - **Immutable filenames**: Slug derived from subject on first write, never changes. Thread identity tracked by `**Thread ID**` metadata.
 - **File mtime**: Set to last message date via `os.utime()`. `ls -t` sorts by thread activity.
 - **Multi-source accumulation**: Threads fetched from multiple labels or accounts accumulate all sources in `**Labels**` and `**Accounts**` metadata.
 - **Orphan cleanup**: `--full` sync deletes files not touched during the run.
 - **manifest.toml**: Generated after sync. Indexes threads by labels, accounts, contacts, and last-updated date.
-- **Contacts**: `contacts.toml` maps contacts to email addresses. Per-contact `AGENTS.md` in `correspondence/contacts/{name}/` provides drafting context. `corrkit contact-add` scaffolds new contacts.
+- **Contacts**: `contacts.toml` maps contacts to email addresses. Per-contact `AGENTS.md` in `mail/contacts/{name}/` provides drafting context. `corky contact-add` scaffolds new contacts.
 - **tomli-w**: Added as dependency for TOML writing.
 - Backward-compatible parsing of legacy `**Label**` format.
 
@@ -67,7 +80,7 @@ Flat conversation directory, contacts, manifest.
 
 IMAP polling daemon.
 
-- `corrkit watch` polls IMAP on an interval and syncs automatically.
+- `corky watch` polls IMAP on an interval and syncs automatically.
 - Configurable poll interval and desktop notifications via `accounts.toml` `[watch]` section.
 - systemd and launchd service templates.
 
@@ -91,9 +104,9 @@ Collaborator tooling and multi-account support.
 
 ## 0.1.0
 
-Renamed to corrkit. Unified CLI dispatcher.
+Renamed to corky. Unified CLI dispatcher.
 
-- `corrkit` CLI with subcommands.
+- `corky` CLI with subcommands.
 - `push-draft` command to create drafts or send emails from markdown.
 - Incremental IMAP sync with `--full` option.
 - Gmail sync workspace with drafting support.

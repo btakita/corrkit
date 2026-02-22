@@ -1,0 +1,479 @@
+//! IMAP connect, fetch, merge, dedup, label routing.
+
+use anyhow::Result;
+use chrono::{DateTime, Datelike, Utc};
+use imap::Session;
+use native_tls::TlsStream;
+use once_cell::sync::Lazy;
+use regex::Regex;
+use std::collections::HashSet;
+use std::net::TcpStream;
+use std::path::{Path, PathBuf};
+
+use super::markdown::{parse_thread_markdown, thread_to_markdown};
+use super::types::{AccountSyncState, LabelState, Message, SyncState, Thread};
+use crate::config::corky_config;
+use crate::resolve;
+use crate::util::{slugify, thread_key_from_subject};
+
+static THREAD_ID_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?m)^\*\*Thread ID\*\*:\s*(.+)$").unwrap());
+
+/// Extract text/plain body from a parsed email.
+fn extract_body(parsed: &mailparse::ParsedMail) -> String {
+    if parsed.subparts.is_empty() {
+        if let Ok(body) = parsed.get_body() {
+            return body;
+        }
+        return String::new();
+    }
+    for part in &parsed.subparts {
+        let ctype = part.ctype.mimetype.as_str();
+        if ctype == "text/plain" {
+            let has_disposition = part
+                .headers
+                .iter()
+                .any(|h| h.get_key_ref().eq_ignore_ascii_case("Content-Disposition"));
+            if !has_disposition {
+                if let Ok(body) = part.get_body() {
+                    return body;
+                }
+            }
+        }
+        let nested = extract_body(part);
+        if !nested.is_empty() {
+            return nested;
+        }
+    }
+    String::new()
+}
+
+/// Parse an RFC 2822 date string, falling back to epoch on failure.
+pub fn parse_msg_date(date_str: &str) -> DateTime<Utc> {
+    DateTime::parse_from_rfc2822(date_str)
+        .map(|dt| dt.with_timezone(&Utc))
+        .or_else(|_| {
+            mailparse::dateparse(date_str)
+                .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_default())
+        })
+        .unwrap_or_default()
+}
+
+/// Set file mtime to the parsed date.
+fn set_mtime(path: &Path, date_str: &str) -> Result<()> {
+    let dt = parse_msg_date(date_str);
+    if dt.year() <= 1970 {
+        return Ok(());
+    }
+    let ts = dt.timestamp();
+    #[cfg(unix)]
+    {
+        use std::ffi::CString;
+        let path_c = CString::new(path.to_string_lossy().as_bytes())?;
+        let atime = path
+            .metadata()?
+            .accessed()?
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs() as i64;
+        let times = libc::utimbuf {
+            actime: atime,
+            modtime: ts,
+        };
+        unsafe {
+            libc::utime(path_c.as_ptr(), &times);
+        }
+    }
+    Ok(())
+}
+
+/// Find an existing thread file by its Thread ID metadata.
+fn find_thread_file(out_dir: &Path, thread_id: &str) -> Option<PathBuf> {
+    if !out_dir.exists() {
+        return None;
+    }
+    for entry in std::fs::read_dir(out_dir).ok()?.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        if let Ok(text) = std::fs::read_to_string(&path) {
+            if let Some(cap) = THREAD_ID_RE.captures(&text) {
+                if cap[1].trim() == thread_id {
+                    return Some(path);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Return a slug that doesn't collide with existing files.
+fn unique_slug(out_dir: &Path, slug: &str) -> String {
+    if !out_dir.join(format!("{}.md", slug)).exists() {
+        return slug.to_string();
+    }
+    let mut n = 2;
+    while out_dir.join(format!("{}-{}.md", slug, n)).exists() {
+        n += 1;
+    }
+    format!("{}-{}", slug, n)
+}
+
+/// Merge a single message into its thread file on disk.
+///
+/// Returns the path of the written file, or None if only metadata updated.
+pub fn merge_message_to_file(
+    out_dir: &Path,
+    label_name: &str,
+    account_name: &str,
+    message: &Message,
+    thread_key: &str,
+) -> Result<Option<PathBuf>> {
+    std::fs::create_dir_all(out_dir)?;
+
+    let existing_file = find_thread_file(out_dir, thread_key);
+    let mut thread: Thread = if let Some(ref ef) = existing_file {
+        let text = std::fs::read_to_string(ef)?;
+        parse_thread_markdown(&text).unwrap_or_else(|| Thread {
+            id: thread_key.to_string(),
+            subject: message.subject.clone(),
+            ..Default::default()
+        })
+    } else {
+        Thread {
+            id: thread_key.to_string(),
+            subject: message.subject.clone(),
+            ..Default::default()
+        }
+    };
+
+    // Accumulate labels and accounts
+    if !label_name.is_empty() && !thread.labels.contains(&label_name.to_string()) {
+        thread.labels.push(label_name.to_string());
+    }
+    if !account_name.is_empty() && !thread.accounts.contains(&account_name.to_string()) {
+        thread.accounts.push(account_name.to_string());
+    }
+
+    // Deduplicate by (from, date)
+    let seen: HashSet<(&str, &str)> = thread
+        .messages
+        .iter()
+        .map(|m| (m.from.as_str(), m.date.as_str()))
+        .collect();
+    if seen.contains(&(message.from.as_str(), message.date.as_str())) {
+        // Still update labels/accounts even if message is a dupe
+        if let Some(ref ef) = existing_file {
+            std::fs::write(ef, thread_to_markdown(&thread))?;
+            let _ = set_mtime(ef, &thread.last_date);
+        }
+        return Ok(existing_file);
+    }
+
+    thread.messages.push(message.clone());
+    thread.messages.sort_by_key(|m| parse_msg_date(&m.date));
+    thread.last_date = thread
+        .messages
+        .last()
+        .map(|m| m.date.clone())
+        .unwrap_or_default();
+
+    let file_path = if let Some(ef) = existing_file {
+        ef
+    } else {
+        let slug = unique_slug(out_dir, &slugify(&thread.subject));
+        out_dir.join(format!("{}.md", slug))
+    };
+
+    std::fs::write(&file_path, thread_to_markdown(&thread))?;
+    let _ = set_mtime(&file_path, &thread.last_date);
+
+    println!(
+        "  Wrote: {}",
+        file_path.file_name().unwrap_or_default().to_string_lossy()
+    );
+    Ok(Some(file_path))
+}
+
+/// Build label→output_dirs map from .corky.toml [routing].
+///
+/// Fan-out: one label can route to multiple mailbox directories.
+/// Supports `account:label` syntax for per-account binding.
+pub fn build_label_routes(account_name: &str) -> std::collections::HashMap<String, Vec<PathBuf>> {
+    let mut routes: std::collections::HashMap<String, Vec<PathBuf>> = std::collections::HashMap::new();
+    let config = match corky_config::try_load_config(None) {
+        Some(c) => c,
+        None => return routes,
+    };
+    let data_dir = resolve::data_dir();
+    for (label_key, mailbox_paths) in &config.routing {
+        if label_key.contains(':') {
+            let parts: Vec<&str> = label_key.splitn(2, ':').collect();
+            let label_account = parts[0];
+            let label_name = parts[1];
+            if !account_name.is_empty() && label_account != account_name {
+                continue;
+            }
+            let dirs: Vec<PathBuf> = mailbox_paths
+                .iter()
+                .map(|p| data_dir.join(p).join("conversations"))
+                .collect();
+            routes.entry(label_name.to_string()).or_default().extend(dirs);
+        } else {
+            let dirs: Vec<PathBuf> = mailbox_paths
+                .iter()
+                .map(|p| data_dir.join(p).join("conversations"))
+                .collect();
+            routes.entry(label_key.clone()).or_default().extend(dirs);
+        }
+    }
+    routes
+}
+
+type ImapSession = Session<TlsStream<TcpStream>>;
+
+/// Connect to IMAP server.
+fn connect_imap(
+    host: &str,
+    port: u16,
+    starttls: bool,
+    user: &str,
+    password: &str,
+) -> Result<ImapSession> {
+    let mut tls_builder = native_tls::TlsConnector::builder();
+
+    if starttls || host == "127.0.0.1" || host == "localhost" {
+        tls_builder.danger_accept_invalid_certs(true);
+        tls_builder.danger_accept_invalid_hostnames(true);
+    }
+
+    let tls = tls_builder.build()?;
+
+    let client = if starttls {
+        imap::connect_starttls((host, port), host, &tls)?
+    } else {
+        imap::connect((host, port), host, &tls)?
+    };
+
+    let session = client.login(user, password).map_err(|e| e.0)?;
+    Ok(session)
+}
+
+/// Sync all labels for one account.
+#[allow(clippy::too_many_arguments)]
+pub fn sync_account(
+    account_name: &str,
+    host: &str,
+    port: u16,
+    starttls: bool,
+    user: &str,
+    password: &str,
+    labels: &[String],
+    sync_days: u32,
+    state: &mut SyncState,
+    full: bool,
+    base_dir: Option<&Path>,
+    mut touched: Option<&mut HashSet<PathBuf>>,
+) -> Result<()> {
+    let base_dir = base_dir
+        .map(PathBuf::from)
+        .unwrap_or_else(resolve::conversations_dir);
+    let acct_state = state
+        .accounts
+        .entry(account_name.to_string())
+        .or_default();
+
+    let routes = build_label_routes(account_name);
+
+    // Merge shared labels into sync set (preserving order, no dupes)
+    let mut all_labels: Vec<String> = Vec::new();
+    let mut seen_labels = HashSet::new();
+    for label in labels.iter().chain(routes.keys()) {
+        if seen_labels.insert(label.clone()) {
+            all_labels.push(label.clone());
+        }
+    }
+
+    if all_labels.is_empty() {
+        println!(
+            "  No labels configured for account '{}' \u{2014} skipping",
+            account_name
+        );
+        return Ok(());
+    }
+
+    println!("Connecting to {}:{} as {}", host, port, user);
+
+    let mut session = connect_imap(host, port, starttls, user, password)?;
+
+    for label in &all_labels {
+        // Collect all output dirs: base + any fan-out routes
+        let mut out_dirs = vec![base_dir.clone()];
+        if let Some(dirs) = routes.get(label) {
+            out_dirs.extend(dirs.iter().cloned());
+        }
+
+        sync_label(
+            &mut session,
+            label,
+            account_name,
+            acct_state,
+            full,
+            sync_days,
+            &out_dirs,
+            &mut touched,
+        )?;
+    }
+
+    // Logout errors are non-fatal — data is already fetched and merged.
+    // Some servers (e.g. ProtonMail Bridge) return responses the imap
+    // crate cannot parse during logout.
+    let _ = session.logout();
+    Ok(())
+}
+
+/// Sync a single IMAP label/folder, writing to multiple output dirs (fan-out).
+#[allow(clippy::too_many_arguments)]
+fn sync_label(
+    session: &mut ImapSession,
+    label_name: &str,
+    account_name: &str,
+    acct_state: &mut AccountSyncState,
+    full: bool,
+    sync_days: u32,
+    out_dirs: &[PathBuf],
+    touched: &mut Option<&mut HashSet<PathBuf>>,
+) -> Result<()> {
+    println!("Syncing label: {}", label_name);
+
+    let mailbox = match session.select(label_name) {
+        Ok(mb) => mb,
+        Err(_) => {
+            println!("  Label \"{}\" not found \u{2014} skipping", label_name);
+            return Ok(());
+        }
+    };
+
+    let uidvalidity = mailbox.uid_validity.unwrap_or(0);
+    let prior = acct_state.labels.get(label_name);
+
+    let do_full = full || prior.is_none() || prior.map(|p| p.uidvalidity) != Some(uidvalidity);
+
+    let uids: Vec<u32> = if do_full {
+        if let Some(p) = prior {
+            if p.uidvalidity != uidvalidity {
+                println!("  UIDVALIDITY changed \u{2014} doing full resync");
+            } else if full {
+                println!("  Full sync requested");
+            }
+        } else {
+            println!("  No prior state \u{2014} doing full sync");
+        }
+
+        let since_date = Utc::now() - chrono::Duration::days(sync_days as i64);
+        let since_str = since_date.format("%d-%b-%Y").to_string();
+        let search_result = session.uid_search(format!("SINCE {}", since_str))?;
+        search_result.into_iter().collect()
+    } else {
+        let prior = prior.unwrap();
+        let search_result = session.uid_search(format!("UID {}:*", prior.last_uid + 1))?;
+        search_result
+            .into_iter()
+            .filter(|&u| u > prior.last_uid)
+            .collect()
+    };
+
+    if uids.is_empty() {
+        println!("  No new messages");
+        acct_state.labels.insert(
+            label_name.to_string(),
+            LabelState {
+                uidvalidity,
+                last_uid: prior.map(|p| p.last_uid).unwrap_or(0),
+            },
+        );
+        return Ok(());
+    }
+
+    println!("  Fetching {} message(s)", uids.len());
+
+    let mut max_uid = prior.map(|p| p.last_uid).unwrap_or(0);
+
+    for uid in &uids {
+        let fetches = session.uid_fetch(uid.to_string(), "RFC822")?;
+        let fetch = match fetches.iter().next() {
+            Some(f) => f,
+            None => continue,
+        };
+
+        let body_raw = match fetch.body() {
+            Some(b) => b,
+            None => continue,
+        };
+
+        let parsed = match mailparse::parse_mail(body_raw) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("  Warning: failed to parse message UID {}: {}", uid, e);
+                continue;
+            }
+        };
+
+        let subject = parsed
+            .headers
+            .iter()
+            .find(|h| h.get_key_ref().eq_ignore_ascii_case("Subject"))
+            .map(|h| h.get_value())
+            .unwrap_or_else(|| "(no subject)".to_string());
+
+        let from = parsed
+            .headers
+            .iter()
+            .find(|h| h.get_key_ref().eq_ignore_ascii_case("From"))
+            .map(|h| h.get_value())
+            .unwrap_or_default();
+
+        let date = parsed
+            .headers
+            .iter()
+            .find(|h| h.get_key_ref().eq_ignore_ascii_case("Date"))
+            .map(|h| h.get_value())
+            .unwrap_or_default();
+
+        let thread_key = thread_key_from_subject(&subject);
+        let body = extract_body(&parsed);
+
+        let message = Message {
+            id: uid.to_string(),
+            thread_id: thread_key.clone(),
+            from,
+            date,
+            subject,
+            body,
+        };
+
+        for out_dir in out_dirs {
+            let file_path =
+                merge_message_to_file(out_dir, label_name, account_name, &message, &thread_key)?;
+            if let Some(ref mut touched_set) = touched {
+                if let Some(ref fp) = file_path {
+                    touched_set.insert(fp.clone());
+                }
+            }
+        }
+
+        if *uid > max_uid {
+            max_uid = *uid;
+        }
+    }
+
+    acct_state.labels.insert(
+        label_name.to_string(),
+        LabelState {
+            uidvalidity,
+            last_uid: max_uid,
+        },
+    );
+
+    Ok(())
+}

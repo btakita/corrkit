@@ -1,0 +1,49 @@
+[package]
+name = "corky"
+version = "0.7.0"
+edition = "2021"
+description = "Sync email threads from IMAP to Markdown, draft replies, manage collaborators"
+license = "Apache-2.0"
+repository = "https://github.com/btakita/corky"
+readme = "README.md"
+
+[[bin]]
+name = "corky"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+toml_edit = "0.22"
+anyhow = "1"
+thiserror = "2"
+imap = "2"
+native-tls = "0.2"
+mailparse = "0.15"
+lettre = "0.11"
+chrono = { version = "0.4", features = ["serde"] }
+directories = "6"
+regex = "1"
+once_cell = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time"] }
+glob = "0.3"
+libc = "0.2"
+tempfile = "3"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+pretty_assertions = "1"
+
+[lints.rust]
+warnings = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

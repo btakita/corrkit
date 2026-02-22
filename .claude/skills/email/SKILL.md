@@ -9,20 +9,20 @@ Manage and draft correspondence using locally synced email threads.
 - **Use context** — always read the relevant thread in `conversations/` before drafting a reply
 - **Be concise** — prefer shorter responses; ask before writing anything long
 
-## Available Tools
+## Use These Paths and Commands
 
 - `correspondence/conversations/` — synced email threads as Markdown (flat, one file per thread)
 - `correspondence/contacts/{name}/AGENTS.md` — per-contact context for drafting
 - `correspondence/manifest.toml` — thread index by labels, accounts, contacts
 - `correspondence/drafts/` — outgoing email drafts being worked on
-- `corrkit by find-unanswered` — list threads awaiting a reply
-- `corrkit sync` — re-sync threads from all accounts
-- `corrkit list-folders ACCOUNT` — list IMAP folders for an account
+- `corky find-unanswered` — list threads awaiting a reply
+- `corky sync` — re-sync threads from all accounts
+- `corky list-folders ACCOUNT` — list IMAP folders for an account
 
 ## Workflows
 
 ### Review inbox
-1. Run `corrkit by find-unanswered` to identify threads needing a reply
+1. Run `corky find-unanswered` to identify threads needing a reply
 2. Read each thread and assess priority
 3. Present a prioritized list with a one-line summary per thread
 4. Wait for instruction before drafting anything

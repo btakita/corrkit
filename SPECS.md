@@ -1,13 +1,13 @@
-# Corrkit Functional Specification
+# Corky Functional Specification
 
-> Language-independent specification for the corrkit email sync and collaboration tool.
+> Language-independent specification for the corky email sync and collaboration tool.
 > This document captures the exact behavior a port must reproduce.
 
 ## 1. Overview
 
-Corrkit syncs email threads from IMAP providers into a flat directory of Markdown files,
-supports AI-assisted drafting, manages collaborator sharing via git submodules, and pushes
-routing intelligence to Cloudflare.
+Corky syncs email threads from IMAP providers into a flat directory of Markdown files,
+supports AI-assisted drafting, manages mailbox sharing via git submodules or plain directories,
+and pushes routing intelligence to Cloudflare.
 
 ## 2. Data Directory
 
@@ -21,19 +21,11 @@ routing intelligence to Cloudflare.
     {name}/
       AGENTS.md
       CLAUDE.md -> AGENTS.md
-  for/                  # Collaborator submodules (outgoing)
-    {gh-user}/
+  mailboxes/            # Named mailboxes (plain dirs or git submodules)
+    {name}/
       conversations/
       drafts/
-      AGENTS.md
-      CLAUDE.md -> AGENTS.md
-      README.md
-      voice.md
-      .gitignore
-  by/                   # Collaborator submodules (incoming)
-    {gh-user}/
-      conversations/
-      drafts/
+      contacts/
       AGENTS.md
       CLAUDE.md -> AGENTS.md
       README.md
@@ -46,32 +38,31 @@ routing intelligence to Cloudflare.
 ### 2.2 Resolution Order
 
 The data directory is resolved at runtime in this order:
-1. `correspondence/` directory in current working directory (developer workflow)
-2. `CORRKIT_DATA` environment variable
-3. App config space (see §2.4)
-4. `~/Documents/correspondence` (hardcoded fallback)
+1. `mail/` directory in current working directory (developer workflow)
+2. `CORKY_DATA` environment variable
+3. App config mailbox (see §2.4)
+4. `~/Documents/mail` (hardcoded fallback)
 
 ### 2.3 Config Directory
 
-- If `correspondence/` exists in cwd → `.` (current directory, developer workflow)
-- Otherwise → same as data directory (general user: config lives inside data dir)
+Config always lives inside the data directory (`mail/`).
 
-Config files: `accounts.toml`, `collaborators.toml`, `contacts.toml`, `voice.md`, `credentials.json`
+Config files: `.corky.toml`, `voice.md`, `credentials.json`
 
 ### 2.4 App Config
 
-Location: `{platformdirs.user_config_dir("corrkit")}/config.toml`
-- Linux: `~/.config/corrkit/config.toml`
-- macOS: `~/Library/Application Support/corrkit/config.toml`
-- Windows: `%APPDATA%/corrkit/config.toml`
+Location: `{platformdirs.user_config_dir("corky")}/config.toml`
+- Linux: `~/.config/corky/config.toml`
+- macOS: `~/Library/Application Support/corky/config.toml`
+- Windows: `%APPDATA%/corky/config.toml`
 
-Stores named spaces (data directory references) and a default. Used in resolution step 3.
+Stores named mailboxes (data directory references) and a default. Used in resolution step 3.
 
-Space resolution (when no explicit name given):
-1. `default_space` set → use that space
-2. Exactly one space → use it implicitly
-3. Multiple spaces, no default → error with list
-4. No spaces → return None (fall through to step 4)
+Mailbox resolution (when no explicit name given):
+1. `default_mailbox` set → use that mailbox
+2. Exactly one mailbox → use it implicitly
+3. Multiple mailboxes, no default → error with list
+4. No mailboxes → return None (fall through to step 4)
 
 ## 3. File Formats
 
@@ -101,8 +92,6 @@ Space resolution (when no explicit name given):
 Metadata regex: `^\*\*(.+?)\*\*:\s*(.+)$` (multiline)
 Message header regex: `^## (.+?) — (.+)$` (multiline, em dash U+2014)
 
-Legacy format: `**Label**: {single_label}` (backward compatible, parsed if **Labels** absent)
-
 ### 3.2 Draft Markdown
 
 ```markdown
@@ -112,7 +101,7 @@ Legacy format: `**Label**: {single_label}` (backward compatible, parsed if **Lab
 **CC**: {optional}
 **Status**: draft
 **Author**: {name}
-**Account**: {optional — account name from accounts.toml}
+**Account**: {optional — account name from .corky.toml}
 **From**: {optional — email address, used to resolve account}
 **In-Reply-To**: {optional — message ID}
 
@@ -126,12 +115,12 @@ Recommended fields: `**Status**`, `**Author**`
 Status values: `draft` → `review` → `approved` → `sent`
 Valid send statuses (for push-draft --send): `review`, `approved`
 
-### 3.3 accounts.toml
+### 3.3 .corky.toml
 
 ```toml
 [owner]
-github_user = "username"    # Required for collaborator features
-name = "Display Name"       # Optional
+github_user = "username"
+name = "Display Name"
 
 [accounts.{name}]
 provider = "gmail"          # gmail | protonmail-bridge | imap
@@ -148,44 +137,29 @@ drafts_folder = "Drafts"
 sync_days = 3650            # How far back to sync
 default = false             # Mark one account as default
 
+[contacts.{name}]
+emails = ["addr@example.com"]
+labels = ["correspondence"]         # For lookup, not sync routing
+account = "personal"                # Optional
+
+[routing]
+for-alex = ["mailboxes/alex"]
+shared = ["mailboxes/alice", "mailboxes/bob"]
+
+[mailboxes.alex]
+auto_send = false
+
 [watch]
 poll_interval = 300         # Seconds between polls
 notify = false              # Desktop notifications
 ```
-
-Non-account top-level keys: `watch`, `owner`
-Flat format (no `[accounts.]` prefix) is also supported for backward compatibility.
 
 Password resolution order:
 1. `password` field (inline)
 2. `password_cmd` (run shell command, strip trailing whitespace)
 3. Error if neither set
 
-Legacy `.env` fallback: If no accounts.toml exists, reads `GMAIL_USER_EMAIL`, `GMAIL_APP_PASSWORD` (spaces stripped), `GMAIL_SYNC_LABELS` (comma-separated), `GMAIL_SYNC_DAYS` from environment.
-
-### 3.4 collaborators.toml
-
-```toml
-[{github_username}]
-labels = ["for-user"]               # Required
-name = "Display Name"               # Optional
-repo = "owner/to-username"          # Auto-derived if omitted
-account = "personal"                # Optional — bind plain labels to one account
-```
-
-Section key = GitHub username. `repo` auto-derived as `{owner_gh}/to-{collab_gh}` if omitted.
-
 Label scoping syntax: `account:label` (e.g. `"proton-dev:INBOX"`) binds a label to a specific account.
-Plain labels use the collaborator-level `account` field, or match all accounts if unset.
-
-### 3.5 contacts.toml
-
-```toml
-[{name}]
-emails = ["addr@example.com"]
-labels = ["correspondence"]         # For lookup, not sync routing
-account = "personal"                # Optional
-```
 
 ### 3.6 .sync-state.json
 
@@ -204,8 +178,6 @@ account = "personal"                # Optional
 }
 ```
 
-Legacy migration: If top-level `labels` field exists and `accounts` is empty, migrate to `accounts._legacy`.
-
 ### 3.7 manifest.toml
 
 ```toml
@@ -218,25 +190,25 @@ last_updated = "RFC 2822 date"
 contacts = ["contact-name"]
 ```
 
-Generated after each sync by scanning conversation files and matching sender emails against contacts.toml.
+Generated after each sync by scanning conversation files and matching sender emails against `[contacts]` in `.corky.toml`.
 
 ### 3.8 config.toml (App Config)
 
 ```toml
-default_space = "personal"
+default_mailbox = "personal"
 
-[spaces.personal]
-path = "~/Documents/correspondence"
+[mailboxes.personal]
+path = "~/Documents/mail"
 
-[spaces.work]
-path = "~/work/correspondence"
+[mailboxes.work]
+path = "~/work/mail"
 ```
 
 Top-level fields:
-- `default_space`: name of the default space (set automatically to the first space added)
+- `default_mailbox`: name of the default mailbox (set automatically to the first mailbox added)
 
-Space fields:
-- `path`: absolute or `~`-relative path to a correspondence data directory
+Mailbox fields:
+- `path`: absolute or `~`-relative path to a mail data directory
 
 ## 4. Algorithms
 
@@ -277,23 +249,21 @@ When the same thread is fetched from multiple labels or accounts:
 
 ### 4.5 Label Routing
 
-Labels in `collaborators.toml` route to `{data_dir}/for/{gh_user}/conversations/`.
-Plain labels (no collaborator mapping) route to `{data_dir}/conversations/`.
+Labels in the `[routing]` section of `.corky.toml` route to configured mailbox directories.
+Fan-out: one label can route to multiple mailboxes (array of paths).
+Plain labels (no routing entry) route to `{data_dir}/conversations/`.
+Routing values are paths like `mailboxes/{name}`, resolved relative to data_dir, with `/conversations/` appended.
 
 Account:label syntax (`"proton-dev:INBOX"`):
 - Only matches when syncing the named account
 - The IMAP folder used is the part after the colon
-
-Collaborator-level `account` field:
-- Plain labels only match when syncing the named account
-- `account:label` labels ignore the collaborator-level account field
 
 ### 4.6 Manifest Generation
 
 After sync, scan all `.md` files in `conversations/`:
 1. Parse each file back into a Thread object
 2. For each message, extract email from sender (`<email>` regex)
-3. Match against contacts.toml email→name mapping
+3. Match against `[contacts]` email→name mapping in `.corky.toml`
 4. Write `manifest.toml` with thread metadata and matched contacts
 
 ## 5. Commands
@@ -301,36 +271,58 @@ After sync, scan all `.md` files in `conversations/`:
 ### 5.1 init
 
 ```
-corrkit init --user EMAIL [--data-dir PATH] [--provider PROVIDER]
+corky init --user EMAIL [PATH] [--with-skill] [--provider PROVIDER]
              [--password-cmd CMD] [--labels LABEL,...] [--github-user USER]
-             [--name NAME] [--space NAME] [--sync] [--force]
+             [--name NAME] [--mailbox-name NAME] [--sync] [--force]
 ```
 
-- Creates `{data_dir}/{conversations,drafts,contacts}/` with `.gitkeep` files
-- Generates `accounts.toml` with provider preset and owner section
-- Creates empty `collaborators.toml` and `contacts.toml`
-- Registers the data dir as a named space in app config
-- `--force`: overwrite existing config; without it, exit 1 if accounts.toml exists
-- `--sync`: set `CORRKIT_DATA` env, run sync
+- `PATH`: project directory (default: `.` — current directory)
+- Creates `{path}/mail/{conversations,drafts,contacts}/` with `.gitkeep` files
+- Generates `.corky.toml` at `{path}/mail/`
+- Installs `voice.md` at `{path}/mail/` if not present
+- If inside a git repo: adds `mail` to `.gitignore`
+- `--with-skill`: install the email skill to `.claude/skills/email/`
+- Registers the project dir as a named mailbox in app config
+- `--force`: overwrite existing config; without it, exit 1 if `.corky.toml` exists
+- `--sync`: set `CORKY_DATA` env, run sync
 - `--provider`: `gmail` (default), `protonmail-bridge`, `imap`
-- `--data-dir`: default `~/Documents/correspondence`
 - `--labels`: default `correspondence` (comma-separated)
-- `--space`: space name to register (default: `"default"`)
+- `--mailbox-name`: mailbox name to register (default: `"default"`)
+
+### 5.1.1 install-skill
+
+```
+corky install-skill NAME
+```
+
+- Install an agent skill into the current directory
+- Currently supported: `email` (installs `.claude/skills/email/SKILL.md` and `README.md`)
+- Skips files that already exist (never overwrites)
 
 ### 5.2 sync
 
 ```
-corrkit sync [--full] [--account NAME]
+corky sync                   # incremental IMAP sync (default)
+corky sync full              # full IMAP resync (ignore saved state)
+corky sync account NAME      # sync one account
+corky sync routes            # apply routing to existing conversations
+corky sync mailbox [NAME]    # push/pull shared mailboxes
 ```
 
-Sync all configured accounts (or one with `--account`).
-`--full`: ignore saved state, re-fetch all messages within `sync_days`.
+Bare `corky sync` runs incremental IMAP sync for all configured accounts.
+Subcommands:
+- `full`: ignore saved state, re-fetch all messages within `sync_days`
+- `account NAME`: sync only the named account
+- `routes`: apply `[routing]` rules to existing `conversations/*.md` files,
+  copying matching threads into mailbox `conversations/` directories
+- `mailbox [NAME]`: git push/pull shared mailbox repos (alias for `mailbox sync`)
+
 Exit code: 0 on success.
 
 ### 5.3 sync-auth
 
 ```
-corrkit sync-auth
+corky sync-auth
 ```
 
 Gmail OAuth setup. Requires `credentials.json` from Google Cloud Console.
@@ -340,7 +332,7 @@ Outputs the refresh token for `.env`.
 ### 5.4 list-folders
 
 ```
-corrkit list-folders [ACCOUNT]
+corky list-folders [ACCOUNT]
 ```
 
 Without argument: lists available account names.
@@ -349,7 +341,7 @@ With argument: connects to IMAP and lists all folders with flags.
 ### 5.5 push-draft
 
 ```
-corrkit push-draft FILE [--send]
+corky push-draft FILE [--send]
 ```
 
 Default: creates a draft via IMAP APPEND to the drafts folder.
@@ -357,14 +349,14 @@ Default: creates a draft via IMAP APPEND to the drafts folder.
 After sending, updates Status field in the file to `sent`.
 
 Account resolution for sending:
-1. `**Account**` field → match by name in accounts.toml
+1. `**Account**` field → match by name in `.corky.toml`
 2. `**From**` field → match by email address
 3. Fall back to default account
 
 ### 5.6 add-label
 
 ```
-corrkit add-label LABEL --account NAME
+corky add-label LABEL --account NAME
 ```
 
 Text-level TOML edit to add a label to an account's `labels` array.
@@ -373,26 +365,26 @@ Preserves comments and formatting. Returns false if label already present.
 ### 5.7 contact-add
 
 ```
-corrkit contact-add NAME --email EMAIL [--email EMAIL2] [--label LABEL] [--account ACCT]
+corky contact-add NAME --email EMAIL [--email EMAIL2] [--label LABEL] [--account ACCT]
 ```
 
 Creates `{data_dir}/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink.
-Updates `contacts.toml`. If both `--label` and `--account` given, adds label to account config.
+Updates `.corky.toml`. If both `--label` and `--account` given, adds label to account config.
 
 ### 5.8 watch
 
 ```
-corrkit watch [--interval N]
+corky watch [--interval N]
 ```
 
-IMAP polling daemon. Syncs all accounts, then pushes to collaborator submodules.
-Desktop notifications on new messages if `notify = true` in accounts.toml.
+IMAP polling daemon. Syncs all accounts, then pushes to shared mailboxes.
+Desktop notifications on new messages if `notify = true` in `.corky.toml`.
 Clean shutdown on SIGTERM/SIGINT.
 
 ### 5.9 audit-docs
 
 ```
-corrkit audit-docs
+corky audit-docs
 ```
 
 Checks instruction files (AGENTS.md, README.md, SKILL.md) against codebase:
@@ -405,104 +397,119 @@ Checks instruction files (AGENTS.md, README.md, SKILL.md) against codebase:
 ### 5.10 help
 
 ```
-corrkit help [FILTER]
-corrkit --help
+corky help [FILTER]
+corky --help
 ```
 
 Shows command reference. Optional filter matches command names.
 
-### 5.11 for add
+### 5.11 mailbox add
 
 ```
-corrkit for add GITHUB_USER --label LABEL [--name NAME] [--pat] [--public] [--account ACCT] [--org ORG]
+corky mailbox add NAME --label LABEL [--name NAME] [--github] [--pat] [--public] [--account ACCT] [--org ORG]
 ```
 
-Creates a private GitHub repo (`{org}/to-{gh_user}`), initializes with AGENTS.md/README.md/voice.md/conversations/drafts, adds as git submodule under `for/{gh_user}/`. Updates `collaborators.toml`.
+Alias: `corky mb add`
 
+Without `--github`: creates a plain directory at `mailboxes/{name}/` with conversations/drafts/contacts subdirectories and template files (AGENTS.md, README.md, voice.md, .gitignore).
+With `--github`: creates a private GitHub repo (`{org}/to-{name}`), initializes with template files, adds as git submodule at `mailboxes/{name}/`. Updates `.corky.toml`.
+
+`--github`: use a git submodule instead of a plain directory
 `--pat`: PAT-based access (prints instructions instead of GitHub collaborator invite)
 `--public`: public repo visibility
 `--org`: override GitHub org (default: owner's github_user)
 
-### 5.12 for sync
+### 5.12 mailbox sync
 
 ```
-corrkit for sync [NAME]
+corky mailbox sync [NAME]
 ```
 
-For each collaborator (or one named): git pull --rebase, copy voice.md if newer, sync GitHub Actions workflow, stage+commit+push local changes, update submodule ref in parent.
+Alias: `corky mb sync`
 
-### 5.13 for status
+For each mailbox (or one named): git pull --rebase, copy voice.md if newer, sync GitHub Actions workflow, stage+commit+push local changes, update submodule ref in parent. Skips git ops for plain (non-submodule) directories.
 
-```
-corrkit for status
-```
-
-Shows incoming/outgoing commit counts for each collaborator submodule.
-
-### 5.14 for remove
+### 5.13 mailbox status
 
 ```
-corrkit for remove NAME [--delete-repo]
+corky mailbox status
 ```
 
-Deinit submodule, `git rm`, remove from collaborators.toml.
+Alias: `corky mb status`
+
+Shows incoming/outgoing commit counts for each mailbox submodule.
+
+### 5.14 mailbox remove
+
+```
+corky mailbox remove NAME [--delete-repo]
+```
+
+Alias: `corky mb remove`
+
+For plain directories: `rm -rf mailboxes/{name}/`.
+For submodules: `git submodule deinit -f`, `git rm`, clean up `.git/modules/{path}`.
+Removes from `.corky.toml`.
 `--delete-repo`: interactively confirms, then deletes GitHub repo via `gh`.
 
-### 5.15 for rename
+### 5.15 mailbox rename
 
 ```
-corrkit for rename OLD NEW [--rename-repo]
+corky mailbox rename OLD NEW [--rename-repo]
 ```
 
-`git mv` the directory, update collaborators.toml.
+Alias: `corky mb rename`
+
+Moves `mailboxes/{old}` to `mailboxes/{new}`. Uses `git mv` for submodules, `mv` for plain dirs.
+Updates `.corky.toml`.
 `--rename-repo`: also rename the GitHub repo via `gh repo rename`.
 
-Searches for the directory in both `{data_dir}/for/` and `{data_dir}/by/`.
-
-### 5.16 for reset
+### 5.16 mailbox reset
 
 ```
-corrkit for reset [NAME] [--no-sync]
+corky mailbox reset [NAME] [--no-sync]
 ```
 
-Pull latest, regenerate all template files (AGENTS.md, README.md, CLAUDE.md symlink, .gitignore, voice.md, notify.yml), commit, push.
+Alias: `corky mb reset`
+
+Pull latest, regenerate all template files (AGENTS.md, README.md, CLAUDE.md symlink, .gitignore, voice.md, notify.yml) at `mailboxes/{name}/`, commit, push.
 `--no-sync`: regenerate files without pull/push.
 
-### 5.17 by find-unanswered
+### 5.17 find-unanswered
 
 ```
-corrkit by find-unanswered [--from NAME]
+corky find-unanswered [--from NAME]
 ```
 
-Scans `conversations/` for threads where the last message sender doesn't match `--from` (default: "Brian"). Designed to run in the collaborator's cloned repo.
+Scans `conversations/` for threads where the last message sender doesn't match `--from` (default: "Brian"). Designed to run in a mailbox directory.
 
 Sender regex: `^## (.+?) —` (multiline, em dash)
 
-### 5.18 by validate-draft
+### 5.18 validate-draft
 
 ```
-corrkit by validate-draft FILE [FILE...]
+corky validate-draft FILE [FILE...]
 ```
 
 Validates draft files. Checks: subject heading, required fields (To), recommended fields (Status, Author), valid status value, `---` separator, non-empty body.
 
 Exit code: 0 if all valid, 1 if any errors.
 
-### 5.19 spaces
+### 5.19 mailbox list
 
 ```
-corrkit spaces
+corky mailbox list
 ```
 
-Lists all configured spaces with paths. Marks the default space. If no spaces configured, prints setup instructions.
+Lists all registered mailboxes with paths. Marks the default mailbox. If no mailboxes configured, prints setup instructions.
 
-### 5.20 Global `--space` Flag
+### 5.20 Global `--mailbox` Flag
 
 ```
-corrkit --space NAME <subcommand> [args...]
+corky --mailbox NAME <subcommand> [args...]
 ```
 
-Available on all commands. Resolves the named space via app config and sets `CORRKIT_DATA` before dispatching to the subcommand.
+Available on all commands. Resolves the named mailbox via app config and sets `CORKY_DATA` before dispatching to the subcommand.
 
 ## 6. Sync Algorithm
 
@@ -547,68 +554,77 @@ On `--full` sync: track all files written/updated. After sync, delete any `.md` 
 
 State is saved only after all accounts complete successfully. If sync crashes mid-way, state is not saved — next run re-fetches.
 
-## 7. Collaborator Lifecycle
+## 7. Mailbox Lifecycle
 
 ### 7.1 Add
 
+Without `--github` (plain directory):
+1. Create `mailboxes/{name}/` with conversations/drafts/contacts subdirectories
+2. Write template files (AGENTS.md, CLAUDE.md symlink, README.md, voice.md, .gitignore)
+3. Update `.corky.toml`
+
+With `--github` (submodule):
 1. Create GitHub repo (`gh repo create`)
 2. Add collaborator (`gh api repos/.../collaborators/...`) or print PAT instructions
 3. Clone to temp dir, write template files, commit, push
-4. Add as git submodule at `for/{gh_user}/`
-5. Update `collaborators.toml`
+4. Add as git submodule at `mailboxes/{name}/`
+5. Update `.corky.toml`
 
 ### 7.2 Sync
 
-1. `git pull --rebase` in submodule
+1. `git pull --rebase` in submodule (skipped for plain directories)
 2. Copy `voice.md` if root copy is newer
 3. Sync workflow template if newer
-4. Stage, commit, push local changes
-5. Update submodule ref in parent (`git add {submodule_path}`)
+4. Stage, commit, push local changes (skipped for plain directories)
+5. Update submodule ref in parent (`git add {submodule_path}`) (skipped for plain directories)
 
 ### 7.3 Status
 
-For each submodule:
+For each mailbox submodule:
 1. `git fetch`
 2. `git rev-list --count HEAD..@{u}` (incoming)
 3. `git rev-list --count @{u}..HEAD` (outgoing)
 
 ### 7.4 Remove
 
+For plain directories: `rm -rf mailboxes/{name}/`.
+For submodules:
 1. `git submodule deinit -f`
 2. `git rm -f`
 3. Clean up `.git/modules/{path}`
-4. Remove from `collaborators.toml`
+
+Then:
+4. Remove from `.corky.toml`
 5. Optionally delete GitHub repo (interactive confirmation)
 
 ### 7.5 Rename
 
-1. Find directory in `for/` or `by/`
-2. `git mv` old → new
-3. Optionally `gh repo rename`
-4. Update `collaborators.toml` entry
+1. Move `mailboxes/{old}` to `mailboxes/{new}` (`git mv` for submodules, `mv` for plain dirs)
+2. Optionally `gh repo rename`
+3. Update `.corky.toml` entry
 
 ### 7.6 Reset
 
-1. `git pull --rebase`
-2. Regenerate: AGENTS.md, CLAUDE.md (symlink), README.md, .gitignore, voice.md, workflow
-3. Stage, commit, push
-4. Update submodule ref in parent
+1. `git pull --rebase` (submodules only)
+2. Regenerate: AGENTS.md, CLAUDE.md (symlink), README.md, .gitignore, voice.md, workflow at `mailboxes/{name}/`
+3. Stage, commit, push (submodules only)
+4. Update submodule ref in parent (submodules only)
 
 ## 8. Draft Lifecycle
 
 ### 8.1 Create
 
-Manual: create file in `{data_dir}/drafts/` or `{data_dir}/for/{gh_user}/drafts/`.
+Manual: create file in `{data_dir}/drafts/` or `{data_dir}/mailboxes/{name}/drafts/`.
 Filename convention: `YYYY-MM-DD-{slug}.md`.
 
 ### 8.2 Validate
 
-`corrkit by validate-draft` checks format. See section 5.18.
+`corky validate-draft` checks format. See section 5.18.
 
 ### 8.3 Push / Send
 
-`corrkit push-draft FILE`: IMAP APPEND to drafts folder.
-`corrkit push-draft FILE --send`: SMTP send, update Status to `sent`.
+`corky push-draft FILE`: IMAP APPEND to drafts folder.
+`corky push-draft FILE --send`: SMTP send, update Status to `sent`.
 
 Account resolution: Account field → From field → default account.
 
@@ -623,7 +639,7 @@ while not shutdown:
     save_state()
     count_new = compare uid snapshots before/after
     if count_new > 0:
-        sync_collaborators()
+        sync_mailboxes()
         notify(count_new)
     wait(interval) or shutdown
 ```
@@ -640,7 +656,7 @@ SIGTERM, SIGINT → clean shutdown (finish current poll, then exit).
 
 ### 9.4 Config
 
-`[watch]` section in `accounts.toml`:
+`[watch]` section in `.corky.toml`:
 - `poll_interval`: seconds (default 300)
 - `notify`: bool (default false)
 
@@ -670,16 +686,7 @@ Preset values are defaults — any field explicitly set on the account wins.
 ### 11.2 Sending Account
 
 For `push-draft`:
-1. `**Account**` metadata field → lookup by name in accounts.toml
+1. `**Account**` metadata field → lookup by name in `.corky.toml`
 2. `**From**` metadata field → lookup by email address (case-insensitive)
 3. Default account (first with `default = true`, or first in file)
 
-### 11.3 Legacy .env
-
-If no `accounts.toml` exists:
-- `GMAIL_USER_EMAIL` → user
-- `GMAIL_APP_PASSWORD` → password (spaces stripped)
-- `GMAIL_SYNC_LABELS` → labels (comma-separated)
-- `GMAIL_SYNC_DAYS` → sync_days (default 3650)
-- Provider forced to `gmail` with gmail presets
-- Mapped to synthetic account named `_legacy`
