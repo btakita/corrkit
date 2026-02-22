@@ -97,20 +97,6 @@ Provider presets fill in IMAP/SMTP connection defaults:
 Any preset value can be overridden per-account. Credential resolution: `password` (inline)
 or `password_cmd` (shell command, e.g. `pass email/personal`).
 
-**Backward compat**: If no `.corky.toml` exists, falls back to `.env` GMAIL_* vars.
-
-### Legacy `.env` configuration
-
-| Variable                     | Required | Description                                          |
-| ---------------------------- | -------- | ---------------------------------------------------- |
-| `GMAIL_USER_EMAIL`           | yes      | Your Gmail address                                   |
-| `GMAIL_APP_PASSWORD`         | yes      | [App password](https://myaccount.google.com/apppasswords) |
-| `GMAIL_SYNC_LABELS`         | yes      | Comma-separated Gmail labels to sync                 |
-| `GMAIL_SYNC_DAYS`           | no       | How far back to sync (default: 3650)                 |
-| `CLOUDFLARE_ACCOUNT_ID`     | no       | For routing intelligence push                        |
-| `CLOUDFLARE_API_TOKEN`      | no       | For routing intelligence push                        |
-| `CLOUDFLARE_D1_DATABASE_ID` | no       | For routing intelligence push                        |
-
 ## Usage
 
 All commands are available through the `corky` CLI:
@@ -136,7 +122,6 @@ corky mailbox status                        # Check mailbox status
 corky mailbox remove NAME                   # Remove a mailbox
 corky mailbox rename OLD NEW                # Rename a mailbox
 corky mailbox reset [NAME]                  # Regenerate mailbox templates
-corky migrate                               # Migrate old config to .corky.toml
 corky find-unanswered                   # Find threads awaiting a reply
 corky validate-draft FILE               # Validate draft markdown files
 corky watch                             # Poll IMAP and sync on an interval

@@ -156,16 +156,3 @@ fn test_config_paths() {
     std::env::remove_var("CORKY_DATA");
 }
 
-// Keep collab path tests for backward compat (used by migrate)
-#[test]
-fn test_collab_to_dir_lowercases() {
-    let tmp = TempDir::new().unwrap();
-    let data = tmp.path().to_path_buf();
-    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
-
-    let dir = resolve::collab_to_dir("AlexUser");
-    assert!(dir.to_string_lossy().contains("alexuser"));
-    assert!(dir.to_string_lossy().ends_with("collabs/alexuser/to"));
-
-    std::env::remove_var("CORKY_DATA");
-}

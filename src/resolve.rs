@@ -51,20 +51,6 @@ pub fn mailbox_dir(name: &str) -> PathBuf {
     data_dir().join("mailboxes").join(name.to_lowercase())
 }
 
-pub fn collab_to_dir(gh_user: &str) -> PathBuf {
-    data_dir()
-        .join("collabs")
-        .join(gh_user.to_lowercase())
-        .join("to")
-}
-
-pub fn collab_from_dir(gh_user: &str) -> PathBuf {
-    data_dir()
-        .join("collabs")
-        .join(gh_user.to_lowercase())
-        .join("from")
-}
-
 pub fn sync_state_file() -> PathBuf {
     data_dir().join(".sync-state.json")
 }
@@ -88,14 +74,6 @@ pub fn corky_toml() -> PathBuf {
     }
     // Default to .corky.toml (for creation)
     dotfile
-}
-
-pub fn accounts_toml() -> PathBuf {
-    config_dir().join("accounts.toml")
-}
-
-pub fn collaborators_toml() -> PathBuf {
-    config_dir().join("collaborators.toml")
 }
 
 pub fn contacts_toml() -> PathBuf {

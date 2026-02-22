@@ -186,24 +186,11 @@ pub fn resolve_password(account: &Account) -> Result<String> {
     bail!("Account {:?} has no password or password_cmd", account.user)
 }
 
-const NON_ACCOUNT_KEYS: &[&str] = &["watch", "owner", "routing", "mailboxes"];
-
-/// Parse accounts from .corky.toml or accounts.toml → {name: Account} mapping.
-///
-/// Resolution order (when path is None):
-/// 1. .corky.toml / corky.toml (new unified config)
-/// 2. accounts.toml (legacy)
+/// Parse accounts from .corky.toml → {name: Account} mapping.
 pub fn load_accounts(path: Option<&Path>) -> Result<HashMap<String, Account>> {
     let path = match path {
         Some(p) => PathBuf::from(p),
-        None => {
-            let ck = resolve::corky_toml();
-            if ck.exists() {
-                ck
-            } else {
-                resolve::accounts_toml()
-            }
-        }
+        None => resolve::corky_toml(),
     };
     if !path.exists() {
         return Ok(HashMap::new());
@@ -212,18 +199,12 @@ pub fn load_accounts(path: Option<&Path>) -> Result<HashMap<String, Account>> {
     let raw: toml::Value = toml::from_str(&content)?;
     let table = raw.as_table().unwrap();
 
-    // Try [accounts.*] format first, fall back to flat format
-    let accounts_section = if let Some(toml::Value::Table(accts)) = table.get("accounts") {
-        accts.clone()
-    } else {
-        table.clone()
+    let Some(toml::Value::Table(accounts_section)) = table.get("accounts") else {
+        return Ok(HashMap::new());
     };
 
     let mut result = HashMap::new();
-    for (name, data) in &accounts_section {
-        if NON_ACCOUNT_KEYS.contains(&name.as_str()) {
-            continue;
-        }
+    for (name, data) in accounts_section {
         if !data.is_table() {
             continue;
         }
@@ -234,64 +215,11 @@ pub fn load_accounts(path: Option<&Path>) -> Result<HashMap<String, Account>> {
     Ok(result)
 }
 
-/// Build a synthetic Account from legacy .env GMAIL_* vars.
-fn legacy_account_from_env() -> Result<Account> {
-    dotenvy::dotenv().ok();
-    let user = std::env::var("GMAIL_USER_EMAIL")
-        .map_err(|_| anyhow::anyhow!("No accounts.toml found and GMAIL_USER_EMAIL not set in .env"))?;
-    let password = std::env::var("GMAIL_APP_PASSWORD")
-        .unwrap_or_default()
-        .replace(' ', "");
-    let labels_str = std::env::var("GMAIL_SYNC_LABELS").unwrap_or_default();
-    let sync_days: u32 = std::env::var("GMAIL_SYNC_DAYS")
-        .unwrap_or_else(|_| "3650".to_string())
-        .parse()
-        .unwrap_or(3650);
-
-    Ok(Account {
-        provider: "gmail".to_string(),
-        user,
-        password,
-        labels: labels_str
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect(),
-        imap_host: "imap.gmail.com".to_string(),
-        imap_port: 993,
-        smtp_host: "smtp.gmail.com".to_string(),
-        smtp_port: 465,
-        drafts_folder: "[Gmail]/Drafts".to_string(),
-        sync_days,
-        default: true,
-        ..Default::default()
-    })
-}
-
-/// Load accounts.toml, falling back to .env GMAIL_* vars.
-pub fn load_accounts_or_env(path: Option<&Path>) -> Result<HashMap<String, Account>> {
-    let accounts = load_accounts(path)?;
-    if !accounts.is_empty() {
-        return Ok(accounts);
-    }
-    let legacy = legacy_account_from_env()?;
-    let mut m = HashMap::new();
-    m.insert("_legacy".to_string(), legacy);
-    Ok(m)
-}
-
-/// Load [owner] section from .corky.toml or accounts.toml.
+/// Load [owner] section from .corky.toml.
 pub fn load_owner(path: Option<&Path>) -> Result<OwnerConfig> {
     let path = match path {
         Some(p) => PathBuf::from(p),
-        None => {
-            let ck = resolve::corky_toml();
-            if ck.exists() {
-                ck
-            } else {
-                resolve::accounts_toml()
-            }
-        }
+        None => resolve::corky_toml(),
     };
     if !path.exists() {
         bail!(
@@ -338,21 +266,14 @@ pub fn get_account_for_email(
     None
 }
 
-/// Add a label to an account's labels list in .corky.toml or accounts.toml.
+/// Add a label to an account's labels list in .corky.toml.
 ///
 /// Uses toml_edit for format-preserving edits.
 /// Returns Ok(true) if added, Ok(false) if already present.
 pub fn add_label_to_account(account_name: &str, label: &str, path: Option<&Path>) -> Result<bool> {
     let path = match path {
         Some(p) => PathBuf::from(p),
-        None => {
-            let ck = resolve::corky_toml();
-            if ck.exists() {
-                ck
-            } else {
-                resolve::accounts_toml()
-            }
-        }
+        None => resolve::corky_toml(),
     };
     if !path.exists() {
         bail!("Config not found at {}", path.display());
@@ -375,15 +296,9 @@ pub fn add_label_to_account(account_name: &str, label: &str, path: Option<&Path>
     let content = std::fs::read_to_string(&path)?;
     let mut doc = content.parse::<toml_edit::DocumentMut>()?;
 
-    // Try [accounts.{name}] first, then [{name}]
-    let labels_array = if let Some(accounts_table) = doc.get_mut("accounts") {
-        accounts_table
-            .get_mut(account_name)
-            .and_then(|t| t.get_mut("labels"))
-    } else {
-        doc.get_mut(account_name)
-            .and_then(|t| t.get_mut("labels"))
-    };
+    let labels_array = doc.get_mut("accounts")
+        .and_then(|t| t.get_mut(account_name))
+        .and_then(|t| t.get_mut("labels"));
 
     if let Some(labels) = labels_array {
         if let Some(arr) = labels.as_array_mut() {
@@ -406,18 +321,11 @@ pub fn add_label_cmd(label: &str, account: &str) -> Result<()> {
     Ok(())
 }
 
-/// Load [watch] section from .corky.toml or accounts.toml. Returns defaults if missing.
+/// Load [watch] section from .corky.toml. Returns defaults if missing.
 pub fn load_watch_config(path: Option<&Path>) -> Result<WatchConfig> {
     let path = match path {
         Some(p) => PathBuf::from(p),
-        None => {
-            let ck = resolve::corky_toml();
-            if ck.exists() {
-                ck
-            } else {
-                resolve::accounts_toml()
-            }
-        }
+        None => resolve::corky_toml(),
     };
     if !path.exists() {
         return Ok(WatchConfig::default());

@@ -43,22 +43,9 @@ pub struct AccountSyncState {
 pub struct SyncState {
     #[serde(default)]
     pub accounts: HashMap<String, AccountSyncState>,
-    /// Legacy flat format, for migration.
-    #[serde(default)]
-    pub labels: HashMap<String, LabelState>,
 }
 
-/// Decode sync state, migrating legacy flat format if needed.
 pub fn load_state(data: &[u8]) -> anyhow::Result<SyncState> {
-    let mut state: SyncState = serde_json::from_slice(data)?;
-    // Migrate: if old flat labels exist and accounts is empty, move to _legacy
-    if !state.labels.is_empty() && state.accounts.is_empty() {
-        state.accounts.insert(
-            "_legacy".to_string(),
-            AccountSyncState {
-                labels: std::mem::take(&mut state.labels),
-            },
-        );
-    }
+    let state: SyncState = serde_json::from_slice(data)?;
     Ok(state)
 }

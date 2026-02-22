@@ -60,22 +60,9 @@ pub fn parse_thread_markdown(text: &str) -> Option<Thread> {
     let thread_id = meta.get("Thread ID").cloned().unwrap_or_default();
     let last_date = meta.get("Last updated").cloned().unwrap_or_default();
 
-    // Parse labels (new multi-label format) with fallback to legacy
-    let labels = if let Some(labels_str) = meta.get("Labels") {
-        labels_str
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect()
-    } else if let Some(legacy) = meta.get("Label") {
-        if legacy.is_empty() {
-            vec![]
-        } else {
-            vec![legacy.clone()]
-        }
-    } else {
-        vec![]
-    };
+    let labels = meta.get("Labels")
+        .map(|s| s.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
 
     // Parse accounts
     let accounts = meta
@@ -171,13 +158,6 @@ mod tests {
         assert_eq!(parsed.messages.len(), 1);
         assert_eq!(parsed.messages[0].from, "Alice <alice@example.com>");
         assert_eq!(parsed.messages[0].body, "Hello there!");
-    }
-
-    #[test]
-    fn test_parse_legacy_label() {
-        let md = "# Subject\n\n**Label**: old-label\n**Thread ID**: test\n**Last updated**: Mon, 1 Jan 2024 00:00:00 +0000\n";
-        let parsed = parse_thread_markdown(md).unwrap();
-        assert_eq!(parsed.labels, vec!["old-label"]);
     }
 
     #[test]

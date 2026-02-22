@@ -36,30 +36,6 @@ default = true
     std::fs::write(dir.join(".corky.toml"), content).unwrap();
 }
 
-/// Create a minimal accounts.toml for testing (legacy format, used in migrate tests).
-pub fn write_accounts_toml(dir: &Path, user: &str) {
-    let content = format!(
-        r#"[owner]
-github_user = "testuser"
-name = "Test User"
-
-[accounts.default]
-provider = "gmail"
-user = "{user}"
-password = "testpassword"
-labels = ["correspondence"]
-default = true
-"#,
-        user = user,
-    );
-    std::fs::write(dir.join("accounts.toml"), content).unwrap();
-}
-
-/// Create an empty collaborators.toml (legacy format, used in migrate tests).
-pub fn write_empty_collaborators(dir: &Path) {
-    std::fs::write(dir.join("collaborators.toml"), "").unwrap();
-}
-
 /// Create an empty contacts.toml.
 pub fn write_empty_contacts(dir: &Path) {
     std::fs::write(dir.join("contacts.toml"), "").unwrap();

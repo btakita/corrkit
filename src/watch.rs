@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use crate::accounts::{load_accounts_or_env, load_watch_config, resolve_password};
+use crate::accounts::{load_accounts, load_watch_config, resolve_password};
 use crate::config::corky_config;
 use crate::resolve;
 use crate::sync::imap_sync::sync_account;
@@ -110,7 +110,7 @@ fn sync_mailboxes() {
 
 /// One sync + mailbox sync cycle. Returns count of labels with new messages.
 fn poll_once(notify_enabled: bool) -> usize {
-    let accounts = match load_accounts_or_env(None) {
+    let accounts = match load_accounts(None) {
         Ok(a) => a,
         Err(e) => {
             eprintln!("Failed to load accounts: {}", e);

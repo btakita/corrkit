@@ -154,8 +154,6 @@ pub enum Commands {
     #[command(subcommand, alias = "mb")]
     Mailbox(MailboxCommands),
 
-    /// Migrate from accounts.toml + collaborators.toml to .corky.toml
-    Migrate,
 }
 
 #[derive(Subcommand)]

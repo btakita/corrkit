@@ -105,6 +105,5 @@ fn main() -> Result<()> {
                 corky::mailbox::reset::run(name.as_deref(), no_sync)
             }
         },
-        Commands::Migrate => corky::migrate::run(),
     }
 }

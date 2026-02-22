@@ -2,10 +2,10 @@
 
 use anyhow::Result;
 
-use crate::accounts::{load_accounts_or_env, resolve_password};
+use crate::accounts::{load_accounts, resolve_password};
 
 pub fn run(account: Option<&str>) -> Result<()> {
-    let accounts = load_accounts_or_env(None)?;
+    let accounts = load_accounts(None)?;
 
     let Some(account_name) = account else {
         println!("Available accounts:");

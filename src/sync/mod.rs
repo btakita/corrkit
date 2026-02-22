@@ -12,7 +12,7 @@ use anyhow::Result;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use crate::accounts::{load_accounts_or_env, resolve_password};
+use crate::accounts::{load_accounts, resolve_password};
 use crate::resolve;
 
 use self::imap_sync::sync_account;
@@ -40,7 +40,7 @@ pub fn save_state(state: &SyncState) -> Result<()> {
 
 /// corky sync [--full] [--account NAME]
 pub fn run(full: bool, account: Option<&str>) -> Result<()> {
-    let accounts = load_accounts_or_env(None)?;
+    let accounts = load_accounts(None)?;
     let mut state = if full {
         SyncState::default()
     } else {

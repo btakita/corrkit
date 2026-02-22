@@ -92,8 +92,6 @@ Mailbox resolution (when no explicit name given):
 Metadata regex: `^\*\*(.+?)\*\*:\s*(.+)$` (multiline)
 Message header regex: `^## (.+?) — (.+)$` (multiline, em dash U+2014)
 
-Legacy format: `**Label**: {single_label}` (backward compatible, parsed if **Labels** absent)
-
 ### 3.2 Draft Markdown
 
 ```markdown
@@ -151,20 +149,10 @@ poll_interval = 300         # Seconds between polls
 notify = false              # Desktop notifications
 ```
 
-Non-account top-level keys: `watch`, `owner`, `routing`, `mailboxes`
-Flat format (no `[accounts.]` prefix) is also supported for backward compatibility.
-
 Password resolution order:
 1. `password` field (inline)
 2. `password_cmd` (run shell command, strip trailing whitespace)
 3. Error if neither set
-
-Legacy `.env` fallback: If no accounts.toml exists, reads `GMAIL_USER_EMAIL`, `GMAIL_APP_PASSWORD` (spaces stripped), `GMAIL_SYNC_LABELS` (comma-separated), `GMAIL_SYNC_DAYS` from environment.
-
-### 3.4 collaborators.toml (deprecated)
-
-Collaborator config (`collaborators.toml`) has been replaced by `[routing]` and `[mailboxes.*]`
-sections in `.corky.toml`. See §3.3.
 
 Label scoping syntax: `account:label` (e.g. `"proton-dev:INBOX"`) binds a label to a specific account.
 
@@ -193,8 +181,6 @@ account = "personal"                # Optional
   }
 }
 ```
-
-Legacy migration: If top-level `labels` field exists and `accounts` is empty, migrate to `accounts._legacy`.
 
 ### 3.7 manifest.toml
 
@@ -227,8 +213,6 @@ Top-level fields:
 
 Mailbox fields:
 - `path`: absolute or `~`-relative path to a correspondence data directory
-
-Backward compat: if `[mailboxes]` is missing but `[spaces]` exists, reads from `[spaces]` (and `default_space`).
 
 ## 4. Algorithms
 
@@ -531,14 +515,6 @@ corky --mailbox NAME <subcommand> [args...]
 
 Available on all commands. Resolves the named mailbox via app config and sets `CORKY_DATA` before dispatching to the subcommand.
 
-### 5.21 migrate
-
-```
-corky migrate
-```
-
-Converts old `accounts.toml` + `collaborators.toml` to unified `.corky.toml`. Moves `collabs/{name}/to/` directories to `mailboxes/{name}/`. Fails if `.corky.toml` already exists or no `accounts.toml` found.
-
 ## 6. Sync Algorithm
 
 ### 6.1 State
@@ -718,12 +694,3 @@ For `push-draft`:
 2. `**From**` metadata field → lookup by email address (case-insensitive)
 3. Default account (first with `default = true`, or first in file)
 
-### 11.3 Legacy .env
-
-If no `accounts.toml` exists:
-- `GMAIL_USER_EMAIL` → user
-- `GMAIL_APP_PASSWORD` → password (spaces stripped)
-- `GMAIL_SYNC_LABELS` → labels (comma-separated)
-- `GMAIL_SYNC_DAYS` → sync_days (default 3650)
-- Provider forced to `gmail` with gmail presets
-- Mapped to synthetic account named `_legacy`

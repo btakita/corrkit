@@ -11,40 +11,6 @@ use corky::accounts::{
 };
 
 #[test]
-fn test_load_accounts_flat_format() {
-    let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
-    std::fs::write(
-        &path,
-        r#"
-[personal]
-provider = "gmail"
-user = "alice@gmail.com"
-password = "secret123"
-labels = ["correspondence"]
-default = true
-"#,
-    )
-    .unwrap();
-
-    let accounts = load_accounts(Some(&path)).unwrap();
-    assert_eq!(accounts.len(), 1);
-
-    let acct = accounts.get("personal").unwrap();
-    assert_eq!(acct.provider, "gmail");
-    assert_eq!(acct.user, "alice@gmail.com");
-    assert_eq!(acct.password, "secret123");
-    assert_eq!(acct.labels, vec!["correspondence"]);
-    assert!(acct.default);
-    // Gmail preset should apply
-    assert_eq!(acct.imap_host, "imap.gmail.com");
-    assert_eq!(acct.imap_port, 993);
-    assert_eq!(acct.smtp_host, "smtp.gmail.com");
-    assert_eq!(acct.smtp_port, 465);
-    assert_eq!(acct.drafts_folder, "[Gmail]/Drafts");
-}
-
-#[test]
 fn test_load_accounts_nested_format() {
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().join("accounts.toml");
@@ -280,11 +246,11 @@ name = "My Name"
 #[test]
 fn test_load_owner_missing_section() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[personal]
+[accounts.personal]
 provider = "gmail"
 "#,
     )
@@ -363,11 +329,11 @@ fn test_account_defaults() {
 fn test_preset_overrides_only_defaults() {
     // If account specifies imap_host, preset should not override it
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[personal]
+[accounts.personal]
 provider = "gmail"
 user = "alice@gmail.com"
 password = "test"
@@ -387,11 +353,11 @@ imap_host = "custom.imap.host"
 #[test]
 fn test_add_label_to_account() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[personal]
+[accounts.personal]
 provider = "gmail"
 user = "alice@gmail.com"
 password = "test"
@@ -412,11 +378,11 @@ labels = ["inbox"]
 #[test]
 fn test_add_label_already_exists() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[personal]
+[accounts.personal]
 provider = "gmail"
 user = "alice@gmail.com"
 password = "test"
@@ -432,11 +398,11 @@ labels = ["inbox"]
 #[test]
 fn test_add_label_unknown_account() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[personal]
+[accounts.personal]
 provider = "gmail"
 user = "alice@gmail.com"
 password = "test"
@@ -450,42 +416,13 @@ labels = ["inbox"]
 }
 
 #[test]
-fn test_non_account_keys_ignored() {
-    let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
-    std::fs::write(
-        &path,
-        r#"
-[owner]
-github_user = "testuser"
-
-[watch]
-poll_interval = 60
-
-[personal]
-provider = "gmail"
-user = "alice@gmail.com"
-password = "test"
-"#,
-    )
-    .unwrap();
-
-    let accounts = load_accounts(Some(&path)).unwrap();
-    // owner and watch should NOT appear as accounts
-    assert!(!accounts.contains_key("owner"));
-    assert!(!accounts.contains_key("watch"));
-    assert_eq!(accounts.len(), 1);
-    assert!(accounts.contains_key("personal"));
-}
-
-#[test]
 fn test_protonmail_bridge_preset() {
     let tmp = TempDir::new().unwrap();
-    let path = tmp.path().join("accounts.toml");
+    let path = tmp.path().join(".corky.toml");
     std::fs::write(
         &path,
         r#"
-[proton]
+[accounts.proton]
 provider = "protonmail-bridge"
 user = "user@proton.me"
 password = "bridge-password"

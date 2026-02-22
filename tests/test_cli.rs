@@ -106,15 +106,6 @@ fn test_cli_mb_alias() {
 }
 
 #[test]
-fn test_cli_migrate_subcommand() {
-    let mut cmd = corky_cmd();
-    cmd.arg("migrate");
-    // Will fail because no accounts.toml in cwd, but should not panic
-    let output = cmd.output().unwrap();
-    assert!(output.status.code().is_some());
-}
-
-#[test]
 fn test_cli_sync_routes() {
     let tmp = tempfile::TempDir::new().unwrap();
     let project_dir = tmp.path().to_path_buf();

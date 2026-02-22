@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::accounts::{
-    get_account_for_email, get_default_account, load_accounts_or_env, resolve_password,
+    get_account_for_email, get_default_account, load_accounts, resolve_password,
 };
 
 static META_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)^\*\*(.+?)\*\*:\s*(.+)$").unwrap());
@@ -145,7 +145,7 @@ fn update_draft_status(path: &Path, new_status: &str) -> Result<()> {
 
 /// Resolve sending account from draft metadata.
 fn resolve_account(meta: &HashMap<String, String>) -> Result<(String, crate::accounts::Account, String)> {
-    let accounts = load_accounts_or_env(None)?;
+    let accounts = load_accounts(None)?;
 
     // Try **Account** field first
     if let Some(acct_name) = meta.get("Account") {

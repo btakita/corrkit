@@ -44,25 +44,15 @@ pub fn save(config: &toml::Value) -> Result<()> {
     Ok(())
 }
 
-/// Read the mailboxes table, with backward-compat fallback to `[spaces]`.
 fn read_mailboxes(table: &toml::map::Map<String, toml::Value>) -> toml::map::Map<String, toml::Value> {
     if let Some(toml::Value::Table(m)) = table.get("mailboxes") {
         return m.clone();
     }
-    // Backward compat: read from [spaces] if [mailboxes] is missing
-    if let Some(toml::Value::Table(s)) = table.get("spaces") {
-        return s.clone();
-    }
     toml::map::Map::new()
 }
 
-/// Read the default mailbox name, with backward-compat fallback to `default_space`.
 fn read_default(table: &toml::map::Map<String, toml::Value>) -> Option<String> {
     if let Some(toml::Value::String(d)) = table.get("default_mailbox") {
-        return Some(d.clone());
-    }
-    // Backward compat: read from default_space
-    if let Some(toml::Value::String(d)) = table.get("default_space") {
         return Some(d.clone());
     }
     None

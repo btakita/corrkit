@@ -101,16 +101,6 @@ fn test_roundtrip_multiple_messages() {
 }
 
 #[test]
-fn test_parse_legacy_label_format() {
-    let md = "# Old Thread\n\n\
-              **Label**: legacy-label\n\
-              **Thread ID**: old-thread\n\
-              **Last updated**: Mon, 1 Jan 2024 00:00:00 +0000\n";
-    let parsed = parse_thread_markdown(md).unwrap();
-    assert_eq!(parsed.labels, vec!["legacy-label"]);
-}
-
-#[test]
 fn test_parse_multi_label() {
     let md = "# Multi Label Thread\n\n\
               **Labels**: alpha, beta, gamma\n\
@@ -571,19 +561,6 @@ fn test_sync_state_roundtrip() {
     let data = serde_json::to_vec(&state).unwrap();
     let loaded = corky::sync::types::load_state(&data).unwrap();
     assert!(loaded.accounts.is_empty());
-    assert!(loaded.labels.is_empty());
-}
-
-#[test]
-fn test_sync_state_legacy_migration() {
-    // Old format had flat labels, should migrate to accounts._legacy
-    let json = r#"{"labels":{"inbox":{"uidvalidity":1,"last_uid":100}},"accounts":{}}"#;
-    let state = corky::sync::types::load_state(json.as_bytes()).unwrap();
-    assert!(state.labels.is_empty()); // Migrated away
-    assert!(state.accounts.contains_key("_legacy"));
-    let legacy = state.accounts.get("_legacy").unwrap();
-    assert!(legacy.labels.contains_key("inbox"));
-    assert_eq!(legacy.labels["inbox"].last_uid, 100);
 }
 
 // ---------------------------------------------------------------------------

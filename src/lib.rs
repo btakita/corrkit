@@ -6,7 +6,6 @@ pub mod contact;
 pub mod draft;
 pub mod init;
 pub mod mailbox;
-pub mod migrate;
 pub mod resolve;
 pub mod skill;
 pub mod sync;
