@@ -1,9 +1,18 @@
 //! Template generators for mailbox repos (AGENTS.md, README.md).
 
+fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().to_string() + c.as_str(),
+    }
+}
+
 /// Generate AGENTS.md for a mailbox repo.
 pub fn generate_agents_md(name: &str, owner_name: &str) -> String {
+    let title_name = capitalize(name);
     format!(
-        r#"# Shared Correspondence with {owner_name}
+        r#"# {owner_name}'s Mailbox for {title_name}
 
 ## Workflow
 
@@ -118,8 +127,9 @@ on his behalf.
 
 /// Generate README.md for a mailbox repo.
 pub fn generate_readme_md(name: &str, owner_name: &str) -> String {
+    let title_name = capitalize(name);
     format!(
-        r#"# Shared Correspondence with {owner_name}
+        r#"# {owner_name}'s Mailbox for {title_name}
 
 This repo contains email threads {owner_name} has shared with you and a place for you
 to draft replies on his behalf.
