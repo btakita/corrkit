@@ -38,7 +38,7 @@ fn install_email(project_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// CLI entry point for `corrkit install-skill`.
+/// CLI entry point for `corky install-skill`.
 pub fn run(name: &str) -> Result<()> {
     let project_dir = std::env::current_dir()?;
     install(name, &project_dir)

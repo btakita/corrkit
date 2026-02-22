@@ -1,6 +1,6 @@
-//! App-level config for corrkit (mailbox registry, defaults).
+//! App-level config for corky (mailbox registry, defaults).
 //!
-//! Reads/writes {user_config_dir}/corrkit/config.toml.
+//! Reads/writes {user_config_dir}/corky/config.toml.
 
 use anyhow::{bail, Result};
 use std::collections::BTreeMap;
@@ -8,12 +8,12 @@ use std::path::PathBuf;
 
 use crate::resolve;
 
-/// Return the OS-native corrkit config directory.
+/// Return the OS-native corky config directory.
 pub fn app_config_dir() -> PathBuf {
-    if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "corrkit") {
+    if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "corky") {
         proj_dirs.config_dir().to_path_buf()
     } else {
-        resolve::home_dir().join(".config").join("corrkit")
+        resolve::home_dir().join(".config").join("corky")
     }
 }
 

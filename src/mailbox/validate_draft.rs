@@ -93,7 +93,7 @@ pub fn validate_draft(path: &Path) -> Vec<String> {
     issues
 }
 
-/// corrkit validate-draft FILE [FILE...]
+/// corky validate-draft FILE [FILE...]
 pub fn run(files: &[PathBuf]) -> Result<()> {
     let mut all_ok = true;
 

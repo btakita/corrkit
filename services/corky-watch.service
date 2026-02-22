@@ -1,0 +1,19 @@
+# systemd user unit for corky watch
+# Install: cp corky-watch.service ~/.config/systemd/user/
+# Enable:  systemctl --user enable --now corky-watch
+# Logs:    journalctl --user -u corky-watch -f
+
+[Unit]
+Description=corky IMAP polling daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/work/btakita/corky
+ExecStart=/usr/bin/env uv run corky watch
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

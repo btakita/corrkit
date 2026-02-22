@@ -1,4 +1,4 @@
-//! Initialize a new corrkit project directory with config and folder structure.
+//! Initialize a new corky project directory with config and folder structure.
 
 use anyhow::Result;
 use std::path::{Path, PathBuf};
@@ -21,8 +21,8 @@ fn create_dirs(data_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Generate .corrkit.toml content.
-fn generate_corrkit_toml(
+/// Generate .corky.toml content.
+fn generate_corky_toml(
     user: &str,
     provider: &str,
     password_cmd: &str,
@@ -143,9 +143,9 @@ pub fn run(
         .filter(|s| !s.is_empty())
         .collect();
 
-    let config_path = data_dir.join(".corrkit.toml");
+    let config_path = data_dir.join(".corky.toml");
     if config_path.exists() && !force {
-        eprintln!(".corrkit.toml already exists at {}", config_path.display());
+        eprintln!(".corky.toml already exists at {}", config_path.display());
         eprintln!("Use --force to overwrite.");
         std::process::exit(1);
     }
@@ -157,9 +157,9 @@ pub fn run(
         data_dir.display()
     );
 
-    // 3. Generate .corrkit.toml inside correspondence/
+    // 3. Generate .corky.toml inside correspondence/
     let content =
-        generate_corrkit_toml(user, provider, password_cmd, &labels, github_user, name);
+        generate_corky_toml(user, provider, password_cmd, &labels, github_user, name);
     std::fs::write(&config_path, &content)?;
     println!("Created {}", config_path.display());
 
@@ -197,13 +197,13 @@ pub fn run(
         println!();
         println!("Gmail setup:");
         println!("  Option A: App password \u{2014} https://myaccount.google.com/apppasswords");
-        println!("    Add password_cmd = \"pass email/personal\" to correspondence/.corrkit.toml");
-        println!("  Option B: OAuth \u{2014} run 'corrkit sync-auth' after placing credentials.json");
+        println!("    Add password_cmd = \"pass email/personal\" to correspondence/.corky.toml");
+        println!("  Option B: OAuth \u{2014} run 'corky sync-auth' after placing credentials.json");
     }
 
     // 9. Optional first sync
     if sync {
-        std::env::set_var("CORRKIT_DATA", data_dir.to_string_lossy().as_ref());
+        std::env::set_var("CORKY_DATA", data_dir.to_string_lossy().as_ref());
         println!();
         crate::sync::run(false, None)?;
     }
@@ -216,11 +216,11 @@ pub fn run(
             println!("  - Set up app password or OAuth (see above)");
         }
         if !presets.contains_key(provider) && provider == "imap" {
-            println!("  - Add imap_host, smtp_host to correspondence/.corrkit.toml");
+            println!("  - Add imap_host, smtp_host to correspondence/.corky.toml");
         }
-        println!("  - Run: corrkit sync");
+        println!("  - Run: corky sync");
         if !with_skill {
-            println!("  - Run: corrkit install-skill email  (to add the email agent skill)");
+            println!("  - Run: corky install-skill email  (to add the email agent skill)");
         }
     }
 

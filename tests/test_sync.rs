@@ -6,10 +6,10 @@ mod common;
 use std::collections::HashSet;
 use tempfile::TempDir;
 
-use corrkit::sync::imap_sync::{merge_message_to_file, parse_msg_date};
-use corrkit::sync::markdown::{parse_thread_markdown, thread_to_markdown};
-use corrkit::sync::types::{Message, SyncState, Thread};
-use corrkit::util::slugify;
+use corky::sync::imap_sync::{merge_message_to_file, parse_msg_date};
+use corky::sync::markdown::{parse_thread_markdown, thread_to_markdown};
+use corky::sync::types::{Message, SyncState, Thread};
+use corky::util::slugify;
 use pretty_assertions::assert_eq;
 
 // ---------------------------------------------------------------------------
@@ -569,7 +569,7 @@ fn test_mtime_set_on_write() {
 fn test_sync_state_roundtrip() {
     let state = SyncState::default();
     let data = serde_json::to_vec(&state).unwrap();
-    let loaded = corrkit::sync::types::load_state(&data).unwrap();
+    let loaded = corky::sync::types::load_state(&data).unwrap();
     assert!(loaded.accounts.is_empty());
     assert!(loaded.labels.is_empty());
 }
@@ -578,7 +578,7 @@ fn test_sync_state_roundtrip() {
 fn test_sync_state_legacy_migration() {
     // Old format had flat labels, should migrate to accounts._legacy
     let json = r#"{"labels":{"inbox":{"uidvalidity":1,"last_uid":100}},"accounts":{}}"#;
-    let state = corrkit::sync::types::load_state(json.as_bytes()).unwrap();
+    let state = corky::sync::types::load_state(json.as_bytes()).unwrap();
     assert!(state.labels.is_empty()); // Migrated away
     assert!(state.accounts.contains_key("_legacy"));
     let legacy = state.accounts.get("_legacy").unwrap();
@@ -693,8 +693,8 @@ fn test_manifest_generation() {
     let conv_dir = data_dir.join("conversations");
     std::fs::create_dir_all(&conv_dir).unwrap();
 
-    // Set CORRKIT_DATA so contacts.toml resolution works
-    std::env::set_var("CORRKIT_DATA", data_dir.to_string_lossy().as_ref());
+    // Set CORKY_DATA so contacts.toml resolution works
+    std::env::set_var("CORKY_DATA", data_dir.to_string_lossy().as_ref());
 
     // Create a contacts.toml
     std::fs::write(data_dir.join("contacts.toml"), "").unwrap();
@@ -722,7 +722,7 @@ fn test_manifest_generation() {
     )
     .unwrap();
 
-    corrkit::sync::manifest::generate_manifest(&conv_dir).unwrap();
+    corky::sync::manifest::generate_manifest(&conv_dir).unwrap();
 
     let manifest_path = data_dir.join("manifest.toml");
     assert!(manifest_path.exists());
@@ -731,7 +731,7 @@ fn test_manifest_generation() {
     assert!(content.contains("manifest-subject"));
     assert!(content.contains("Manifest Subject"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 // ---------------------------------------------------------------------------

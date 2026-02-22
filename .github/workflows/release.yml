@@ -51,26 +51,26 @@ jobs:
 
       - name: Package (Unix)
         if: runner.os != 'Windows'
-        run: tar czf corrkit-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release corrkit
+        run: tar czf corky-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release corky
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path target/${{ matrix.target }}/release/corrkit.exe -DestinationPath corrkit-${{ matrix.target }}.zip
+        run: Compress-Archive -Path target/${{ matrix.target }}/release/corky.exe -DestinationPath corky-${{ matrix.target }}.zip
 
       - name: Upload artifact (Unix)
         if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: corrkit-${{ matrix.target }}
-          path: corrkit-${{ matrix.target }}.tar.gz
+          name: corky-${{ matrix.target }}
+          path: corky-${{ matrix.target }}.tar.gz
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: corrkit-${{ matrix.target }}
-          path: corrkit-${{ matrix.target }}.zip
+          name: corky-${{ matrix.target }}
+          path: corky-${{ matrix.target }}.zip
 
   release:
     needs: build
@@ -88,6 +88,6 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
           gh release create "$tag" \
-            --title "corrkit $tag" \
+            --title "corky $tag" \
             --generate-notes \
             artifacts/*

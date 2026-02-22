@@ -1,4 +1,4 @@
-//! Command reference for corrkit.
+//! Command reference for corky.
 
 use anyhow::Result;
 
@@ -19,7 +19,7 @@ const COMMANDS: &[(&str, &str)] = &[
     ("find-unanswered [--from NAME]", "Find threads awaiting a reply"),
     ("validate-draft FILE [FILE...]", "Validate draft markdown files"),
     ("audit-docs", "Audit instruction files"),
-    ("migrate", "Migrate from accounts.toml to .corrkit.toml"),
+    ("migrate", "Migrate from accounts.toml to .corky.toml"),
     ("help", "Show this reference"),
 ];
 
@@ -61,7 +61,7 @@ pub fn run(filter: Option<&str>) -> Result<()> {
         }
     }
 
-    println!("corrkit commands\n");
+    println!("corky commands\n");
     print_table(COMMANDS);
 
     println!("\nmailbox commands (alias: mb)\n");

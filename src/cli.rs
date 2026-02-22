@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "corrkit", version, about = "Sync email threads from IMAP to Markdown, draft replies, manage mailboxes", disable_help_subcommand = true)]
+#[command(name = "corky", version, about = "Sync email threads from IMAP to Markdown, draft replies, manage mailboxes", disable_help_subcommand = true)]
 pub struct Cli {
     /// Use a named mailbox from app config
     #[arg(long, global = true)]
@@ -56,7 +56,7 @@ pub enum Commands {
         #[arg(long = "mailbox-name", default_value = "default")]
         mailbox_name: String,
 
-        /// Overwrite existing .corrkit.toml
+        /// Overwrite existing .corky.toml
         #[arg(long)]
         force: bool,
     },
@@ -72,7 +72,7 @@ pub enum Commands {
 
     /// List IMAP folders for an account
     ListFolders {
-        /// Account name from .corrkit.toml
+        /// Account name from .corky.toml
         account: Option<String>,
     },
 
@@ -91,7 +91,7 @@ pub enum Commands {
         /// Label to add
         label: String,
 
-        /// Account name in .corrkit.toml
+        /// Account name in .corky.toml
         #[arg(long)]
         account: String,
     },
@@ -154,7 +154,7 @@ pub enum Commands {
     #[command(subcommand, alias = "mb")]
     Mailbox(MailboxCommands),
 
-    /// Migrate from accounts.toml + collaborators.toml to .corrkit.toml
+    /// Migrate from accounts.toml + collaborators.toml to .corky.toml
     Migrate,
 }
 
@@ -165,7 +165,7 @@ pub enum SyncCommands {
 
     /// Sync one account
     Account {
-        /// Account name from .corrkit.toml
+        /// Account name from .corky.toml
         name: String,
     },
 

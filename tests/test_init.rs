@@ -1,7 +1,7 @@
-//! Integration tests for corrkit init (src/init.rs).
+//! Integration tests for corky init (src/init.rs).
 //!
 //! Each test sets HOME to a temp dir to isolate from the real
-//! ~/.config/corrkit/config.toml. Tests run serially via
+//! ~/.config/corky/config.toml. Tests run serially via
 //! a shared mutex to avoid env var races.
 
 mod common;
@@ -9,7 +9,7 @@ mod common;
 use std::sync::Mutex;
 use tempfile::TempDir;
 
-use corrkit::accounts::{load_accounts, load_owner};
+use corky::accounts::{load_accounts, load_owner};
 
 static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
@@ -31,7 +31,7 @@ fn run_init_isolated(
     let _lock = ENV_MUTEX.lock().unwrap();
     let old_home = std::env::var("HOME").ok();
     std::env::set_var("HOME", tmp.path().to_string_lossy().as_ref());
-    let result = corrkit::init::run(
+    let result = corky::init::run(
         user, path, provider, password_cmd, labels, github_user, name,
         false, // sync
         mailbox, force,
@@ -64,17 +64,17 @@ fn test_init_creates_directory_structure() {
     assert!(data_dir.join("drafts").join(".gitkeep").exists());
     assert!(data_dir.join("contacts").join(".gitkeep").exists());
     // Config inside correspondence/
-    assert!(data_dir.join(".corrkit.toml").exists());
+    assert!(data_dir.join(".corky.toml").exists());
     assert!(data_dir.join("contacts.toml").exists());
     assert!(data_dir.join("voice.md").exists());
     // No config at project root
-    assert!(!path.join(".corrkit.toml").exists());
+    assert!(!path.join(".corky.toml").exists());
     assert!(!path.join("contacts.toml").exists());
     assert!(!path.join("voice.md").exists());
 }
 
 #[test]
-fn test_init_corrkit_toml_content() {
+fn test_init_corky_toml_content() {
     let tmp = TempDir::new().unwrap();
     let path = tmp.path().join("initdata");
 
@@ -85,7 +85,7 @@ fn test_init_corrkit_toml_content() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     assert!(accounts.contains_key("default"));
     let acct = accounts.get("default").unwrap();
@@ -109,7 +109,7 @@ fn test_init_with_custom_provider() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.provider, "protonmail-bridge");
@@ -128,7 +128,7 @@ fn test_init_labels_parsing() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert_eq!(acct.labels.len(), 3);
@@ -143,7 +143,7 @@ fn test_init_force_overwrites() {
     let path = tmp.path().join("forcedata");
     let data_dir = path.join("correspondence");
     std::fs::create_dir_all(&data_dir).unwrap();
-    std::fs::write(data_dir.join(".corrkit.toml"), "# old config").unwrap();
+    std::fs::write(data_dir.join(".corky.toml"), "# old config").unwrap();
 
     run_init_isolated(
         &tmp, &path, "new@example.com", "gmail",
@@ -152,7 +152,7 @@ fn test_init_force_overwrites() {
     )
     .unwrap();
 
-    let content = std::fs::read_to_string(data_dir.join(".corrkit.toml")).unwrap();
+    let content = std::fs::read_to_string(data_dir.join(".corky.toml")).unwrap();
     assert!(content.contains("new@example.com"));
     assert!(!content.contains("# old config"));
 }
@@ -169,7 +169,7 @@ fn test_init_tilde_expansion() {
     )
     .unwrap();
 
-    assert!(path.join("correspondence").join(".corrkit.toml").exists());
+    assert!(path.join("correspondence").join(".corky.toml").exists());
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn test_init_empty_labels() {
     )
     .unwrap();
 
-    let config_path = path.join("correspondence").join(".corrkit.toml");
+    let config_path = path.join("correspondence").join(".corky.toml");
     let accounts = load_accounts(Some(&config_path)).unwrap();
     let acct = accounts.get("default").unwrap();
     assert!(acct.labels.is_empty());
@@ -232,7 +232,7 @@ fn test_init_with_skill() {
     let _lock = ENV_MUTEX.lock().unwrap();
     let old_home = std::env::var("HOME").ok();
     std::env::set_var("HOME", tmp.path().to_string_lossy().as_ref());
-    let result = corrkit::init::run(
+    let result = corky::init::run(
         "user@example.com", &path, "gmail", "", "correspondence", "", "",
         false, "test-init-mb-skill", true,
         true, // with_skill

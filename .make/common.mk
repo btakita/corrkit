@@ -8,8 +8,8 @@ build:
 release:
 	cargo build --release
 	@mkdir -p .bin
-	@ln -sf ../target/release/corrkit .bin/corrkit
-	@echo "Installed .bin/corrkit -> target/release/corrkit"
+	@ln -sf ../target/release/corky .bin/corky
+	@echo "Installed .bin/corky -> target/release/corky"
 
 # Run tests
 test:
@@ -40,7 +40,7 @@ install-hooks:
 # Remove build artifacts
 clean:
 	cargo clean
-	rm -f .bin/corrkit
+	rm -f .bin/corky
 
 # Set up Python venv (for wrapper development)
 init-python: PY_VERSION = $(shell [ -f .python-version ] && \
@@ -52,4 +52,4 @@ init-python:
 	fi
 	uv venv .venv --python "$(PY_VERSION)" --no-project --clear --seed $(VENV_ARGS)
 	uv pip install -e wrapper/
-	@echo "Python wrapper installed in .venv (corrkit binary still comes from .bin/)"
+	@echo "Python wrapper installed in .venv (corky binary still comes from .bin/)"

@@ -38,7 +38,7 @@ pub fn save_state(state: &SyncState) -> Result<()> {
     Ok(())
 }
 
-/// corrkit sync [--full] [--account NAME]
+/// corky sync [--full] [--account NAME]
 pub fn run(full: bool, account: Option<&str>) -> Result<()> {
     let accounts = load_accounts_or_env(None)?;
     let mut state = if full {

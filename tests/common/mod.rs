@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-/// Create a temporary data directory with the standard corrkit structure.
+/// Create a temporary data directory with the standard corky structure.
 pub fn temp_data_dir() -> (TempDir, PathBuf) {
     let tmp = TempDir::new().expect("failed to create temp dir");
     let data_dir = tmp.path().to_path_buf();
@@ -17,8 +17,8 @@ pub fn temp_data_dir() -> (TempDir, PathBuf) {
     (tmp, data_dir)
 }
 
-/// Create a minimal .corrkit.toml for testing.
-pub fn write_corrkit_toml(dir: &Path, user: &str) {
+/// Create a minimal .corky.toml for testing.
+pub fn write_corky_toml(dir: &Path, user: &str) {
     let content = format!(
         r#"[owner]
 github_user = "testuser"
@@ -33,7 +33,7 @@ default = true
 "#,
         user = user,
     );
-    std::fs::write(dir.join(".corrkit.toml"), content).unwrap();
+    std::fs::write(dir.join(".corky.toml"), content).unwrap();
 }
 
 /// Create a minimal accounts.toml for testing (legacy format, used in migrate tests).

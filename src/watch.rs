@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use crate::accounts::{load_accounts_or_env, load_watch_config, resolve_password};
-use crate::config::corrkit_config;
+use crate::config::corky_config;
 use crate::resolve;
 use crate::sync::imap_sync::sync_account;
 use crate::sync::types::SyncState;
@@ -85,7 +85,7 @@ fn save_state(state: &SyncState) {
 }
 
 fn sync_mailboxes() {
-    let config = match corrkit_config::try_load_config(None) {
+    let config = match corky_config::try_load_config(None) {
         Some(c) => c,
         None => return,
     };
@@ -159,7 +159,7 @@ fn poll_once(notify_enabled: bool) -> usize {
         sync_mailboxes();
         if notify_enabled {
             notify(
-                "corrkit",
+                "corky",
                 &format!("{} label(s) with new messages", new_count),
             );
         }
@@ -170,7 +170,7 @@ fn poll_once(notify_enabled: bool) -> usize {
     new_count
 }
 
-/// corrkit watch [--interval N]
+/// corky watch [--interval N]
 #[tokio::main]
 pub async fn run(interval_override: Option<u64>) -> Result<()> {
     let config = load_watch_config(None)?;
@@ -186,7 +186,7 @@ pub async fn run(interval_override: Option<u64>) -> Result<()> {
         shutdown_clone.store(true, Ordering::Relaxed);
     });
 
-    println!("corrkit watch: polling every {}s (Ctrl-C to stop)", interval);
+    println!("corky watch: polling every {}s (Ctrl-C to stop)", interval);
 
     loop {
         if shutdown.load(Ordering::Relaxed) {
@@ -207,6 +207,6 @@ pub async fn run(interval_override: Option<u64>) -> Result<()> {
         tokio::time::sleep(tokio::time::Duration::from_secs(interval)).await;
     }
 
-    println!("corrkit watch: stopped");
+    println!("corky watch: stopped");
     Ok(())
 }

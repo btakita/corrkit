@@ -2,13 +2,13 @@
 
 mod common;
 
-use corrkit::app_config;
+use corky::app_config;
 
 #[test]
 fn test_app_config_dir_returns_path() {
     let dir = app_config::app_config_dir();
-    // Should contain "corrkit" somewhere in the path
-    assert!(dir.to_string_lossy().contains("corrkit"));
+    // Should contain "corky" somewhere in the path
+    assert!(dir.to_string_lossy().contains("corky"));
 }
 
 #[test]

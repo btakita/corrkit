@@ -34,7 +34,7 @@ fn thread_labels(text: &str) -> String {
         .unwrap_or_default()
 }
 
-/// corrkit find-unanswered [--from NAME]
+/// corky find-unanswered [--from NAME]
 pub fn run(from_name: &str) -> Result<()> {
     let conversations = PathBuf::from("conversations");
     if !conversations.exists() {

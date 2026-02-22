@@ -188,16 +188,16 @@ pub fn resolve_password(account: &Account) -> Result<String> {
 
 const NON_ACCOUNT_KEYS: &[&str] = &["watch", "owner", "routing", "mailboxes"];
 
-/// Parse accounts from .corrkit.toml or accounts.toml → {name: Account} mapping.
+/// Parse accounts from .corky.toml or accounts.toml → {name: Account} mapping.
 ///
 /// Resolution order (when path is None):
-/// 1. .corrkit.toml / corrkit.toml (new unified config)
+/// 1. .corky.toml / corky.toml (new unified config)
 /// 2. accounts.toml (legacy)
 pub fn load_accounts(path: Option<&Path>) -> Result<HashMap<String, Account>> {
     let path = match path {
         Some(p) => PathBuf::from(p),
         None => {
-            let ck = resolve::corrkit_toml();
+            let ck = resolve::corky_toml();
             if ck.exists() {
                 ck
             } else {
@@ -280,12 +280,12 @@ pub fn load_accounts_or_env(path: Option<&Path>) -> Result<HashMap<String, Accou
     Ok(m)
 }
 
-/// Load [owner] section from .corrkit.toml or accounts.toml.
+/// Load [owner] section from .corky.toml or accounts.toml.
 pub fn load_owner(path: Option<&Path>) -> Result<OwnerConfig> {
     let path = match path {
         Some(p) => PathBuf::from(p),
         None => {
-            let ck = resolve::corrkit_toml();
+            let ck = resolve::corky_toml();
             if ck.exists() {
                 ck
             } else {
@@ -295,7 +295,7 @@ pub fn load_owner(path: Option<&Path>) -> Result<OwnerConfig> {
     };
     if !path.exists() {
         bail!(
-            "Config not found at {}.\nRun 'corrkit init' or add an [owner] section with github_user.",
+            "Config not found at {}.\nRun 'corky init' or add an [owner] section with github_user.",
             path.display()
         );
     }
@@ -338,7 +338,7 @@ pub fn get_account_for_email(
     None
 }
 
-/// Add a label to an account's labels list in .corrkit.toml or accounts.toml.
+/// Add a label to an account's labels list in .corky.toml or accounts.toml.
 ///
 /// Uses toml_edit for format-preserving edits.
 /// Returns Ok(true) if added, Ok(false) if already present.
@@ -346,7 +346,7 @@ pub fn add_label_to_account(account_name: &str, label: &str, path: Option<&Path>
     let path = match path {
         Some(p) => PathBuf::from(p),
         None => {
-            let ck = resolve::corrkit_toml();
+            let ck = resolve::corky_toml();
             if ck.exists() {
                 ck
             } else {
@@ -395,7 +395,7 @@ pub fn add_label_to_account(account_name: &str, label: &str, path: Option<&Path>
     Ok(true)
 }
 
-/// CLI: corrkit add-label LABEL --account ACCOUNT
+/// CLI: corky add-label LABEL --account ACCOUNT
 pub fn add_label_cmd(label: &str, account: &str) -> Result<()> {
     let added = add_label_to_account(account, label, None)?;
     if added {
@@ -406,12 +406,12 @@ pub fn add_label_cmd(label: &str, account: &str) -> Result<()> {
     Ok(())
 }
 
-/// Load [watch] section from .corrkit.toml or accounts.toml. Returns defaults if missing.
+/// Load [watch] section from .corky.toml or accounts.toml. Returns defaults if missing.
 pub fn load_watch_config(path: Option<&Path>) -> Result<WatchConfig> {
     let path = match path {
         Some(p) => PathBuf::from(p),
         None => {
-            let ck = resolve::corrkit_toml();
+            let ck = resolve::corky_toml();
             if ck.exists() {
                 ck
             } else {

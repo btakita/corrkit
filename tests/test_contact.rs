@@ -5,7 +5,7 @@ mod common;
 use std::collections::BTreeMap;
 use tempfile::TempDir;
 
-use corrkit::config::contact::{self, Contact};
+use corky::config::contact::{self, Contact};
 
 #[test]
 fn test_load_contacts_empty_file() {

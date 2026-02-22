@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 use super::markdown::{parse_thread_markdown, thread_to_markdown};
 use super::types::{AccountSyncState, LabelState, Message, SyncState, Thread};
-use crate::config::corrkit_config;
+use crate::config::corky_config;
 use crate::resolve;
 use crate::util::{slugify, thread_key_from_subject};
 
@@ -195,13 +195,13 @@ pub fn merge_message_to_file(
     Ok(Some(file_path))
 }
 
-/// Build label→output_dirs map from .corrkit.toml [routing].
+/// Build label→output_dirs map from .corky.toml [routing].
 ///
 /// Fan-out: one label can route to multiple mailbox directories.
 /// Supports `account:label` syntax for per-account binding.
 pub fn build_label_routes(account_name: &str) -> std::collections::HashMap<String, Vec<PathBuf>> {
     let mut routes: std::collections::HashMap<String, Vec<PathBuf>> = std::collections::HashMap::new();
-    let config = match corrkit_config::try_load_config(None) {
+    let config = match corky_config::try_load_config(None) {
         Some(c) => c,
         None => return routes,
     };

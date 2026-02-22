@@ -1,5 +1,5 @@
-# Corrkit unified configuration.
-# Copy to .corrkit.toml and fill in your details.
+# Corky unified configuration.
+# Copy to .corky.toml and fill in your details.
 # See README.md for full documentation.
 
 [owner]

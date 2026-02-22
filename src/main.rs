@@ -1,18 +1,18 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corrkit::cli::{Cli, Commands, MailboxCommands, SyncCommands};
+use corky::cli::{Cli, Commands, MailboxCommands, SyncCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Handle --mailbox: resolve named mailbox and set CORRKIT_DATA
+    // Handle --mailbox: resolve named mailbox and set CORKY_DATA
     if let Some(ref mailbox_name) = cli.mailbox {
-        let path = corrkit::app_config::resolve_mailbox(Some(mailbox_name))?;
+        let path = corky::app_config::resolve_mailbox(Some(mailbox_name))?;
         if let Some(p) = path {
-            std::env::set_var("CORRKIT_DATA", p.to_string_lossy().as_ref());
+            std::env::set_var("CORKY_DATA", p.to_string_lossy().as_ref());
         } else {
-            eprintln!("No mailboxes configured. Run 'corrkit init' first.");
+            eprintln!("No mailboxes configured. Run 'corky init' first.");
             std::process::exit(1);
         }
     }
@@ -30,7 +30,7 @@ fn main() -> Result<()> {
             sync,
             mailbox_name,
             force,
-        } => corrkit::init::run(
+        } => corky::init::run(
             &user,
             &path,
             &provider,
@@ -44,32 +44,32 @@ fn main() -> Result<()> {
             with_skill,
         ),
         Commands::Sync { command } => match command {
-            None => corrkit::sync::run(false, None),
-            Some(SyncCommands::Full) => corrkit::sync::run(true, None),
-            Some(SyncCommands::Account { name }) => corrkit::sync::run(false, Some(&name)),
-            Some(SyncCommands::Routes) => corrkit::sync::routes::run(),
-            Some(SyncCommands::Mailbox { name }) => corrkit::mailbox::sync::run(name.as_deref()),
+            None => corky::sync::run(false, None),
+            Some(SyncCommands::Full) => corky::sync::run(true, None),
+            Some(SyncCommands::Account { name }) => corky::sync::run(false, Some(&name)),
+            Some(SyncCommands::Routes) => corky::sync::routes::run(),
+            Some(SyncCommands::Mailbox { name }) => corky::mailbox::sync::run(name.as_deref()),
         },
-        Commands::SyncAuth => corrkit::sync::auth::run(),
-        Commands::ListFolders { account } => corrkit::sync::folders::run(account.as_deref()),
-        Commands::PushDraft { file, send } => corrkit::draft::run(&file, send),
-        Commands::AddLabel { label, account } => corrkit::accounts::add_label_cmd(&label, &account),
+        Commands::SyncAuth => corky::sync::auth::run(),
+        Commands::ListFolders { account } => corky::sync::folders::run(account.as_deref()),
+        Commands::PushDraft { file, send } => corky::draft::run(&file, send),
+        Commands::AddLabel { label, account } => corky::accounts::add_label_cmd(&label, &account),
         Commands::ContactAdd {
             name,
             emails,
             labels,
             account,
-        } => corrkit::contact::add::run(&name, &emails, &labels, &account),
-        Commands::Watch { interval } => corrkit::watch::run(interval),
-        Commands::InstallSkill { name } => corrkit::skill::run(&name),
-        Commands::AuditDocs => corrkit::audit_docs::run(),
-        Commands::Help { filter } => corrkit::help::run(filter.as_deref()),
+        } => corky::contact::add::run(&name, &emails, &labels, &account),
+        Commands::Watch { interval } => corky::watch::run(interval),
+        Commands::InstallSkill { name } => corky::skill::run(&name),
+        Commands::AuditDocs => corky::audit_docs::run(),
+        Commands::Help { filter } => corky::help::run(filter.as_deref()),
         Commands::FindUnanswered { from_name } => {
-            corrkit::mailbox::find_unanswered::run(&from_name)
+            corky::mailbox::find_unanswered::run(&from_name)
         }
-        Commands::ValidateDraft { files } => corrkit::mailbox::validate_draft::run(&files),
+        Commands::ValidateDraft { files } => corky::mailbox::validate_draft::run(&files),
         Commands::Mailbox(cmd) => match cmd {
-            MailboxCommands::List => corrkit::mailbox::list::run(),
+            MailboxCommands::List => corky::mailbox::list::run(),
             MailboxCommands::Add {
                 name,
                 labels,
@@ -80,7 +80,7 @@ fn main() -> Result<()> {
                 public,
                 account,
                 org,
-            } => corrkit::mailbox::add::run(
+            } => corky::mailbox::add::run(
                 &name,
                 &labels,
                 &display_name,
@@ -91,20 +91,20 @@ fn main() -> Result<()> {
                 &account,
                 &org,
             ),
-            MailboxCommands::Sync { name } => corrkit::mailbox::sync::run(name.as_deref()),
-            MailboxCommands::Status => corrkit::mailbox::sync::status(),
+            MailboxCommands::Sync { name } => corky::mailbox::sync::run(name.as_deref()),
+            MailboxCommands::Status => corky::mailbox::sync::status(),
             MailboxCommands::Remove { name, delete_repo } => {
-                corrkit::mailbox::remove::run(&name, delete_repo)
+                corky::mailbox::remove::run(&name, delete_repo)
             }
             MailboxCommands::Rename {
                 old_name,
                 new_name,
                 rename_repo,
-            } => corrkit::mailbox::rename::run(&old_name, &new_name, rename_repo),
+            } => corky::mailbox::rename::run(&old_name, &new_name, rename_repo),
             MailboxCommands::Reset { name, no_sync } => {
-                corrkit::mailbox::reset::run(name.as_deref(), no_sync)
+                corky::mailbox::reset::run(name.as_deref(), no_sync)
             }
         },
-        Commands::Migrate => corrkit::migrate::run(),
+        Commands::Migrate => corky::migrate::run(),
     }
 }

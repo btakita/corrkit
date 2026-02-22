@@ -14,7 +14,7 @@ use crate::resolve;
 pub fn run() -> Result<()> {
     let routes = build_label_routes("");
     if routes.is_empty() {
-        println!("No routing rules configured in .corrkit.toml");
+        println!("No routing rules configured in .corky.toml");
         return Ok(());
     }
 

@@ -63,7 +63,7 @@ pub fn run(old_name: &str, new_name: &str, rename_repo: bool) -> Result<()> {
         }
     }
 
-    // 3. Update .corrkit.toml
+    // 3. Update .corky.toml
     update_config(old_name, new_name)?;
 
     println!(
@@ -73,9 +73,9 @@ pub fn run(old_name: &str, new_name: &str, rename_repo: bool) -> Result<()> {
     Ok(())
 }
 
-/// Rename mailbox in .corrkit.toml: update [mailboxes] key and [routing] paths.
+/// Rename mailbox in .corky.toml: update [mailboxes] key and [routing] paths.
 fn update_config(old_name: &str, new_name: &str) -> Result<()> {
-    let config_path = resolve::corrkit_toml();
+    let config_path = resolve::corky_toml();
     if !config_path.exists() {
         return Ok(());
     }
@@ -111,7 +111,7 @@ fn update_config(old_name: &str, new_name: &str) -> Result<()> {
 
     std::fs::write(&config_path, doc.to_string())?;
     println!(
-        "Renamed '{}' \u{2192} '{}' in .corrkit.toml",
+        "Renamed '{}' \u{2192} '{}' in .corky.toml",
         old_name, new_name
     );
 

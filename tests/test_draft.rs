@@ -4,7 +4,7 @@ mod common;
 
 use tempfile::TempDir;
 
-use corrkit::draft::parse_draft;
+use corky::draft::parse_draft;
 
 fn write_draft(dir: &std::path::Path, filename: &str, content: &str) -> std::path::PathBuf {
     let path = dir.join(filename);

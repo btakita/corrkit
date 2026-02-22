@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd agent for corrkit watch
-  Install: cp com.corrkit.watch.plist ~/Library/LaunchAgents/
-  Load:    launchctl load ~/Library/LaunchAgents/com.corrkit.watch.plist
-  Logs:    tail -f /tmp/corrkit-watch.log
+  launchd agent for corky watch
+  Install: cp com.corky.watch.plist ~/Library/LaunchAgents/
+  Load:    launchctl load ~/Library/LaunchAgents/com.corky.watch.plist
+  Logs:    tail -f /tmp/corky-watch.log
 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.corrkit.watch</string>
+    <string>com.corky.watch</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/env</string>
         <string>uv</string>
         <string>run</string>
-        <string>corrkit</string>
+        <string>corky</string>
         <string>watch</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/YOU/work/btakita/corrkit</string>
+    <string>/Users/YOU/work/btakita/corky</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/corrkit-watch.log</string>
+    <string>/tmp/corky-watch.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/corrkit-watch.log</string>
+    <string>/tmp/corky-watch.log</string>
 </dict>
 </plist>

@@ -173,7 +173,7 @@ fn resolve_account(meta: &HashMap<String, String>) -> Result<(String, crate::acc
     Ok((name, acct, pwd))
 }
 
-/// corrkit push-draft FILE [--send]
+/// corky push-draft FILE [--send]
 pub fn run(file: &Path, send: bool) -> Result<()> {
     if !file.exists() {
         bail!("File not found: {}", file.display());

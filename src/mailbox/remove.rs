@@ -39,7 +39,7 @@ pub fn run(name: &str, delete_repo: bool) -> Result<()> {
         );
     }
 
-    // Remove from .corrkit.toml
+    // Remove from .corky.toml
     remove_from_config(name)?;
 
     // Optionally delete GitHub repo
@@ -71,9 +71,9 @@ pub fn run(name: &str, delete_repo: bool) -> Result<()> {
     Ok(())
 }
 
-/// Remove mailbox and routing entries from .corrkit.toml.
+/// Remove mailbox and routing entries from .corky.toml.
 fn remove_from_config(name: &str) -> Result<()> {
-    let config_path = resolve::corrkit_toml();
+    let config_path = resolve::corky_toml();
     if !config_path.exists() {
         return Ok(());
     }
@@ -107,7 +107,7 @@ fn remove_from_config(name: &str) -> Result<()> {
     }
 
     std::fs::write(&config_path, doc.to_string())?;
-    println!("Removed '{}' from .corrkit.toml", name);
+    println!("Removed '{}' from .corky.toml", name);
 
     Ok(())
 }

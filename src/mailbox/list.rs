@@ -9,11 +9,11 @@ pub fn run() -> Result<()> {
 
     if mailboxes.is_empty() {
         println!("No mailboxes configured.");
-        println!("Run 'corrkit init --user EMAIL' to create one.");
+        println!("Run 'corky init --user EMAIL' to create one.");
         return Ok(());
     }
 
-    println!("corrkit mailboxes\n");
+    println!("corky mailboxes\n");
     let name_w = mailboxes.iter().map(|(n, _, _)| n.len()).max().unwrap_or(0);
     for (name, path, is_default) in &mailboxes {
         let marker = if *is_default { " (default)" } else { "" };

@@ -1,13 +1,13 @@
 #!/bin/sh
-# corrkit installer — downloads prebuilt binary from GitHub Releases
+# corky installer — downloads prebuilt binary from GitHub Releases
 #
 # Usage:
-#   curl -sSf https://raw.githubusercontent.com/btakita/corrkit/main/install.sh | sh
+#   curl -sSf https://raw.githubusercontent.com/btakita/corky/main/install.sh | sh
 #   curl -sSf ... | sh -s -- --system          # install to /usr/local/bin
 #   curl -sSf ... | sh -s -- --version 0.7.0   # specific version
 set -eu
 
-REPO="btakita/corrkit"
+REPO="btakita/corky"
 INSTALL_DIR="$HOME/.local/bin"
 USE_SUDO=""
 VERSION=""
@@ -84,12 +84,12 @@ if [ -z "$VERSION" ]; then
 fi
 
 TAG="v$VERSION"
-ARCHIVE="corrkit-${TARGET}.tar.gz"
+ARCHIVE="corky-${TARGET}.tar.gz"
 URL="https://github.com/$REPO/releases/download/$TAG/$ARCHIVE"
 
-echo "Installing corrkit $VERSION for $TARGET..."
+echo "Installing corky $VERSION for $TARGET..."
 echo "  From: $URL"
-echo "  To:   $INSTALL_DIR/corrkit"
+echo "  To:   $INSTALL_DIR/corky"
 
 # Create temp directory
 TMPDIR="$(mktemp -d)"
@@ -101,15 +101,15 @@ tar xzf "$TMPDIR/$ARCHIVE" -C "$TMPDIR"
 
 # Install binary
 mkdir -p "$INSTALL_DIR"
-$USE_SUDO install -m 755 "$TMPDIR/corrkit" "$INSTALL_DIR/corrkit"
+$USE_SUDO install -m 755 "$TMPDIR/corky" "$INSTALL_DIR/corky"
 
 # Verify
-if "$INSTALL_DIR/corrkit" --version >/dev/null 2>&1; then
-    echo "corrkit $VERSION installed successfully."
-    "$INSTALL_DIR/corrkit" --version
+if "$INSTALL_DIR/corky" --version >/dev/null 2>&1; then
+    echo "corky $VERSION installed successfully."
+    "$INSTALL_DIR/corky" --version
 else
-    echo "Warning: corrkit installed but failed to run." >&2
-    echo "Check that $INSTALL_DIR/corrkit is executable." >&2
+    echo "Warning: corky installed but failed to run." >&2
+    echo "Check that $INSTALL_DIR/corky is executable." >&2
 fi
 
 # PATH hint

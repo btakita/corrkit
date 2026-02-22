@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::Command;
 
 use crate::accounts::load_owner;
-use crate::config::corrkit_config;
+use crate::config::corky_config;
 use crate::resolve;
 
 use super::templates::{generate_agents_md, generate_readme_md};
@@ -128,16 +128,16 @@ fn reset_one(name: &str, owner_name: &str, do_sync: bool) -> Result<()> {
     Ok(())
 }
 
-/// corrkit mailbox reset [NAME] [--no-sync]
+/// corky mailbox reset [NAME] [--no-sync]
 pub fn run(name: Option<&str>, no_sync: bool) -> Result<()> {
-    let config = corrkit_config::try_load_config(None);
+    let config = corky_config::try_load_config(None);
     let mailbox_names: Vec<String> = config
         .as_ref()
         .map(|c| c.mailboxes.keys().cloned().collect())
         .unwrap_or_default();
 
     if mailbox_names.is_empty() {
-        println!("No mailboxes configured in .corrkit.toml");
+        println!("No mailboxes configured in .corky.toml");
         return Ok(());
     }
 

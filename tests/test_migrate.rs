@@ -1,40 +1,40 @@
-//! Integration tests for corrkit migrate.
+//! Integration tests for corky migrate.
 
 mod common;
 
 use std::sync::Mutex;
 use tempfile::TempDir;
 
-use corrkit::config::corrkit_config;
+use corky::config::corky_config;
 
 static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 /// Run migrate in an isolated environment.
 /// Must hold ENV_MUTEX to avoid cwd races with parallel tests.
 fn run_migrate_isolated(data_dir: &std::path::Path) -> anyhow::Result<()> {
-    let old_corrkit = std::env::var("CORRKIT_DATA").ok();
+    let old_corky = std::env::var("CORKY_DATA").ok();
     let old_cwd = std::env::current_dir().ok();
 
-    std::env::set_var("CORRKIT_DATA", data_dir.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data_dir.to_string_lossy().as_ref());
     // Change to a dir without correspondence/ to avoid config_dir() returning "."
     let _ = std::env::set_current_dir(data_dir);
 
-    let result = corrkit::migrate::run();
+    let result = corky::migrate::run();
 
     // Restore
     if let Some(c) = old_cwd {
         let _ = std::env::set_current_dir(c);
     }
-    match old_corrkit {
-        Some(v) => std::env::set_var("CORRKIT_DATA", v),
-        None => std::env::remove_var("CORRKIT_DATA"),
+    match old_corky {
+        Some(v) => std::env::set_var("CORKY_DATA", v),
+        None => std::env::remove_var("CORKY_DATA"),
     }
 
     result
 }
 
 #[test]
-fn test_migrate_creates_corrkit_toml() {
+fn test_migrate_creates_corky_toml() {
     let _lock = ENV_MUTEX.lock().unwrap();
     let tmp = TempDir::new().unwrap();
     let data_dir = tmp.path().to_path_buf();
@@ -60,12 +60,12 @@ name = "Alex"
 
     run_migrate_isolated(&data_dir).unwrap();
 
-    // Verify .corrkit.toml was created
-    let config_path = data_dir.join(".corrkit.toml");
+    // Verify .corky.toml was created
+    let config_path = data_dir.join(".corky.toml");
     assert!(config_path.exists());
 
     // Verify it can be loaded
-    let config = corrkit_config::load_config(Some(&config_path)).unwrap();
+    let config = corky_config::load_config(Some(&config_path)).unwrap();
     assert!(config.routing.contains_key("for-alex"));
     assert!(config.mailboxes.contains_key("alex"));
 
@@ -74,13 +74,13 @@ name = "Alex"
 }
 
 #[test]
-fn test_migrate_fails_if_corrkit_toml_exists() {
+fn test_migrate_fails_if_corky_toml_exists() {
     let _lock = ENV_MUTEX.lock().unwrap();
     let tmp = TempDir::new().unwrap();
     let data_dir = tmp.path().to_path_buf();
 
     common::write_accounts_toml(&data_dir, "test@example.com");
-    std::fs::write(data_dir.join(".corrkit.toml"), "").unwrap();
+    std::fs::write(data_dir.join(".corky.toml"), "").unwrap();
 
     let result = run_migrate_isolated(&data_dir);
     assert!(result.is_err());
@@ -108,10 +108,10 @@ fn test_migrate_without_collaborators() {
 
     run_migrate_isolated(&data_dir).unwrap();
 
-    let config_path = data_dir.join(".corrkit.toml");
+    let config_path = data_dir.join(".corky.toml");
     assert!(config_path.exists());
 
-    let config = corrkit_config::load_config(Some(&config_path)).unwrap();
+    let config = corky_config::load_config(Some(&config_path)).unwrap();
     assert!(config.routing.is_empty());
     assert!(config.mailboxes.is_empty());
 }

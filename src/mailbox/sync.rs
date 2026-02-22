@@ -4,7 +4,7 @@ use anyhow::Result;
 use std::path::Path;
 use std::process::Command;
 
-use crate::config::corrkit_config;
+use crate::config::corky_config;
 use crate::resolve;
 
 fn run_git(args: &[&str]) -> (String, String, i32) {
@@ -139,16 +139,16 @@ pub fn sync_one(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// corrkit mailbox sync [NAME]
+/// corky mailbox sync [NAME]
 pub fn run(name: Option<&str>) -> Result<()> {
-    let config = corrkit_config::try_load_config(None);
+    let config = corky_config::try_load_config(None);
     let mailbox_names: Vec<String> = config
         .as_ref()
         .map(|c| c.mailboxes.keys().cloned().collect())
         .unwrap_or_default();
 
     if mailbox_names.is_empty() {
-        println!("No mailboxes configured in .corrkit.toml");
+        println!("No mailboxes configured in .corky.toml");
         return Ok(());
     }
 
@@ -168,16 +168,16 @@ pub fn run(name: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// corrkit mailbox status
+/// corky mailbox status
 pub fn status() -> Result<()> {
-    let config = corrkit_config::try_load_config(None);
+    let config = corky_config::try_load_config(None);
     let mailbox_names: Vec<String> = config
         .as_ref()
         .map(|c| c.mailboxes.keys().cloned().collect())
         .unwrap_or_default();
 
     if mailbox_names.is_empty() {
-        println!("No mailboxes configured in .corrkit.toml");
+        println!("No mailboxes configured in .corky.toml");
         return Ok(());
     }
 

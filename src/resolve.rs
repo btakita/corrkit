@@ -1,8 +1,8 @@
-//! Path resolution for corrkit data and config directories.
+//! Path resolution for corky data and config directories.
 //!
 //! Resolution order for data directory:
 //!   1. correspondence/ in cwd (developer workflow)
-//!   2. CORRKIT_DATA environment variable
+//!   2. CORKY_DATA environment variable
 //!   3. App config mailbox (via app_config::resolve_mailbox)
 //!   4. ~/Documents/correspondence (general user default)
 
@@ -14,7 +14,7 @@ pub fn data_dir() -> PathBuf {
     if local.is_dir() {
         return local;
     }
-    if let Ok(env) = std::env::var("CORRKIT_DATA") {
+    if let Ok(env) = std::env::var("CORKY_DATA") {
         if !env.is_empty() {
             return PathBuf::from(env);
         }
@@ -75,18 +75,18 @@ pub fn manifest_file() -> PathBuf {
 
 // --- Derived helpers: config paths ---
 
-/// Resolve .corrkit.toml path: check .corrkit.toml then corrkit.toml in config_dir().
-pub fn corrkit_toml() -> PathBuf {
+/// Resolve .corky.toml path: check .corky.toml then corky.toml in config_dir().
+pub fn corky_toml() -> PathBuf {
     let dir = config_dir();
-    let dotfile = dir.join(".corrkit.toml");
+    let dotfile = dir.join(".corky.toml");
     if dotfile.exists() {
         return dotfile;
     }
-    let plain = dir.join("corrkit.toml");
+    let plain = dir.join("corky.toml");
     if plain.exists() {
         return plain;
     }
-    // Default to .corrkit.toml (for creation)
+    // Default to .corky.toml (for creation)
     dotfile
 }
 

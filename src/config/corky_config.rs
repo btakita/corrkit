@@ -1,4 +1,4 @@
-//! Unified config type — parse .corrkit.toml (accounts + routing + mailboxes).
+//! Unified config type — parse .corky.toml (accounts + routing + mailboxes).
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ use crate::accounts::{Account, OwnerConfig, WatchConfig};
 use crate::resolve;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct CorrKitConfig {
+pub struct CorkyConfig {
     #[serde(default)]
     pub owner: Option<OwnerConfig>,
     #[serde(default)]
@@ -42,27 +42,27 @@ pub struct MailboxPermissions {
     pub send: bool,
 }
 
-/// Load .corrkit.toml (or corrkit.toml) from a given path or resolved location.
-pub fn load_config(path: Option<&Path>) -> Result<CorrKitConfig> {
+/// Load .corky.toml (or corky.toml) from a given path or resolved location.
+pub fn load_config(path: Option<&Path>) -> Result<CorkyConfig> {
     let path = path
         .map(PathBuf::from)
-        .unwrap_or_else(resolve::corrkit_toml);
+        .unwrap_or_else(resolve::corky_toml);
     if !path.exists() {
         bail!(
-            ".corrkit.toml not found at {}.\nRun 'corrkit init' or 'corrkit migrate' to create it.",
+            ".corky.toml not found at {}.\nRun 'corky init' or 'corky migrate' to create it.",
             path.display()
         );
     }
     let content = std::fs::read_to_string(&path)?;
-    let config: CorrKitConfig = toml::from_str(&content)?;
+    let config: CorkyConfig = toml::from_str(&content)?;
     Ok(config)
 }
 
 /// Try loading config, returning None if the file doesn't exist.
-pub fn try_load_config(path: Option<&Path>) -> Option<CorrKitConfig> {
+pub fn try_load_config(path: Option<&Path>) -> Option<CorkyConfig> {
     let path = path
         .map(PathBuf::from)
-        .unwrap_or_else(resolve::corrkit_toml);
+        .unwrap_or_else(resolve::corky_toml);
     if !path.exists() {
         return None;
     }

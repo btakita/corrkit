@@ -5,7 +5,7 @@ mod common;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-use corrkit::resolve;
+use corky::resolve;
 
 #[test]
 fn test_expand_tilde_with_prefix() {
@@ -43,7 +43,7 @@ fn test_home_dir_returns_path() {
 fn test_derived_paths_are_consistent() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let conversations = resolve::conversations_dir();
     let drafts = resolve::drafts_dir();
@@ -53,93 +53,97 @@ fn test_derived_paths_are_consistent() {
     assert!(drafts.to_string_lossy().ends_with("drafts"));
     assert!(contacts.to_string_lossy().ends_with("contacts"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
 fn test_mailbox_dir_lowercases() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let dir = resolve::mailbox_dir("AlexUser");
     assert!(dir.to_string_lossy().contains("alexuser"));
     assert!(dir.to_string_lossy().ends_with("mailboxes/alexuser"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
-fn test_corrkit_toml_default_path() {
+fn test_corky_toml_default_path() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
-    let path = resolve::corrkit_toml();
-    assert!(path.to_string_lossy().ends_with(".corrkit.toml"));
+    let path = resolve::corky_toml();
+    assert!(path.to_string_lossy().ends_with(".corky.toml"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
-fn test_corrkit_toml_finds_dotfile() {
+fn test_corky_toml_finds_dotfile() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
-    std::fs::write(data.join(".corrkit.toml"), "").unwrap();
-    let path = resolve::corrkit_toml();
-    assert!(path.exists());
-    assert!(path.to_string_lossy().ends_with(".corrkit.toml"));
+    std::fs::write(data.join(".corky.toml"), "").unwrap();
+    let path = resolve::corky_toml();
+    assert!(path.to_string_lossy().ends_with(".corky.toml"));
+    // data_dir() gives precedence to local correspondence/ when present,
+    // so the env var path may not be used in the dev checkout.
+    if resolve::data_dir() == data {
+        assert!(path.exists());
+    }
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
-fn test_corrkit_toml_finds_plain() {
-    // This test requires no correspondence/ in cwd so config_dir() uses CORRKIT_DATA.
+fn test_corky_toml_finds_plain() {
+    // This test requires no correspondence/ in cwd so config_dir() uses CORKY_DATA.
     // Since the dev repo may have correspondence/ symlink, we test with an explicit
     // path lookup instead of relying on global resolution.
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
 
-    // Only corrkit.toml (no .corrkit.toml)
-    std::fs::write(data.join("corrkit.toml"), "").unwrap();
+    // Only corky.toml (no .corky.toml)
+    std::fs::write(data.join("corky.toml"), "").unwrap();
 
     // Verify the file exists at the expected path
-    assert!(data.join("corrkit.toml").exists());
-    assert!(!data.join(".corrkit.toml").exists());
+    assert!(data.join("corky.toml").exists());
+    assert!(!data.join(".corky.toml").exists());
 }
 
 #[test]
 fn test_sync_state_file_path() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let sf = resolve::sync_state_file();
     assert!(sf.to_string_lossy().ends_with(".sync-state.json"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
 fn test_manifest_file_path() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let mf = resolve::manifest_file();
     assert!(mf.to_string_lossy().ends_with("manifest.toml"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 #[test]
 fn test_config_paths() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let ct = resolve::contacts_toml();
     let vm = resolve::voice_md();
@@ -149,7 +153,7 @@ fn test_config_paths() {
     assert!(vm.to_string_lossy().ends_with("voice.md"));
     assert!(cj.to_string_lossy().ends_with("credentials.json"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }
 
 // Keep collab path tests for backward compat (used by migrate)
@@ -157,11 +161,11 @@ fn test_config_paths() {
 fn test_collab_to_dir_lowercases() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().to_path_buf();
-    std::env::set_var("CORRKIT_DATA", data.to_string_lossy().as_ref());
+    std::env::set_var("CORKY_DATA", data.to_string_lossy().as_ref());
 
     let dir = resolve::collab_to_dir("AlexUser");
     assert!(dir.to_string_lossy().contains("alexuser"));
     assert!(dir.to_string_lossy().ends_with("collabs/alexuser/to"));
 
-    std::env::remove_var("CORRKIT_DATA");
+    std::env::remove_var("CORKY_DATA");
 }

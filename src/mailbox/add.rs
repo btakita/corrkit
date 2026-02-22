@@ -171,7 +171,7 @@ pub fn run(
         }
     }
 
-    // 5. Update .corrkit.toml with routing and mailbox config
+    // 5. Update .corky.toml with routing and mailbox config
     update_config(&mb_name, labels, account)?;
 
     // 6. Summary
@@ -179,21 +179,21 @@ pub fn run(
     println!("Done! Next steps:");
     for label in labels {
         println!(
-            "  - Ensure '{}' is in your account's labels in .corrkit.toml",
+            "  - Ensure '{}' is in your account's labels in .corky.toml",
             label
         );
     }
-    println!("  - Run: corrkit sync --full");
+    println!("  - Run: corky sync --full");
     if github {
-        println!("  - Run: corrkit mailbox sync {}", mb_name);
+        println!("  - Run: corky mailbox sync {}", mb_name);
     }
 
     Ok(())
 }
 
-/// Add routing and mailbox entries to .corrkit.toml.
+/// Add routing and mailbox entries to .corky.toml.
 fn update_config(name: &str, labels: &[String], account: &str) -> Result<()> {
-    let config_path = resolve::corrkit_toml();
+    let config_path = resolve::corky_toml();
     if !config_path.exists() {
         return Ok(());
     }

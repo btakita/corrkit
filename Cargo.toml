@@ -1,14 +1,14 @@
 [package]
-name = "corrkit"
+name = "corky"
 version = "0.7.0"
 edition = "2021"
 description = "Sync email threads from IMAP to Markdown, draft replies, manage collaborators"
 license = "Apache-2.0"
-repository = "https://github.com/btakita/corrkit"
+repository = "https://github.com/btakita/corky"
 readme = "README.md"
 
 [[bin]]
-name = "corrkit"
+name = "corky"
 path = "src/main.rs"
 
 [dependencies]

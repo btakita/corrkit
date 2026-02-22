@@ -2,22 +2,22 @@
 
 ## Two Repos
 
-**corrkit** is the tool — Rust source, tests, config templates. It is a public repo.
+**corky** is the tool — Rust source, tests, config templates. It is a public repo.
 
 **correspondence** is the data — synced threads, drafts, contacts, mailboxes.
-It is a separate, private repo. corrkit accesses it via a `correspondence/` path in the
+It is a separate, private repo. corky accesses it via a `correspondence/` path in the
 working directory, which can be either:
 
 - A **symlink** to an external clone (e.g. `correspondence -> ~/data/correspondence`)
-- A **subdirectory** or nested clone inside the corrkit checkout
+- A **subdirectory** or nested clone inside the corky checkout
 
 **Developer workflow:** `correspondence/` exists at the working directory root (symlink or subdirectory).
-The `correspondence` entry in `.gitignore` keeps the data repo out of corrkit's git history.
+The `correspondence` entry in `.gitignore` keeps the data repo out of corky's git history.
 
-**General user workflow:** `corrkit init --user EMAIL` creates `correspondence/` in the current
+**General user workflow:** `corky init --user EMAIL` creates `correspondence/` in the current
 directory with config inside it, and registers the project dir as a named mailbox.
 Commands find the data dir via the resolution order in `src/resolve.rs`: local `correspondence/`,
-`CORRKIT_DATA` env, app config mailbox, `~/Documents` fallback. Use `--mailbox NAME` to select a
+`CORKY_DATA` env, app config mailbox, `~/Documents` fallback. Use `--mailbox NAME` to select a
 specific mailbox.
 
 ## Writing Voice
@@ -34,23 +34,23 @@ See `voice.md` (committed) for tone, style, and formatting guidelines.
 
 **New user (quick install):**
 ```sh
-curl -sSf https://raw.githubusercontent.com/btakita/corrkit/main/install.sh | sh
-corrkit init --user you@gmail.com
+curl -sSf https://raw.githubusercontent.com/btakita/corky/main/install.sh | sh
+corky init --user you@gmail.com
 ```
 
 **New user (from source):**
 ```sh
 cargo install --path .
-corrkit init --user you@gmail.com
+corky init --user you@gmail.com
 ```
 
 **Developer (from repo checkout):**
 ```sh
-cp .corrkit.toml.example correspondence/.corrkit.toml   # configure your email accounts
-make release                                              # build + symlink to .bin/corrkit
+cp .corky.toml.example correspondence/.corky.toml   # configure your email accounts
+make release                                              # build + symlink to .bin/corky
 ```
 
-See README.md for full config reference (.corrkit.toml, contacts.toml, Gmail OAuth).
+See README.md for full config reference (.corky.toml, contacts.toml, Gmail OAuth).
 
 ## Sync Behavior
 
@@ -60,7 +60,7 @@ See README.md for full config reference (.corrkit.toml, contacts.toml, Gmail OAu
 - **Multi-label accumulation**: Thread fetched from multiple labels/accounts accumulates all in metadata.
 - **Incremental by default**: Tracks IMAP UIDs per-account in `.sync-state.json`. `sync full` re-fetches everything.
 - **Streaming writes**: Each message merged immediately. If sync crashes, state is not saved; next run re-fetches.
-- **Shared label routing**: Labels in `[routing]` section of `.corrkit.toml` route to `correspondence/mailboxes/{name}/conversations/`.
+- **Shared label routing**: Labels in `[routing]` section of `.corky.toml` route to `correspondence/mailboxes/{name}/conversations/`.
   One label can fan-out to multiple mailboxes.
 - **Dedup**: Messages deduplicated by `(sender, date)` tuple when merging into existing files.
 - **Slug collisions**: Different threads with same slug get `-2`, `-3` suffix.
@@ -72,7 +72,7 @@ See README.md for conversation markdown format, draft format, and status values.
 
 ## Mailbox Config
 
-Use `[routing]` for label-to-mailbox mapping and `[mailboxes.*]` for per-mailbox settings in `.corrkit.toml`:
+Use `[routing]` for label-to-mailbox mapping and `[mailboxes.*]` for per-mailbox settings in `.corky.toml`:
 
 ```toml
 [routing]
@@ -120,7 +120,7 @@ Follow a research → plan → implement cycle. Never write code until the plan 
 4. **Implement** — Execute the plan. Mark completed tasks, maintain strict typing,
    and continuously run checks (`make check`). Terse single-sentence feedback is fine
    during this phase.
-5. **Precommit** — Run `make precommit` and `corrkit audit-docs` before committing.
+5. **Precommit** — Run `make precommit` and `corky audit-docs` before committing.
 
 ## Conventions
 
@@ -135,6 +135,6 @@ Follow a research → plan → implement cycle. Never write code until the plan 
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes
-- Update `SPECS.md` when corrkit functionality changes (commands, formats, algorithms)
+- Update `SPECS.md` when corky functionality changes (commands, formats, algorithms)
 - Commits must be clean — no dangling unstaged files. When splitting work across commits, stage all related files (including `Cargo.lock`)
 

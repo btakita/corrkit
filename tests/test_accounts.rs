@@ -5,7 +5,7 @@ mod common;
 use std::collections::HashMap;
 use tempfile::TempDir;
 
-use corrkit::accounts::{
+use corky::accounts::{
     self, get_account_for_email, get_default_account, load_accounts, load_owner,
     load_watch_config, resolve_password, Account,
 };

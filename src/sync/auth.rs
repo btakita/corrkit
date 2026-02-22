@@ -20,8 +20,8 @@ pub fn run() -> Result<()> {
     println!("Gmail OAuth setup is not yet implemented in the Rust port.");
     println!();
     println!("For now, use the Python version for one-time OAuth setup:");
-    println!("  pip install corrkit==0.6.1");
-    println!("  corrkit sync-auth");
+    println!("  pip install corky==0.6.1");
+    println!("  corky sync-auth");
     println!();
     println!("Or use an app password instead:");
     println!("  https://myaccount.google.com/apppasswords");

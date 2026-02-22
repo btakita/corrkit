@@ -4,7 +4,7 @@
 
 Consolidate conversations from multiple email accounts into a single flat directory of Markdown files. Draft replies with AI assistance. Push routing intelligence to Cloudflare.
 
-Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `correspondence/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
+Corky syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hosted) into `correspondence/conversations/` — one file per thread, regardless of source. A thread that arrives via both Gmail and Protonmail merges into one file. Labels, accounts, and contacts are metadata, not directory structure. Slack and social media sources are planned.
 
 ## Tech Stack
 
@@ -23,16 +23,16 @@ Corrkit syncs threads from any IMAP provider (Gmail, Protonmail Bridge, self-hos
 
 **Quick install (Linux & macOS):**
 ```sh
-curl -sSf https://raw.githubusercontent.com/btakita/corrkit/main/install.sh | sh
+curl -sSf https://raw.githubusercontent.com/btakita/corky/main/install.sh | sh
 ```
 
-This downloads a prebuilt binary to `~/.local/bin/corrkit`. Use `--system` to install
+This downloads a prebuilt binary to `~/.local/bin/corky`. Use `--system` to install
 to `/usr/local/bin` instead (requires sudo).
 
 **Via pip/uvx (wrapper):**
 ```sh
-pip install corrkit    # installs a thin wrapper that calls the Rust binary
-uvx corrkit --help     # one-shot execution
+pip install corky    # installs a thin wrapper that calls the Rust binary
+uvx corky --help     # one-shot execution
 ```
 
 The pip package is a thin wrapper — it requires the Rust binary to be installed separately.
@@ -44,21 +44,21 @@ cargo install --path .
 
 **Initialize:**
 ```sh
-corrkit init --user you@gmail.com
+corky init --user you@gmail.com
 ```
 
-This creates `~/Documents/correspondence` with directory structure, `.corrkit.toml`,
-and empty config files inside it. Edit `correspondence/.corrkit.toml` with credentials, then run `corrkit sync`.
+This creates `~/Documents/correspondence` with directory structure, `.corky.toml`,
+and empty config files inside it. Edit `correspondence/.corky.toml` with credentials, then run `corky sync`.
 
 **Developer setup (from repo checkout):**
 ```sh
-cp .corrkit.toml.example correspondence/.corrkit.toml   # configure your email accounts
+cp .corky.toml.example correspondence/.corky.toml   # configure your email accounts
 cargo build
 ```
 
 ### Account configuration
 
-Define email accounts in `correspondence/.corrkit.toml` with provider presets:
+Define email accounts in `correspondence/.corky.toml` with provider presets:
 
 ```toml
 [accounts.personal]
@@ -97,7 +97,7 @@ Provider presets fill in IMAP/SMTP connection defaults:
 Any preset value can be overridden per-account. Credential resolution: `password` (inline)
 or `password_cmd` (shell command, e.g. `pass email/personal`).
 
-**Backward compat**: If no `.corrkit.toml` exists, falls back to `.env` GMAIL_* vars.
+**Backward compat**: If no `.corky.toml` exists, falls back to `.env` GMAIL_* vars.
 
 ### Legacy `.env` configuration
 
@@ -113,41 +113,41 @@ or `password_cmd` (shell command, e.g. `pass email/personal`).
 
 ## Usage
 
-All commands are available through the `corrkit` CLI:
+All commands are available through the `corky` CLI:
 
 ```sh
-corrkit --help                    # Show all commands
-corrkit init --user EMAIL        # Initialize in current directory
-corrkit init --user EMAIL /path # Initialize at specific path
-corrkit install-skill email     # Install the email agent skill
-corrkit sync                     # Incremental IMAP sync (all accounts)
-corrkit sync full                # Full re-sync (ignore saved state)
-corrkit sync account personal    # Sync one account
-corrkit sync routes              # Apply routing rules to existing conversations
-corrkit sync mailbox [NAME]      # Push/pull shared mailboxes
-corrkit list-folders [ACCOUNT]   # List IMAP folders for an account
-corrkit push-draft correspondence/drafts/FILE.md # Save a draft via IMAP
-corrkit push-draft correspondence/drafts/FILE.md --send  # Send via SMTP
-corrkit add-label LABEL --account NAME   # Add a label to an account's sync config
-corrkit contact-add NAME --email EMAIL    # Add a contact with context docs
-corrkit mailbox add NAME --label LABEL        # Add a mailbox
-corrkit mailbox sync [NAME]                   # Push/pull shared mailboxes
-corrkit mailbox status                        # Check mailbox status
-corrkit mailbox remove NAME                   # Remove a mailbox
-corrkit mailbox rename OLD NEW                # Rename a mailbox
-corrkit mailbox reset [NAME]                  # Regenerate mailbox templates
-corrkit migrate                               # Migrate old config to .corrkit.toml
-corrkit find-unanswered                   # Find threads awaiting a reply
-corrkit validate-draft FILE               # Validate draft markdown files
-corrkit watch                             # Poll IMAP and sync on an interval
-corrkit watch --interval 60               # Override poll interval (seconds)
-corrkit mailbox list                     # List registered mailboxes
-corrkit --mailbox work sync              # Sync a specific mailbox
-corrkit audit-docs                        # Audit instruction files for staleness
-corrkit help                              # Show command reference
+corky --help                    # Show all commands
+corky init --user EMAIL        # Initialize in current directory
+corky init --user EMAIL /path # Initialize at specific path
+corky install-skill email     # Install the email agent skill
+corky sync                     # Incremental IMAP sync (all accounts)
+corky sync full                # Full re-sync (ignore saved state)
+corky sync account personal    # Sync one account
+corky sync routes              # Apply routing rules to existing conversations
+corky sync mailbox [NAME]      # Push/pull shared mailboxes
+corky list-folders [ACCOUNT]   # List IMAP folders for an account
+corky push-draft correspondence/drafts/FILE.md # Save a draft via IMAP
+corky push-draft correspondence/drafts/FILE.md --send  # Send via SMTP
+corky add-label LABEL --account NAME   # Add a label to an account's sync config
+corky contact-add NAME --email EMAIL    # Add a contact with context docs
+corky mailbox add NAME --label LABEL        # Add a mailbox
+corky mailbox sync [NAME]                   # Push/pull shared mailboxes
+corky mailbox status                        # Check mailbox status
+corky mailbox remove NAME                   # Remove a mailbox
+corky mailbox rename OLD NEW                # Rename a mailbox
+corky mailbox reset [NAME]                  # Regenerate mailbox templates
+corky migrate                               # Migrate old config to .corky.toml
+corky find-unanswered                   # Find threads awaiting a reply
+corky validate-draft FILE               # Validate draft markdown files
+corky watch                             # Poll IMAP and sync on an interval
+corky watch --interval 60               # Override poll interval (seconds)
+corky mailbox list                     # List registered mailboxes
+corky --mailbox work sync              # Sync a specific mailbox
+corky audit-docs                        # Audit instruction files for staleness
+corky help                              # Show command reference
 ```
 
-Windows users can download `.zip` from [GitHub Releases](https://github.com/btakita/corrkit/releases)
+Windows users can download `.zip` from [GitHub Releases](https://github.com/btakita/corky/releases)
 or build from source with `cargo install --path .`.
 
 ### Multiple mailboxes
@@ -156,18 +156,18 @@ Manage multiple correspondence directories (personal, work, etc.) with named mai
 
 ```sh
 # Init registers a mailbox automatically
-corrkit init --user you@gmail.com                                   # init in cwd
-corrkit init --user work@company.com ~/work/project --mailbox-name work  # init at path
+corky init --user you@gmail.com                                   # init in cwd
+corky init --user work@company.com ~/work/project --mailbox-name work  # init at path
 
 # List registered mailboxes
-corrkit mailbox list
+corky mailbox list
 
 # Use a specific mailbox for any command
-corrkit --mailbox work sync
-corrkit --mailbox personal mailbox status
+corky --mailbox work sync
+corky --mailbox personal mailbox status
 ```
 
-Mailboxes are stored in `~/.config/corrkit/config.toml` (Linux), `~/Library/Application Support/corrkit/config.toml` (macOS), or `%APPDATA%/corrkit/config.toml` (Windows). The first mailbox added becomes the default. With one mailbox configured, `--mailbox` is optional.
+Mailboxes are stored in `~/.config/corky/config.toml` (Linux), `~/Library/Application Support/corky/config.toml` (macOS), or `%APPDATA%/corky/config.toml` (Windows). The first mailbox added becomes the default. With one mailbox configured, `--mailbox` is optional.
 
 Synced threads are written to `correspondence/conversations/[slug].md` (flat, one file per thread). Labels and accounts are metadata inside each file. A `manifest.toml` index is generated after each sync.
 
@@ -175,7 +175,7 @@ Synced threads are written to `correspondence/conversations/[slug].md` (flat, on
 
 ```sh
 make build                        # Debug build
-make release                      # Release build + symlink to .bin/corrkit
+make release                      # Release build + symlink to .bin/corky
 make test                         # Run tests
 make clippy                       # Lint
 make check                        # Lint + test
@@ -204,7 +204,7 @@ skills/
 skills-lock.json
 ```
 
-Config files (`.corrkit.toml`, `contacts.toml`, `voice.md`) live inside `correspondence/`
+Config files (`.corky.toml`, `contacts.toml`, `voice.md`) live inside `correspondence/`
 which is already gitignored. `credentials.json` is also gitignored in `correspondence/.gitignore`.
 
 ## Unified conversation directory
@@ -274,7 +274,7 @@ Filename convention: `[YYYY-MM-DD]-[slug].md`.
 **CC**: (optional)
 **Status**: draft
 **Author**: brian
-**Account**: (optional — account name from .corrkit.toml, e.g. "personal")
+**Account**: (optional — account name from .corky.toml, e.g. "personal")
 **From**: (optional — email address, used to resolve account if Account not set)
 **In-Reply-To**: (optional — message ID)
 
@@ -295,7 +295,7 @@ Correspondence-kit inverts this. You control what any agent or collaborator can 
 2. **Labels route to scoped views.** Each mailbox gives the collaborator/agent a directory containing only the threads labeled for them — nothing else.
 3. **Credentials never leave your machine.** Config lives inside `correspondence/` (your private data repo). Agents draft replies in markdown; only you can push to your email.
 
-An agent added with `corrkit mailbox add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
+An agent added with `corky mailbox add assistant --label for-assistant` can only see threads you've tagged `for-assistant`. It can't see your other conversations, your contacts, or other collaborators' repos. If the agent is compromised, the blast radius is limited to the threads you chose to share.
 
 This works across multiple email accounts — Gmail, Protonmail, self-hosted — each with its own labels and routing rules, all funneling through the same scoped mailbox model.
 
@@ -306,7 +306,7 @@ Per-contact directories give Claude context when drafting emails — relationshi
 ### Adding a contact
 
 ```sh
-corrkit contact-add alex --email alex@example.com --email alex@work.com --label correspondence --account personal
+corky contact-add alex --email alex@example.com --email alex@work.com --label correspondence --account personal
 ```
 
 This creates `correspondence/contacts/alex/` with an AGENTS.md template (+ CLAUDE.md symlink) and updates `contacts.toml`.
@@ -340,19 +340,19 @@ Share specific email threads with people or AI agents via scoped directories or 
 
 ```sh
 # Plain directory (default)
-corrkit mailbox add alex --label for-alex --name "Alex"
+corky mailbox add alex --label for-alex --name "Alex"
 
 # With GitHub submodule
-corrkit mailbox add alex --label for-alex --name "Alex" --github
+corky mailbox add alex --label for-alex --name "Alex" --github
 
 # AI agent (uses a PAT instead of GitHub invite)
-corrkit mailbox add assistant-bot --label for-assistant --pat
+corky mailbox add assistant-bot --label for-assistant --pat
 
 # Bind all labels to one account
-corrkit mailbox add alex --label for-alex --account personal
+corky mailbox add alex --label for-alex --account personal
 
 # Per-label account scoping (proton-dev account, INBOX folder)
-# Use account:label syntax in .corrkit.toml directly
+# Use account:label syntax in .corky.toml directly
 ```
 
 This creates a scoped directory under `mailboxes/{name}/`. With `--github`, it also creates a private GitHub repo (`{owner}/to-{name}`) and adds it as a submodule.
@@ -361,31 +361,31 @@ This creates a scoped directory under `mailboxes/{name}/`. With `--github`, it a
 
 ```sh
 # 1. Sync emails -- shared labels route to mailboxes/{name}/conversations/
-corrkit sync
+corky sync
 
 # 2. Push synced threads to mailbox repos & pull their drafts
-corrkit mailbox sync
+corky mailbox sync
 
 # 3. Check what's pending without pushing
-corrkit mailbox status
+corky mailbox status
 
 # 4. Review a collaborator's draft and push it as an email draft
-corrkit push-draft mailboxes/alex/drafts/2026-02-19-reply.md
+corky push-draft mailboxes/alex/drafts/2026-02-19-reply.md
 ```
 
-### Unattended sync with `corrkit watch`
+### Unattended sync with `corky watch`
 
 Run as a daemon to poll IMAP, sync threads, and push to shared repos automatically:
 
 ```sh
 # Interactive — polls every 5 minutes (default), Ctrl-C to stop
-corrkit watch
+corky watch
 
 # Custom interval
-corrkit watch --interval 60
+corky watch --interval 60
 ```
 
-Configure in `correspondence/.corrkit.toml`:
+Configure in `correspondence/.corky.toml`:
 
 ```toml
 [watch]
@@ -397,58 +397,58 @@ notify = true          # desktop alerts on new messages (default: false)
 
 **Linux (systemd):**
 ```sh
-cp services/corrkit-watch.service ~/.config/systemd/user/
+cp services/corky-watch.service ~/.config/systemd/user/
 # Edit WorkingDirectory in the unit file to match your setup
-systemctl --user enable --now corrkit-watch
-journalctl --user -u corrkit-watch -f   # view logs
+systemctl --user enable --now corky-watch
+journalctl --user -u corky-watch -f   # view logs
 ```
 
 **macOS (launchd):**
 ```sh
-cp services/com.corrkit.watch.plist ~/Library/LaunchAgents/
+cp services/com.corky.watch.plist ~/Library/LaunchAgents/
 # Edit WorkingDirectory in the plist to match your setup
-launchctl load ~/Library/LaunchAgents/com.corrkit.watch.plist
-tail -f /tmp/corrkit-watch.log          # view logs
+launchctl load ~/Library/LaunchAgents/com.corky.watch.plist
+tail -f /tmp/corky-watch.log          # view logs
 ```
 
 ### What collaborators can do
 
 - Read conversations labeled for them
 - Draft replies in `mailboxes/{name}/drafts/` following the format in AGENTS.md
-- Run `corrkit find-unanswered` and `corrkit validate-draft` in their repo
+- Run `corky find-unanswered` and `corky validate-draft` in their repo
 - Push changes to their shared repo
 
 ### What only you can do
 
-- Sync new emails (`corrkit sync`)
-- Push synced threads to mailbox repos (`corrkit mailbox sync`)
-- Send emails (`corrkit push-draft --send`)
+- Sync new emails (`corky sync`)
+- Push synced threads to mailbox repos (`corky mailbox sync`)
+- Send emails (`corky push-draft --send`)
 - Change draft Status to `sent`
 
 ### Removing a mailbox
 
 ```sh
-corrkit mailbox remove alex
-corrkit mailbox remove alex --delete-repo  # also delete the GitHub repo
+corky mailbox remove alex
+corky mailbox remove alex --delete-repo  # also delete the GitHub repo
 ```
 
 ## Designed for humans and agents
 
-Corrkit is built around files, CLI commands, and git — interfaces that work equally well for humans
+Corky is built around files, CLI commands, and git — interfaces that work equally well for humans
 and AI agents. No GUIs, no OAuth popups, no interactive prompts.
 
 ### Why this works
 
 - **Everything is files.** Threads are Markdown. Config is TOML. Drafts are Markdown. Humans read
   them in any editor; agents read and write them natively.
-- **CLI is the interface.** Every operation is a single `corrkit` command. Scriptable, composable,
+- **CLI is the interface.** Every operation is a single `corky` command. Scriptable, composable,
   works the same whether a human or agent is at the keyboard.
 - **Single-binary for collaborators.** One `curl | sh` install gives collaborators
-  `corrkit find-unanswered` and `corrkit validate-draft` — no dev environment needed.
+  `corky find-unanswered` and `corky validate-draft` — no dev environment needed.
 - **Self-documenting repos.** Each shared repo ships with `AGENTS.md` (full instructions),
   `CLAUDE.md` (symlink for Claude Code), `voice.md`, and a `README.md`. A new collaborator —
   human or agent — can start contributing immediately.
-- **Templates stay current.** `corrkit mailbox reset` regenerates all template files in shared repos
+- **Templates stay current.** `corky mailbox reset` regenerates all template files in shared repos
   when the tool evolves. No manual sync of instructions across collaborators.
 
 ### Owner workflow
@@ -457,7 +457,7 @@ The owner can work directly or with an AI agent (Claude Code, Codex, etc.) that 
 both the codebase and the correspondence. In a single session:
 
 1. Develop the tool — write code, run tests, commit
-2. Sync emails — `corrkit sync`
+2. Sync emails — `corky sync`
 3. Manage collaborators — add, reset templates, push synced threads
 4. Draft replies — reading threads for context, writing drafts matching the voice guidelines
 5. Review collaborator drafts — validate, approve, push to email
@@ -481,17 +481,17 @@ mailboxes/{name}/
 ```
 
 The collaborator reads conversations, drafts replies following the documented format, validates with
-`corrkit validate-draft`, and pushes. The owner reviews and sends.
+`corky validate-draft`, and pushes. The owner reviews and sends.
 
 ## Cloudflare architecture
 
-Corrkit handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage
+Corky handles the heavy lifting locally. Distilled intelligence is pushed to Cloudflare storage
 for use by a lightweight TypeScript Worker that handles email routing.
 
 ```
 Gmail/Protonmail
       ↓
-corrkit (local)
+corky (local)
   - sync threads → markdown
   - extract intelligence (tags, contact metadata, routing rules)
   - push to Cloudflare
@@ -502,7 +502,7 @@ Cloudflare D1 / KV
   - routing rules
       ↓
 Cloudflare Worker (TypeScript)
-  - email routing decisions using intelligence from corrkit
+  - email routing decisions using intelligence from corky
 ```
 
 Full conversation threads stay local. Cloudflare only receives the minimal distilled signal
@@ -523,7 +523,7 @@ for real-time workflows.
 
 - **Slack sync**: Pull conversations from Slack channels/DMs into the flat conversations/ directory
 - **Social media sync**: Pull DMs and threads from social platforms into conversations/
-- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from corrkit
+- **Cloudflare routing**: TypeScript Worker consuming D1/KV data pushed from corky
 - **Local MCP server**: Live email access during Claude sessions without Pipedream
 - **Multi-user**: Per-user credential flow when shared with another developer
 

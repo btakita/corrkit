@@ -51,8 +51,8 @@ Reply body text.
 Run the helper command to find threads awaiting a reply:
 
 ```sh
-uvx corrkit find-unanswered
-uvx corrkit find-unanswered --from "{owner_name}"
+uvx corky find-unanswered
+uvx corky find-unanswered --from "{owner_name}"
 ```
 
 ## Drafting a reply
@@ -90,7 +90,7 @@ and note which thread you're replying to in the body.
 ### Validating a draft
 
 ```sh
-uvx corrkit validate-draft drafts/2026-02-19-example.md
+uvx corky validate-draft drafts/2026-02-19-example.md
 ```
 
 ### Status flow
@@ -111,7 +111,7 @@ on his behalf.
 
 - Read conversations
 - Create and edit drafts
-- Run `uvx corrkit find-unanswered` and `uvx corrkit validate-draft`
+- Run `uvx corky find-unanswered` and `uvx corky validate-draft`
 - Push changes to this repo
 
 ## What only {owner_name} can do
@@ -152,7 +152,7 @@ git pull
 ### 2. Find threads that need a reply
 
 ```sh
-uvx corrkit find-unanswered
+uvx corky find-unanswered
 ```
 
 ### 3. Draft a reply
@@ -176,7 +176,7 @@ Set **Status** to `review` when it's ready for {owner_name} to look at.
 ### 4. Validate and push
 
 ```sh
-uvx corrkit validate-draft drafts/your-draft.md
+uvx corky validate-draft drafts/your-draft.md
 git add drafts/
 git commit -m "Draft reply to ..."
 git push

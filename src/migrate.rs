@@ -1,24 +1,24 @@
-//! Migrate from accounts.toml + collaborators.toml to .corrkit.toml.
+//! Migrate from accounts.toml + collaborators.toml to .corky.toml.
 
 use anyhow::{bail, Result};
 
 use crate::config::collaborator;
 use crate::resolve;
 
-/// corrkit migrate
+/// corky migrate
 pub fn run() -> Result<()> {
-    let corrkit_toml = resolve::corrkit_toml();
-    if corrkit_toml.exists() {
+    let corky_toml = resolve::corky_toml();
+    if corky_toml.exists() {
         bail!(
-            ".corrkit.toml already exists at {}.\nMigration is only needed when using the old accounts.toml format.",
-            corrkit_toml.display()
+            ".corky.toml already exists at {}.\nMigration is only needed when using the old accounts.toml format.",
+            corky_toml.display()
         );
     }
 
     let accounts_path = resolve::accounts_toml();
     if !accounts_path.exists() {
         bail!(
-            "No accounts.toml found at {}.\nNothing to migrate. Run 'corrkit init' to create a new project.",
+            "No accounts.toml found at {}.\nNothing to migrate. Run 'corky init' to create a new project.",
             accounts_path.display()
         );
     }
@@ -42,7 +42,7 @@ pub fn run() -> Result<()> {
     let collabs_path = resolve::collaborators_toml();
     let collabs = collaborator::load_collaborators(Some(&collabs_path)).unwrap_or_default();
 
-    // 3. Build .corrkit.toml content
+    // 3. Build .corky.toml content
     // Start with the accounts.toml content as a base (preserves owner, accounts, watch)
     let mut doc = accounts_content.parse::<toml_edit::DocumentMut>()?;
 
@@ -73,9 +73,9 @@ pub fn run() -> Result<()> {
         doc.insert("mailboxes", toml_edit::Item::Table(mailboxes));
     }
 
-    // 4. Write .corrkit.toml
+    // 4. Write .corky.toml
     let config_dir = resolve::config_dir();
-    let new_config_path = config_dir.join(".corrkit.toml");
+    let new_config_path = config_dir.join(".corky.toml");
     std::fs::write(&new_config_path, doc.to_string())?;
     println!("Created {}", new_config_path.display());
 
@@ -134,7 +134,7 @@ pub fn run() -> Result<()> {
     // 6. Print summary
     println!();
     println!("Migration complete!");
-    println!("  - Created .corrkit.toml from accounts.toml");
+    println!("  - Created .corky.toml from accounts.toml");
     if !collabs.is_empty() {
         println!(
             "  - Converted {} collaborator(s) to mailbox config",
