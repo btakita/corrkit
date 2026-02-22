@@ -4,6 +4,8 @@ credentials.json
 *.credentials.json
 AGENTS.local.md
 CLAUDE.local.md
+plan.md
+research.md
 correspondence
 .idea/
 tmp/
