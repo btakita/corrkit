@@ -4,6 +4,18 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.8.0
+
+Contact enrichment, To/CC sync, credential bubbling.
+
+- **`corky contact add --from SLUG`**: Create a contact from a conversation. Extracts non-owner participants from From/To/CC headers, generates enriched AGENTS.md with pre-filled Topics, Formality, Tone, and Research sections. Auto-derives contact name from display name; positional `NAME` overrides.
+- **`corky contact info NAME`**: Aggregates contact config, AGENTS.md content, and matching threads from all manifest.toml files. Shows thread count and last activity.
+- **`corky contact` subcommand group**: `contact add` and `contact info` under a new subcommand group. `contact-add` kept as hidden backward-compatible alias.
+- **BREAKING CHANGE: `Contact` struct simplified**: `labels` and `account` fields removed from `[contacts.*]` in `.corky.toml`. Existing files with these fields are silently ignored on parse. `--label` and `--account` flags on `contact-add` alias are accepted but ignored.
+- **To/CC in sync pipeline**: Messages now store To and CC headers. Conversation markdown includes per-message `**To**:`/`**CC**:` lines. Manifest matches contacts by from, to, and cc. Old files without these lines parse correctly.
+- **Credential bubbling**: `draft push` walks parent directories for `.corky.toml` with matching account credentials when drafting from child mailboxes.
+- **Release workflow fix**: Pin `cross` to v0.2.5 for aarch64-linux builds.
+
 ## 0.7.3
 
 Always install the email skill.
