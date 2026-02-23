@@ -28,6 +28,15 @@ pub fn thread_to_markdown(thread: &Thread) -> String {
         lines.push(String::new());
         lines.push(format!("## {} \u{2014} {}", msg.from, msg.date));
         lines.push(String::new());
+        if !msg.to.is_empty() {
+            lines.push(format!("**To**: {}", msg.to));
+        }
+        if !msg.cc.is_empty() {
+            lines.push(format!("**CC**: {}", msg.cc));
+        }
+        if !msg.to.is_empty() || !msg.cc.is_empty() {
+            lines.push(String::new());
+        }
         lines.push(msg.body.trim().to_string());
         lines.push(String::new());
     }
@@ -79,8 +88,11 @@ pub fn parse_thread_markdown(text: &str) -> Option<Thread> {
     let mut messages: Vec<Message> = Vec::new();
     let mut current_from = String::new();
     let mut current_date = String::new();
+    let mut current_to = String::new();
+    let mut current_cc = String::new();
     let mut body_lines: Vec<&str> = Vec::new();
     let mut in_message = false;
+    let mut in_msg_meta = false; // after header, before body
 
     for line in &lines {
         if let Some(cap) = MSG_HEADER_RE.captures(line) {
@@ -90,6 +102,8 @@ pub fn parse_thread_markdown(text: &str) -> Option<Thread> {
                     id: String::new(),
                     thread_id: thread_key_from_subject(&subject),
                     from: current_from.clone(),
+                    to: current_to.clone(),
+                    cc: current_cc.clone(),
                     date: current_date.clone(),
                     subject: subject.clone(),
                     body: body_lines.join("\n").trim().to_string(),
@@ -97,10 +111,31 @@ pub fn parse_thread_markdown(text: &str) -> Option<Thread> {
             }
             current_from = cap[1].to_string();
             current_date = cap[2].to_string();
+            current_to = String::new();
+            current_cc = String::new();
             body_lines.clear();
             in_message = true;
-        } else if in_message && line.trim() != "---" {
-            body_lines.push(line);
+            in_msg_meta = true;
+        } else if in_message {
+            if in_msg_meta {
+                if let Some(cap) = META_RE.captures(line) {
+                    match cap[1].to_string().as_str() {
+                        "To" => current_to = cap[2].trim().to_string(),
+                        "CC" => current_cc = cap[2].trim().to_string(),
+                        _ => {} // ignore other per-message metadata
+                    }
+                } else if line.trim().is_empty() {
+                    // blank lines between metadata and body are consumed
+                } else {
+                    // first non-metadata, non-blank line — switch to body
+                    in_msg_meta = false;
+                    if line.trim() != "---" {
+                        body_lines.push(line);
+                    }
+                }
+            } else if line.trim() != "---" {
+                body_lines.push(line);
+            }
         }
     }
 
@@ -110,6 +145,8 @@ pub fn parse_thread_markdown(text: &str) -> Option<Thread> {
             id: String::new(),
             thread_id: thread_key_from_subject(&subject),
             from: current_from,
+            to: current_to,
+            cc: current_cc,
             date: current_date,
             subject: subject.clone(),
             body: body_lines.join("\n").trim().to_string(),
@@ -141,6 +178,8 @@ mod tests {
                 id: "1".to_string(),
                 thread_id: "hello world".to_string(),
                 from: "Alice <alice@example.com>".to_string(),
+                to: String::new(),
+                cc: String::new(),
                 date: "Mon, 10 Feb 2025 10:00:00 +0000".to_string(),
                 subject: "Hello World".to_string(),
                 body: "Hello there!".to_string(),
@@ -157,6 +196,48 @@ mod tests {
         assert_eq!(parsed.accounts, vec!["personal"]);
         assert_eq!(parsed.messages.len(), 1);
         assert_eq!(parsed.messages[0].from, "Alice <alice@example.com>");
+        assert_eq!(parsed.messages[0].body, "Hello there!");
+    }
+
+    #[test]
+    fn test_roundtrip_with_to_cc() {
+        let thread = Thread {
+            id: "test-thread".to_string(),
+            subject: "Hello World".to_string(),
+            labels: vec!["inbox".to_string()],
+            accounts: vec!["personal".to_string()],
+            messages: vec![Message {
+                id: "1".to_string(),
+                thread_id: "hello world".to_string(),
+                from: "Alice <alice@example.com>".to_string(),
+                to: "Bob <bob@example.com>, Charlie <charlie@example.com>".to_string(),
+                cc: "Dave <dave@example.com>".to_string(),
+                date: "Mon, 10 Feb 2025 10:00:00 +0000".to_string(),
+                subject: "Hello World".to_string(),
+                body: "Hello there!".to_string(),
+            }],
+            last_date: "Mon, 10 Feb 2025 10:00:00 +0000".to_string(),
+        };
+
+        let md = thread_to_markdown(&thread);
+        assert!(md.contains("**To**: Bob <bob@example.com>, Charlie <charlie@example.com>"));
+        assert!(md.contains("**CC**: Dave <dave@example.com>"));
+
+        let parsed = parse_thread_markdown(&md).unwrap();
+        assert_eq!(parsed.messages.len(), 1);
+        assert_eq!(parsed.messages[0].to, "Bob <bob@example.com>, Charlie <charlie@example.com>");
+        assert_eq!(parsed.messages[0].cc, "Dave <dave@example.com>");
+        assert_eq!(parsed.messages[0].body, "Hello there!");
+    }
+
+    #[test]
+    fn test_parse_old_format_no_to_cc() {
+        // Old format without To/CC lines should parse with empty to/cc
+        let md = "# Subject\n\n**Labels**: inbox\n**Thread ID**: test\n**Last updated**: Mon, 1 Jan 2024 00:00:00 +0000\n\n---\n\n## Alice <alice@example.com> \u{2014} Mon, 1 Jan 2024 00:00:00 +0000\n\nHello there!\n";
+        let parsed = parse_thread_markdown(md).unwrap();
+        assert_eq!(parsed.messages.len(), 1);
+        assert_eq!(parsed.messages[0].to, "");
+        assert_eq!(parsed.messages[0].cc, "");
         assert_eq!(parsed.messages[0].body, "Hello there!");
     }
 

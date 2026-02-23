@@ -8,6 +8,10 @@ pub struct Message {
     pub id: String,
     pub thread_id: String,
     pub from: String,
+    #[serde(default)]
+    pub to: String,
+    #[serde(default)]
+    pub cc: String,
     pub date: String,
     pub subject: String,
     pub body: String,

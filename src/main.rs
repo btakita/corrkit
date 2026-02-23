@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, DraftCommands, MailboxCommands, SyncCommands};
+use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, MailboxCommands, SyncCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -52,12 +52,25 @@ fn main() -> Result<()> {
         Commands::ListFolders { account } => corky::sync::folders::run(account.as_deref()),
         Commands::PushDraft { file, send } => corky::draft::run(&file, send),
         Commands::AddLabel { label, account } => corky::accounts::add_label_cmd(&label, &account),
+        Commands::Contact(cmd) => match cmd {
+            ContactCommands::Add { name, emails, from } => {
+                if let Some(slug) = from {
+                    corky::contact::from_conversation::run(&slug, name.as_deref())
+                } else {
+                    let name = name.ok_or_else(|| {
+                        anyhow::anyhow!("NAME required when not using --from")
+                    })?;
+                    corky::contact::add::run(&name, &emails)
+                }
+            }
+            ContactCommands::Info { name } => corky::contact::info::run(&name),
+        },
         Commands::ContactAdd {
             name,
             emails,
-            labels,
-            account,
-        } => corky::contact::add::run(&name, &emails, &labels, &account),
+            labels: _,
+            account: _,
+        } => corky::contact::add::run(&name, &emails),
         Commands::Watch { interval } => corky::watch::run(interval),
         Commands::InstallSkill { name } => corky::skill::run(&name),
         Commands::AuditDocs => corky::audit_docs::run(),
