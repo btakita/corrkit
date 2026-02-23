@@ -464,12 +464,18 @@ Algorithm:
 
 6. **Print summary** — thread count, last activity date.
 
-### 2.2 Future: `draft push` credential bubbling (out of scope)
+### 2.2 `draft push` credential bubbling
 
-When sending from a mailbox, resolve credentials bottom-up: try the leaf
-mailbox's `.corky.toml` first, then walk up to the parent mailbox, then root.
-If no credentials are found at any level, error. This is a separate enhancement
-to `draft push --send` — not part of the contact enrichment feature.
+Child mailboxes may not have their own IMAP/SMTP credentials — they rely on
+the parent's `.corky.toml` accounts to send. When `draft push --send` runs
+from a mailbox context, resolve credentials bottom-up:
+
+1. Check the leaf mailbox's `.corky.toml` for matching account credentials
+2. Walk up to the parent mailbox, then root
+3. If no credentials found at any level, bail with error
+
+This is needed for the collaboration workflow where a child mailbox drafts
+a reply and the parent's account sends it.
 
 ---
 
