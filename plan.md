@@ -290,7 +290,7 @@ iterative loops with the agent. AGENTS.md can also contain hints for where
 to look for more details (e.g. "Check LinkedIn for current role",
 "Company website: example.com").
 
-Full output example for `enriched_agents_md("alice", &["Project Update"], &["bob"])`:
+Full output example for `enriched_agents_md("alice", &["Project Update"], &["bob"], Some("example.com"))`:
 
 ```markdown
 # Contact: alice
