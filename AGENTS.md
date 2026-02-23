@@ -122,6 +122,18 @@ Follow a research → plan → implement cycle. Never write code until the plan 
    during this phase.
 5. **Precommit** — Run `make precommit` and `corky audit-docs` before committing.
 
+## PR Process
+
+- Feature work happens on a branch with a PR.
+- `research.md` and `plan.md` are committed to the branch for iteration (they are
+  gitignored on main). Before the squash merge, remove them from the branch so they
+  never land on main.
+- PRs use **squash merge** — the branch history (including research/plan commits)
+  collapses into one clean commit on main.
+- Keep `SPECS.md` up to date on each commit — don't defer spec updates to a final
+  cleanup pass. Every commit that changes behavior should include the corresponding
+  spec change.
+
 ## Conventions
 
 - Use `make check` (clippy + test), `make release` (build + .bin symlink) for development
@@ -135,6 +147,6 @@ Follow a research → plan → implement cycle. Never write code until the plan 
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes
-- Update `SPECS.md` when corky functionality changes (commands, formats, algorithms)
+- Update `SPECS.md` in the same commit as the code change (see PR Process)
 - Commits must be clean — no dangling unstaged files. When splitting work across commits, stage all related files (including `Cargo.lock`)
 

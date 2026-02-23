@@ -9,17 +9,22 @@ Manage and draft correspondence using locally synced email threads.
 - **Use context** — always read the relevant thread in `conversations/` before drafting a reply
 - **Be concise** — prefer shorter responses; ask before writing anything long
 
-## Use These Paths and Commands
+## Data Paths
 
 - `conversations/` — synced email threads as Markdown (one file per thread)
 - `contacts/{name}/AGENTS.md` — per-contact context for drafting
 - `manifest.toml` — thread index by labels, accounts, contacts
 - `drafts/` — outgoing email drafts being worked on
+
+## Commands
+
 - `corky unanswered` — list threads awaiting a reply
 - `corky draft new --to EMAIL "Subject"` — scaffold a new draft
 - `corky draft validate` — validate draft format
 - `corky sync` — re-sync threads from all accounts
 - `corky list-folders ACCOUNT` — list IMAP folders for an account
+- `corky contact add --from SLUG` — create a contact from a conversation
+- `corky contact info NAME` — show contact details and thread history
 
 ## Workflows
 
@@ -41,6 +46,15 @@ Manage and draft correspondence using locally synced email threads.
 2. Run `corky draft new --to EMAIL "Subject"` to scaffold the file
 3. Fill in the body in the generated `drafts/[YYYY-MM-DD]-[slug].md`
 4. Iterate until approved
+
+### Enrich contact context
+1. After reviewing a thread, create a contact: `corky contact add --from SLUG`
+2. Read the generated `contacts/{name}/AGENTS.md` — check the ## Research section
+   for hints on where to look (LinkedIn, company website, GitHub, etc.)
+3. Use web search to find the contact's role, company, and interests
+4. Add findings to Topics, Notes, and Research sections of AGENTS.md
+5. Set ## Formality to `casual`, `professional`, or `formal` based on thread tone
+6. When drafting to multiple contacts, apply maximum formality across all recipients
 
 ## Success Criteria
 

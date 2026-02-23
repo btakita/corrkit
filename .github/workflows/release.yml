@@ -39,11 +39,13 @@ jobs:
 
       - name: Install cross
         if: matrix.use_cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
+        run: cargo install cross --version 0.2.5
 
       - name: Build (cross)
         if: matrix.use_cross
         run: cross build --release --target ${{ matrix.target }}
+        env:
+          CROSS_CONTAINER_ENGINE: docker
 
       - name: Build (cargo)
         if: "!matrix.use_cross"

@@ -433,6 +433,20 @@ fn sync_label(
             .map(|h| h.get_value())
             .unwrap_or_default();
 
+        let to = parsed
+            .headers
+            .iter()
+            .find(|h| h.get_key_ref().eq_ignore_ascii_case("To"))
+            .map(|h| h.get_value())
+            .unwrap_or_default();
+
+        let cc = parsed
+            .headers
+            .iter()
+            .find(|h| h.get_key_ref().eq_ignore_ascii_case("Cc"))
+            .map(|h| h.get_value())
+            .unwrap_or_default();
+
         let date = parsed
             .headers
             .iter()
@@ -447,6 +461,8 @@ fn sync_label(
             id: uid.to_string(),
             thread_id: thread_key.clone(),
             from,
+            to,
+            cc,
             date,
             subject,
             body,

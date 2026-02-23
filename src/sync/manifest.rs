@@ -49,14 +49,16 @@ pub fn generate_manifest(conversations_dir: &Path) -> Result<()> {
             None => continue,
         };
 
-        // Match contacts by sender emails
+        // Match contacts by email addresses in from, to, and cc
         let mut thread_contacts: Vec<String> = Vec::new();
         for msg in &thread.messages {
-            if let Some(cap) = EMAIL_RE.captures(&msg.from) {
-                let addr = cap[1].to_lowercase();
-                if let Some(cname) = email_to_contact.get(&addr) {
-                    if !thread_contacts.contains(cname) {
-                        thread_contacts.push(cname.clone());
+            for field in [&msg.from, &msg.to, &msg.cc] {
+                for cap in EMAIL_RE.captures_iter(field) {
+                    let addr = cap[1].to_lowercase();
+                    if let Some(cname) = email_to_contact.get(&addr) {
+                        if !thread_contacts.contains(cname) {
+                            thread_contacts.push(cname.clone());
+                        }
                     }
                 }
             }

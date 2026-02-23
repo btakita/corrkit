@@ -95,14 +95,25 @@ Account resolution:
 1. `**Account**` field → match by name in `.corky.toml`
 2. `**From**` field → match by email address
 3. Fall back to default account
+4. Credential bubbling: if the draft is inside a mailbox, walk parent directories for a `.corky.toml` with matching credentials
 
 ## Contacts
 
 ```sh
-corky contact-add NAME --email EMAIL [--email EMAIL2] [--label LABEL] [--account ACCT]
+corky contact add NAME --email EMAIL [--email EMAIL2]   # Add a contact manually
+corky contact add --from SLUG [NAME]                    # Create from a conversation
+corky contact info NAME                                 # Show contact details + threads
 ```
 
-Creates `mail/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink. Updates `.corky.toml`.
+### contact add
+
+Manual mode: creates `mail/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink. Updates `.corky.toml`.
+
+From-conversation mode (`--from`): finds the conversation, extracts non-owner participants from From/To/CC headers, and creates an enriched contact with pre-filled AGENTS.md (Topics, Formality, Tone, Research sections).
+
+### contact info
+
+Aggregates contact information: emails from config, AGENTS.md content, matching threads from manifest.toml (root and mailboxes), and a summary with thread count and last activity.
 
 ## Mailboxes
 

@@ -146,7 +146,15 @@ fn update_draft_status(path: &Path, new_status: &str) -> Result<()> {
 }
 
 /// Resolve sending account from draft metadata.
-fn resolve_account(meta: &HashMap<String, String>) -> Result<(String, crate::accounts::Account, String)> {
+///
+/// Supports credential bubbling: if the draft lives inside a `mailboxes/` subtree,
+/// walk parent directories upward looking for `.corky.toml` files with matching
+/// account credentials. First match wins.
+fn resolve_account(
+    meta: &HashMap<String, String>,
+    draft_path: &Path,
+) -> Result<(String, crate::accounts::Account, String)> {
+    // Try local accounts first (from resolved .corky.toml)
     let accounts = load_accounts(None)?;
 
     // Try **Account** field first
@@ -169,10 +177,48 @@ fn resolve_account(meta: &HashMap<String, String>) -> Result<(String, crate::acc
         }
     }
 
-    // Fall back to default
-    let (name, acct) = get_default_account(&accounts)?;
-    let pwd = resolve_password(&acct)?;
-    Ok((name, acct, pwd))
+    // Fall back to default from local config
+    if let Ok((name, acct)) = get_default_account(&accounts) {
+        let pwd = resolve_password(&acct)?;
+        return Ok((name, acct, pwd));
+    }
+
+    // Credential bubbling: walk parent directories for .corky.toml with matching account
+    if let Some(result) = bubble_credentials(meta, draft_path) {
+        return Ok(result);
+    }
+
+    bail!("No account found for draft. Check .corky.toml or add **Account**/**From** to the draft.")
+}
+
+/// Walk parent directories from the draft's location, looking for `.corky.toml`
+/// files with account credentials matching the From address.
+fn bubble_credentials(
+    meta: &HashMap<String, String>,
+    draft_path: &Path,
+) -> Option<(String, crate::accounts::Account, String)> {
+    let from_addr = meta.get("From").filter(|s| !s.is_empty())?;
+
+    // Start from the draft's parent directory and walk up
+    let mut dir = draft_path.parent()?;
+    loop {
+        dir = dir.parent()?;
+        let config_path = dir.join(".corky.toml");
+        if config_path.exists() {
+            if let Ok(parent_accounts) = load_accounts(Some(&config_path)) {
+                if let Some((name, acct)) = get_account_for_email(&parent_accounts, from_addr) {
+                    if let Ok(pwd) = resolve_password(&acct) {
+                        return Some((name, acct, pwd));
+                    }
+                }
+            }
+        }
+        // Stop at filesystem root
+        if dir.parent().is_none() || dir == dir.parent().unwrap() {
+            break;
+        }
+    }
+    None
 }
 
 /// corky push-draft FILE [--send]
@@ -196,7 +242,7 @@ pub fn run(file: &Path, send: bool) -> Result<()> {
         );
     }
 
-    let (acct_name, acct, password) = resolve_account(&meta)?;
+    let (acct_name, acct, password) = resolve_account(&meta, file)?;
 
     println!("Account: {} ({})", acct_name, acct.user);
     println!("To:      {}", meta["To"]);

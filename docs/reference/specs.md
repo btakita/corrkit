@@ -82,6 +82,9 @@ Mailbox resolution (when no explicit name given):
 
 ## {Sender Name} <{email}> — {RFC 2822 date}
 
+**To**: {recipient1}, {recipient2}
+**CC**: {cc1}
+
 {Body text}
 
 ---
@@ -90,6 +93,8 @@ Mailbox resolution (when no explicit name given):
 
 {Body text}
 ```
+
+Per-message `**To**:` and `**CC**:` lines are emitted after the message header when non-empty. Old files without these lines parse correctly (fields default to empty).
 
 Metadata regex: `^\*\*(.+?)\*\*:\s*(.+)$` (multiline)
 Message header regex: `^## (.+?) — (.+)$` (multiline, em dash U+2014)
@@ -141,8 +146,6 @@ default = false             # Mark one account as default
 
 [contacts.{name}]
 emails = ["addr@example.com"]
-labels = ["correspondence"]         # For lookup, not sync routing
-account = "personal"                # Optional
 
 [routing]
 for-alex = ["mailboxes/alex"]
@@ -264,9 +267,11 @@ Account:label syntax (`"proton-dev:INBOX"`):
 
 After sync, scan all `.md` files in `conversations/`:
 1. Parse each file back into a Thread object
-2. For each message, extract email from sender (`<email>` regex)
+2. For each message, extract emails from `from`, `to`, and `cc` fields (`<email>` regex)
 3. Match against `[contacts]` email→name mapping in `.corky.toml`
 4. Write `manifest.toml` with thread metadata and matched contacts
+
+A contact appears in the manifest if they sent, received, or were CC'd on any message in the thread.
 
 ## 5. Commands
 
@@ -368,14 +373,13 @@ corky add-label LABEL --account NAME
 Text-level TOML edit to add a label to an account's `labels` array.
 Preserves comments and formatting. Returns false if label already present.
 
-### 5.7 contact-add
+### 5.7 contact-add (hidden alias)
 
 ```
-corky contact-add NAME --email EMAIL [--email EMAIL2] [--label LABEL] [--account ACCT]
+corky contact-add NAME --email EMAIL [--email EMAIL2]
 ```
 
-Creates `{data_dir}/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink.
-Updates `.corky.toml`. If both `--label` and `--account` given, adds label to account config.
+Hidden backward-compatible alias for `contact add`. The `--label` and `--account` flags are accepted but ignored.
 
 ### 5.8 watch
 
@@ -557,6 +561,42 @@ Output: creates `drafts/YYYY-MM-DD-{slug}.md` and prints the path.
 - Author resolved from `[owner] name` in `.corky.toml`
 - Slug collisions handled with `-2`, `-3` suffix (same as sync)
 
+### 5.22 contact add
+
+```
+corky contact add NAME --email EMAIL [--email EMAIL2]
+corky contact add --from SLUG [NAME]
+```
+
+Creates `{data_dir}/contacts/{name}/` with `AGENTS.md` template and `CLAUDE.md` symlink.
+Updates `.corky.toml` with the contact's email addresses.
+
+Manual mode (`--email`): requires `NAME` positional. Creates contact with default AGENTS.md.
+
+From-conversation mode (`--from`):
+1. Find `conversations/{slug}.md` or `mailboxes/*/conversations/{slug}.md`
+2. Parse thread, extract non-owner participants from `from`, `to`, `cc` fields
+3. Filter owner emails via `accounts.*.user` in `.corky.toml`
+4. Single participant: auto-derive name from display name (slugified)
+5. Multiple participants: require positional `NAME` to select one
+6. Generate enriched AGENTS.md with pre-filled Topics, Formality, Tone, and Research sections
+
+`--from` and `--email` conflict (clap `conflicts_with`).
+
+### 5.23 contact info
+
+```
+corky contact info NAME
+```
+
+Aggregates and displays contact information:
+1. Contact config from `.corky.toml` (emails)
+2. `contacts/{name}/AGENTS.md` content
+3. Matching threads from `manifest.toml` (root) and `mailboxes/*/manifest.toml`
+4. Summary: thread count, last activity date
+
+Threads are matched where the `contacts` array in manifest contains `NAME`.
+
 ## 6. Sync Algorithm
 
 ### 6.1 State
@@ -578,6 +618,8 @@ For each account, for each label:
 From RFC822:
 - Subject: `email.header.decode_header()` (handles encoded words)
 - From: `email.header.decode_header()`
+- To: `email.header.decode_header()` (comma-separated recipients)
+- CC: `email.header.decode_header()` (comma-separated recipients)
 - Date: raw header string
 - Body: walk multipart for `text/plain` without `Content-Disposition`, or get payload for non-multipart
 - Thread key: `thread_key_from_subject(subject)`
@@ -735,3 +777,16 @@ For `draft push`:
 1. `**Account**` metadata field → lookup by name in `.corky.toml`
 2. `**From**` metadata field → lookup by email address (case-insensitive)
 3. Default account (first with `default = true`, or first in file)
+4. Credential bubbling (see §11.3)
+
+### 11.3 Credential Bubbling
+
+When a draft lives inside a `mailboxes/` subtree, the child mailbox may not have its own IMAP/SMTP credentials. Corky resolves credentials bottom-up:
+
+1. Check the leaf mailbox's `.corky.toml` for matching account credentials
+2. Walk parent directories upward, checking each `.corky.toml` for an account whose `user` matches the `**From**` address
+3. First match wins
+4. If no credentials found at any level, bail with error
+
+This enables child mailboxes to draft replies that the parent's account sends.
+

@@ -29,6 +29,9 @@ corky sync                        # Re-sync threads from all accounts
 corky list-folders ACCOUNT        # List IMAP folders for an account
 corky draft push FILE             # Save draft to email provider
 corky draft push FILE --send      # Send via SMTP (owner only)
+corky contact add --from SLUG     # Create contact from conversation
+corky contact add NAME --email E  # Create contact manually
+corky contact info NAME           # Show contact details + threads
 ```
 
 ## Draft format

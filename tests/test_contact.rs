@@ -34,8 +34,6 @@ fn test_load_contacts_basic() {
         r#"
 [contacts.alice]
 emails = ["alice@example.com", "alice@work.com"]
-labels = ["correspondence"]
-account = "personal"
 "#,
     )
     .unwrap();
@@ -45,8 +43,28 @@ account = "personal"
 
     let alice = contacts.get("alice").unwrap();
     assert_eq!(alice.emails, vec!["alice@example.com", "alice@work.com"]);
-    assert_eq!(alice.labels, vec!["correspondence"]);
-    assert_eq!(alice.account, "personal");
+}
+
+#[test]
+fn test_load_contacts_basic_with_legacy_fields() {
+    // Old .corky.toml files may have labels/account — serde ignores unknown fields
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().join(".corky.toml");
+    std::fs::write(
+        &path,
+        r#"
+[contacts.alice]
+emails = ["alice@example.com"]
+labels = ["correspondence"]
+account = "personal"
+"#,
+    )
+    .unwrap();
+
+    let contacts = contact::load_contacts(Some(&path)).unwrap();
+    assert_eq!(contacts.len(), 1);
+    let alice = contacts.get("alice").unwrap();
+    assert_eq!(alice.emails, vec!["alice@example.com"]);
 }
 
 #[test]
@@ -61,11 +79,9 @@ emails = ["alice@example.com"]
 
 [contacts.bob]
 emails = ["bob@example.com"]
-labels = ["work"]
 
 [contacts.charlie]
 emails = ["charlie@example.com"]
-account = "work"
 "#,
     )
     .unwrap();
@@ -93,8 +109,6 @@ emails = ["min@example.com"]
     let contacts = contact::load_contacts(Some(&path)).unwrap();
     let minimal = contacts.get("minimal").unwrap();
     assert_eq!(minimal.emails, vec!["min@example.com"]);
-    assert!(minimal.labels.is_empty());
-    assert!(minimal.account.is_empty());
 }
 
 #[test]
@@ -105,8 +119,6 @@ fn test_save_contact() {
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
-        labels: vec!["correspondence".to_string()],
-        account: "personal".to_string(),
     };
 
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
@@ -114,8 +126,6 @@ fn test_save_contact() {
     let content = std::fs::read_to_string(&path).unwrap();
     assert!(content.contains("[contacts.alice]"));
     assert!(content.contains("\"alice@example.com\""));
-    assert!(content.contains("\"correspondence\""));
-    assert!(content.contains("account = \"personal\""));
 }
 
 #[test]
@@ -129,8 +139,6 @@ fn test_save_contact_multiple_emails() {
             "bob@work.com".to_string(),
             "bob@personal.com".to_string(),
         ],
-        labels: vec![],
-        account: String::new(),
     };
 
     contact::save_contact("bob", &bob, Some(&path)).unwrap();
@@ -148,13 +156,9 @@ fn test_save_and_reload_contacts() {
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
-        labels: vec!["inbox".to_string(), "vip".to_string()],
-        account: "personal".to_string(),
     };
     let bob = Contact {
         emails: vec!["bob@work.com".to_string()],
-        labels: vec![],
-        account: String::new(),
     };
 
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
@@ -165,13 +169,9 @@ fn test_save_and_reload_contacts() {
 
     let alice = reloaded.get("alice").unwrap();
     assert_eq!(alice.emails, vec!["alice@example.com"]);
-    assert_eq!(alice.labels, vec!["inbox", "vip"]);
-    assert_eq!(alice.account, "personal");
 
     let bob = reloaded.get("bob").unwrap();
     assert_eq!(bob.emails, vec!["bob@work.com"]);
-    assert!(bob.labels.is_empty());
-    assert!(bob.account.is_empty());
 }
 
 #[test]
@@ -199,7 +199,6 @@ fn test_contact_no_emails() {
         &path,
         r#"
 [contacts.no-email]
-labels = ["test"]
 "#,
     )
     .unwrap();
@@ -207,7 +206,6 @@ labels = ["test"]
     let contacts = contact::load_contacts(Some(&path)).unwrap();
     let no_email = contacts.get("no-email").unwrap();
     assert!(no_email.emails.is_empty());
-    assert_eq!(no_email.labels, vec!["test"]);
 }
 
 #[test]
@@ -228,8 +226,6 @@ user = "test@gmail.com"
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
-        labels: vec![],
-        account: String::new(),
     };
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
 

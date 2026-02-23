@@ -11,10 +11,6 @@ use crate::resolve;
 pub struct Contact {
     #[serde(default)]
     pub emails: Vec<String>,
-    #[serde(default)]
-    pub labels: Vec<String>,
-    #[serde(default)]
-    pub account: String,
 }
 
 /// Load contacts from [contacts.*] in .corky.toml and return {name: Contact} mapping.
@@ -84,16 +80,6 @@ pub fn save_contact(
             arr.push(e.as_str());
         }
         table.insert("emails", toml_edit::value(arr));
-    }
-    if !contact.labels.is_empty() {
-        let mut arr = toml_edit::Array::new();
-        for l in &contact.labels {
-            arr.push(l.as_str());
-        }
-        table.insert("labels", toml_edit::value(arr));
-    }
-    if !contact.account.is_empty() {
-        table.insert("account", toml_edit::value(&contact.account));
     }
     contacts.insert(name, toml_edit::Item::Table(table));
 

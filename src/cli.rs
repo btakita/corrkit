@@ -93,7 +93,12 @@ pub enum Commands {
         account: String,
     },
 
-    /// Add a new contact
+    /// Contact commands
+    #[command(subcommand)]
+    Contact(ContactCommands),
+
+    /// Add a new contact (hidden backward-compatible alias)
+    #[command(hide = true)]
     ContactAdd {
         /// Contact name
         name: String,
@@ -102,11 +107,11 @@ pub enum Commands {
         #[arg(long = "email", required = true)]
         emails: Vec<String>,
 
-        /// Conversation label(s)
+        /// Conversation label(s) (ignored, kept for backward compat)
         #[arg(long = "label")]
         labels: Vec<String>,
 
-        /// Bind contact labels to a specific account
+        /// Bind contact labels to a specific account (ignored, kept for backward compat)
         #[arg(long, default_value = "")]
         account: String,
     },
@@ -159,7 +164,29 @@ pub enum Commands {
     /// Mailbox commands
     #[command(subcommand, alias = "mb")]
     Mailbox(MailboxCommands),
+}
 
+#[derive(Subcommand)]
+pub enum ContactCommands {
+    /// Add a new contact
+    Add {
+        /// Contact name (optional with --from)
+        name: Option<String>,
+
+        /// Email address(es) — conflicts with --from
+        #[arg(long = "email")]
+        emails: Vec<String>,
+
+        /// Create from a conversation slug
+        #[arg(long, conflicts_with = "emails")]
+        from: Option<String>,
+    },
+
+    /// Show contact info
+    Info {
+        /// Contact name
+        name: String,
+    },
 }
 
 #[derive(Subcommand)]
