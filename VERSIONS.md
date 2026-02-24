@@ -4,6 +4,15 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.9.2
+
+Contact sync v2: conversation-aware eligibility + 3-way merge.
+
+- **`corky contact sync`**: Only syncs contacts to mailboxes where they have conversations (sender name matched via slugification) or are explicitly shared via `shared_with` in `.corky.toml`. Mailbox→root always allowed.
+- **3-way merge resolution**: Content hashes (FNV-1a) stored per contact-mailbox pair in `.sync-state.json`. If only one side changed since last sync, that side wins. Conflicts fall back to newest-wins by mtime with a warning.
+- **`Contact` struct extended**: `shared_with` and `aliases` fields added to `[contacts.*]` in `.corky.toml`. `aliases` match sender names that don't slugify to the contact directory name.
+- 26 contact sync tests (19 eligibility + 7 three-way merge).
+
 ## 0.9.1
 
 Telegram HTML export support.
