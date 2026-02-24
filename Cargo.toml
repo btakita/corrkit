@@ -34,6 +34,7 @@ openssl = { version = "0.10", features = ["vendored"], optional = true }
 tempfile = "3"
 zip = "2"
 filetime = "0.2.27"
+ureq = { version = "2", features = ["json"] }
 
 [features]
 default = []

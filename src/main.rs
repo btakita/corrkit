@@ -17,6 +17,12 @@ fn main() -> Result<()> {
         }
     }
 
+
+    // Warn about available upgrades (skip if running the upgrade command itself)
+    if !matches!(cli.command, Commands::Upgrade) {
+        corky::upgrade::warn_if_outdated();
+    }
+
     match cli.command {
         Commands::Init {
             path,
@@ -137,6 +143,7 @@ fn main() -> Result<()> {
                 corky::sync::slack_import::run(&path, &label, &out_dir, &account)
             }
         },
+        Commands::Upgrade => corky::upgrade::run(),
     }
 }
 

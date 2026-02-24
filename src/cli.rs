@@ -168,6 +168,9 @@ pub enum Commands {
     /// Slack commands
     #[command(subcommand)]
     Slack(SlackCommands),
+
+    /// Check for updates and upgrade to the latest version.
+    Upgrade,
 }
 
 #[derive(Subcommand)]
