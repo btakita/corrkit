@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, MailboxCommands, SyncCommands};
+use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, MailboxCommands, SlackCommands, SyncCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -47,6 +47,10 @@ fn main() -> Result<()> {
             Some(SyncCommands::Account { name }) => corky::sync::run(false, Some(&name)),
             Some(SyncCommands::Routes) => corky::sync::routes::run(),
             Some(SyncCommands::Mailbox { name }) => corky::mailbox::sync::run(name.as_deref()),
+            Some(SyncCommands::TelegramImport { path, label, account }) => {
+                let out_dir = corky::resolve::conversations_dir();
+                corky::sync::telegram_import::run(&path, &label, &out_dir, &account)
+            }
         },
         Commands::SyncAuth => corky::sync::auth::run(),
         Commands::ListFolders { account } => corky::sync::folders::run(account.as_deref()),
@@ -125,6 +129,12 @@ fn main() -> Result<()> {
                 corky::mailbox::find_unanswered::run(scope, &from)
             }
             MailboxCommands::Draft(cmd) => run_draft_command(cmd),
+        },
+        Commands::Slack(cmd) => match cmd {
+            SlackCommands::Import { path, label, account } => {
+                let out_dir = corky::resolve::conversations_dir();
+                corky::sync::slack_import::run(&path, &label, &out_dir, &account)
+            }
         },
     }
 }

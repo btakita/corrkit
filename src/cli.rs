@@ -164,6 +164,10 @@ pub enum Commands {
     /// Mailbox commands
     #[command(subcommand, alias = "mb")]
     Mailbox(MailboxCommands),
+
+    /// Slack commands
+    #[command(subcommand)]
+    Slack(SlackCommands),
 }
 
 #[derive(Subcommand)]
@@ -207,6 +211,18 @@ pub enum SyncCommands {
     Mailbox {
         /// Mailbox name (default: all)
         name: Option<String>,
+    },
+
+    /// Import Telegram Desktop JSON export
+    TelegramImport {
+        /// Path to result.json or directory of exports
+        path: PathBuf,
+        /// Label for imported conversations
+        #[arg(long, default_value = "telegram")]
+        label: String,
+        /// Account name for imported conversations
+        #[arg(long, default_value = "telegram")]
+        account: String,
     },
 }
 
@@ -354,5 +370,20 @@ pub enum MailboxCommands {
         /// Regenerate files without pulling/pushing
         #[arg(long)]
         no_sync: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SlackCommands {
+    /// Import Slack workspace export ZIP
+    Import {
+        /// Path to export ZIP file
+        path: PathBuf,
+        /// Label for imported conversations
+        #[arg(long, default_value = "slack")]
+        label: String,
+        /// Account name for imported conversations
+        #[arg(long, default_value = "slack")]
+        account: String,
     },
 }

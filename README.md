@@ -51,6 +51,29 @@ corky watch                     # Poll and sync automatically
 corky --help                    # All commands
 ```
 
+### Telegram import
+
+Import Telegram Desktop JSON exports into corky conversations:
+
+```sh
+corky sync telegram-import ~/Downloads/telegram-export/result.json
+corky sync telegram-import ~/Downloads/telegram-export/           # directory of exports
+corky sync telegram-import result.json --label personal --account tg-personal
+```
+
+Export from Telegram Desktop: Settings > Advanced > Export Telegram data > JSON format.
+
+### Slack import
+
+Import Slack workspace export ZIPs:
+
+```sh
+corky slack import ~/Downloads/my-workspace-export.zip
+corky slack import export.zip --label work --account slack-work
+```
+
+Export from Slack: Workspace admin > Settings > Import/Export Data > Export.
+
 See the [command reference](https://btakita.github.io/corky/guide/commands.html) for details.
 
 ## Development

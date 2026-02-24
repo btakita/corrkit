@@ -22,6 +22,8 @@ Manage and draft correspondence using locally synced email threads.
 - `corky draft new --to EMAIL "Subject"` — scaffold a new draft
 - `corky draft validate` — validate draft format
 - `corky sync` — re-sync threads from all accounts
+- `corky sync telegram-import FILE [--label L] [--account A]` — import Telegram Desktop JSON export
+- `corky slack import FILE.zip [--label L] [--account A]` — import Slack workspace export ZIP
 - `corky list-folders ACCOUNT` — list IMAP folders for an account
 - `corky contact add --from SLUG` — create a contact from a conversation
 - `corky contact info NAME` — show contact details and thread history

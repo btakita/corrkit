@@ -54,6 +54,29 @@ corky sync-auth
 
 Gmail OAuth setup. Requires `credentials.json` from Google Cloud Console.
 
+## Import
+
+### Telegram
+
+```sh
+corky sync telegram-import FILE            # Import Telegram Desktop JSON export
+corky sync telegram-import DIR             # Import from directory containing result.json
+corky sync telegram-import FILE --label personal --account tg-personal
+```
+
+Import Telegram Desktop JSON exports into corky conversations. Each chat becomes a thread with ID `tg:{chat_id}`. Export from Telegram Desktop: Settings > Advanced > Export Telegram data > JSON format.
+
+### Slack
+
+```sh
+corky slack import FILE.zip                # Import Slack workspace export ZIP
+corky slack import FILE.zip --label work --account slack-work
+```
+
+Import Slack workspace export ZIPs. Messages are grouped by `thread_ts` into threads with ID `slack:{channel_id}:{thread_ts}`. Export from Slack: Workspace admin > Settings > Import/Export Data > Export.
+
+Both commands support `--label` (default: provider name) and `--account` (default: provider name) flags.
+
 ## Email
 
 ```sh
