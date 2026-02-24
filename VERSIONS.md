@@ -4,6 +4,15 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.9.0
+
+Telegram + Slack import.
+
+- **`corky sync telegram-import`**: Import Telegram Desktop JSON exports into mailbox threads. Supports single-chat and multi-chat formats. `--account` flag for account routing.
+- **`corky slack import`**: Import Slack workspace export ZIPs into mailbox threads. Resolves user mentions, channels, and mrkdwn formatting. `--account` flag for account routing.
+- CLI integration tests for both import commands.
+- mdbook documentation for Telegram and Slack import guides.
+
 ## 0.8.0
 
 Contact enrichment, To/CC sync, credential bubbling.
