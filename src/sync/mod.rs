@@ -6,6 +6,8 @@ pub mod imap_sync;
 pub mod manifest;
 pub mod markdown;
 pub mod routes;
+pub mod slack_import;
+pub mod telegram_import;
 pub mod types;
 
 use anyhow::Result;
