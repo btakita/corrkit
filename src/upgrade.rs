@@ -2,12 +2,14 @@
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::io::Read as _;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const CRATE_NAME: &str = env!("CARGO_PKG_NAME");
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const CACHE_MAX_AGE_SECS: u64 = 24 * 60 * 60; // 24 hours
+const GITHUB_REPO: &str = "btakita/corky";
 
 #[derive(Serialize, Deserialize)]
 struct VersionCache {
@@ -24,6 +26,115 @@ pub fn warn_if_outdated() {
              Run `corky upgrade` to update.\x1b[0m"
         );
     }
+}
+
+/// Detect the current platform target triple.
+fn detect_target() -> Option<String> {
+    let os = if cfg!(target_os = "linux") {
+        "unknown-linux-gnu"
+    } else if cfg!(target_os = "macos") {
+        "apple-darwin"
+    } else {
+        return None;
+    };
+
+    let arch = if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else {
+        return None;
+    };
+
+    Some(format!("{arch}-{os}"))
+}
+
+/// Try to upgrade by downloading from GitHub Releases.
+/// Returns true if successful.
+fn try_github_release_upgrade(version: &str) -> bool {
+    let target = match detect_target() {
+        Some(t) => t,
+        None => return false,
+    };
+
+    let exe_path = match std::env::current_exe().and_then(|p| p.canonicalize()) {
+        Ok(p) => p,
+        Err(_) => return false,
+    };
+
+    let archive_name = format!("{CRATE_NAME}-{target}.tar.gz");
+    let url = format!(
+        "https://github.com/{GITHUB_REPO}/releases/download/v{version}/{archive_name}"
+    );
+
+    eprintln!("Downloading from GitHub Releases...");
+    eprintln!("  {url}");
+
+    // Download to a temp file next to the binary
+    let exe_dir = match exe_path.parent() {
+        Some(d) => d,
+        None => return false,
+    };
+
+    let tmp_archive = exe_dir.join(format!(".{CRATE_NAME}-upgrade.tar.gz"));
+    let tmp_binary = exe_dir.join(format!(".{CRATE_NAME}-upgrade"));
+
+    // Download
+    let agent = ureq::AgentBuilder::new()
+        .timeout_read(std::time::Duration::from_secs(30))
+        .timeout_write(std::time::Duration::from_secs(10))
+        .build();
+
+    let resp = match agent.get(&url).call() {
+        Ok(r) => r,
+        Err(_) => return false,
+    };
+
+    let mut archive_bytes = Vec::new();
+    if resp.into_reader().read_to_end(&mut archive_bytes).is_err() {
+        return false;
+    }
+
+    if std::fs::write(&tmp_archive, &archive_bytes).is_err() {
+        return false;
+    }
+
+    // Extract using tar
+    let tar_status = std::process::Command::new("tar")
+        .args(["xzf"])
+        .arg(&tmp_archive)
+        .arg("-C")
+        .arg(exe_dir)
+        .arg("--transform")
+        .arg(format!("s/{CRATE_NAME}/.{CRATE_NAME}-upgrade/"))
+        .status();
+
+    let _ = std::fs::remove_file(&tmp_archive);
+
+    let extracted_ok = matches!(tar_status, Ok(s) if s.success());
+    if !extracted_ok {
+        let _ = std::fs::remove_file(&tmp_binary);
+        return false;
+    }
+
+    // Make executable
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&tmp_binary, std::fs::Permissions::from_mode(0o755));
+    }
+
+    // Atomic-ish replace: rename new over old
+    if std::fs::rename(&tmp_binary, &exe_path).is_err() {
+        // On some systems rename across filesystems fails, try copy
+        if std::fs::copy(&tmp_binary, &exe_path).is_err() {
+            let _ = std::fs::remove_file(&tmp_binary);
+            return false;
+        }
+        let _ = std::fs::remove_file(&tmp_binary);
+    }
+
+    true
 }
 
 /// The `upgrade` subcommand handler.
@@ -45,7 +156,13 @@ pub fn run() -> Result<()> {
 
     eprintln!("New version available: v{latest} (current: v{CURRENT_VERSION})");
 
-    // Try cargo install first
+    // Strategy 1: GitHub Releases binary download
+    if try_github_release_upgrade(&latest) {
+        eprintln!("Successfully upgraded to v{latest} via GitHub Releases.");
+        return Ok(());
+    }
+
+    // Strategy 2: cargo install
     eprintln!("Attempting: cargo install {CRATE_NAME}");
     let cargo_status = std::process::Command::new("cargo")
         .args(["install", CRATE_NAME])
@@ -58,7 +175,7 @@ pub fn run() -> Result<()> {
         }
     }
 
-    // Fall back to pip
+    // Strategy 3: pip install
     eprintln!("cargo install failed, trying: pip install --upgrade {CRATE_NAME}");
     let pip_status = std::process::Command::new("pip")
         .args(["install", "--upgrade", CRATE_NAME])
@@ -74,11 +191,11 @@ pub fn run() -> Result<()> {
     // Manual instructions
     eprintln!(
         "\nAutomatic upgrade failed. You can upgrade manually:\n\
+         \n  curl -sSf https://raw.githubusercontent.com/{GITHUB_REPO}/main/install.sh | sh\n\
+         \nor:\n\
          \n  cargo install {CRATE_NAME}\n\
          \nor:\n\
-         \n  pip install --upgrade {CRATE_NAME}\n\
-         \nor build from source:\n\
-         \n  git pull && make install\n"
+         \n  pip install --upgrade {CRATE_NAME}\n"
     );
 
     Ok(())
@@ -257,5 +374,31 @@ mod tests {
 
         assert_eq!(loaded.latest, "1.2.3");
         assert_eq!(loaded.checked_at, 1700000000);
+    }
+
+    #[test]
+    fn test_detect_target() {
+        let target = detect_target();
+        assert!(target.is_some(), "should detect current platform");
+        let t = target.unwrap();
+        assert!(t.contains('-'), "target should contain a dash");
+        // Should be one of our supported targets
+        assert!(
+            t.ends_with("unknown-linux-gnu") || t.ends_with("apple-darwin"),
+            "unexpected target: {t}"
+        );
+    }
+
+    #[test]
+    fn test_github_release_url_format() {
+        let version = "1.2.3";
+        let target = detect_target().unwrap();
+        let archive = format!("{}-{}.tar.gz", CRATE_NAME, target);
+        let url = format!(
+            "https://github.com/{}/releases/download/v{}/{}",
+            GITHUB_REPO, version, archive
+        );
+        assert!(url.starts_with("https://github.com/btakita/corky/releases/download/v1.2.3/"));
+        assert!(url.ends_with(".tar.gz"));
     }
 }
