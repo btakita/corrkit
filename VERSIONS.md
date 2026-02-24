@@ -4,6 +4,12 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.9.1
+
+Telegram HTML export support.
+
+- **`corky sync telegram-import`**: Auto-detect JSON vs HTML by file extension. Parse Telegram Desktop HTML exports (chat name, sender, date with timezone, message text). HTML entity decoding and link tag stripping. Chat ID derived from name hash.
+
 ## 0.9.0
 
 Telegram + Slack import.
