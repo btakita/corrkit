@@ -68,6 +68,7 @@ fn main() -> Result<()> {
                 }
             }
             ContactCommands::Info { name } => corky::contact::info::run(&name),
+            ContactCommands::Sync => corky::contact::sync::run(),
         },
         Commands::ContactAdd {
             name,

@@ -7,10 +7,16 @@ use std::path::{Path, PathBuf};
 
 use crate::resolve;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Contact {
     #[serde(default)]
     pub emails: Vec<String>,
+    /// Explicitly share this contact with these mailboxes (even without conversation match).
+    #[serde(default)]
+    pub shared_with: Vec<String>,
+    /// Aliases for matching sender names that don't slugify to the directory name.
+    #[serde(default)]
+    pub aliases: Vec<String>,
 }
 
 /// Load contacts from [contacts.*] in .corky.toml and return {name: Contact} mapping.
@@ -80,6 +86,20 @@ pub fn save_contact(
             arr.push(e.as_str());
         }
         table.insert("emails", toml_edit::value(arr));
+    }
+    if !contact.shared_with.is_empty() {
+        let mut arr = toml_edit::Array::new();
+        for s in &contact.shared_with {
+            arr.push(s.as_str());
+        }
+        table.insert("shared_with", toml_edit::value(arr));
+    }
+    if !contact.aliases.is_empty() {
+        let mut arr = toml_edit::Array::new();
+        for a in &contact.aliases {
+            arr.push(a.as_str());
+        }
+        table.insert("aliases", toml_edit::value(arr));
     }
     contacts.insert(name, toml_edit::Item::Table(table));
 

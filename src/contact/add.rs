@@ -152,6 +152,7 @@ pub fn run_with_agents_md(name: &str, emails: &[String], agents_md_content: &str
     // 2. Update .corky.toml
     let contact = Contact {
         emails: emails.to_vec(),
+        ..Default::default()
     };
     save_contact(name, &contact, None)?;
     println!("Updated .corky.toml");

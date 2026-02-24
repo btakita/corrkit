@@ -44,9 +44,19 @@ pub struct AccountSyncState {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ContactSyncState {
+    /// Per-mailbox: FNV-1a hash of the CLAUDE.md content at last sync.
+    /// Key = mailbox name, Value = hash hex string.
+    #[serde(default)]
+    pub mailboxes: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SyncState {
     #[serde(default)]
     pub accounts: HashMap<String, AccountSyncState>,
+    #[serde(default)]
+    pub contacts: HashMap<String, ContactSyncState>,
 }
 
 pub fn load_state(data: &[u8]) -> anyhow::Result<SyncState> {

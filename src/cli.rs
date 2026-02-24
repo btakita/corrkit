@@ -191,6 +191,9 @@ pub enum ContactCommands {
         /// Contact name
         name: String,
     },
+
+    /// Sync CLAUDE.md files between root contacts/ and mailbox contacts/
+    Sync,
 }
 
 #[derive(Subcommand)]

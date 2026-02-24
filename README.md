@@ -47,6 +47,7 @@ corky sync                      # Incremental IMAP sync
 corky unanswered                # Threads awaiting a reply
 corky draft push FILE           # Save as email draft
 corky mailbox add NAME --label LABEL  # Share threads
+corky contact sync              # Sync contact CLAUDE.md between root and mailboxes
 corky watch                     # Poll and sync automatically
 corky --help                    # All commands
 ```

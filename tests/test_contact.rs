@@ -119,6 +119,7 @@ fn test_save_contact() {
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
+        ..Default::default()
     };
 
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
@@ -139,6 +140,7 @@ fn test_save_contact_multiple_emails() {
             "bob@work.com".to_string(),
             "bob@personal.com".to_string(),
         ],
+        ..Default::default()
     };
 
     contact::save_contact("bob", &bob, Some(&path)).unwrap();
@@ -156,9 +158,11 @@ fn test_save_and_reload_contacts() {
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
+        ..Default::default()
     };
     let bob = Contact {
         emails: vec!["bob@work.com".to_string()],
+        ..Default::default()
     };
 
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
@@ -226,6 +230,7 @@ user = "test@gmail.com"
 
     let alice = Contact {
         emails: vec!["alice@example.com".to_string()],
+        ..Default::default()
     };
     contact::save_contact("alice", &alice, Some(&path)).unwrap();
 
