@@ -1,6 +1,6 @@
 [package]
 name = "corky"
-version = "0.9.4"
+version = "0.9.5"
 edition = "2021"
 description = "Sync email threads from IMAP to Markdown, draft replies, manage collaborators"
 license = "Apache-2.0"
@@ -35,6 +35,7 @@ tempfile = "3"
 zip = "2"
 filetime = "0.2.27"
 ureq = { version = "2", features = ["json"] }
+instruction-files = { path = "../instruction-files", version = "0.1" }
 
 [features]
 default = []
