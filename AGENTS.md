@@ -142,7 +142,7 @@ Follow a research → plan → implement cycle. Never write code until the plan 
 - Use `toml_edit` for format-preserving TOML edits (add-label)
 - Use `std::process::Command` for git operations (not `git2`)
 - Use `regex` + `once_cell::Lazy` for compiled regex patterns
-- Keep sync, draft, mailbox, contact logic in separate modules
+- Keep sync, draft, mailbox, contact, social, schedule, topics logic in separate modules
 - Do not commit `.env`, `.corky.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `mail`
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message

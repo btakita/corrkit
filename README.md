@@ -38,7 +38,10 @@ See the [getting started guide](https://btakita.github.io/corky/getting-started/
 - **Sandboxed sharing** — label-based routing gives collaborators only the threads you choose
 - **AI-native** — files, CLI, and git work the same for humans and agents
 - **Multi-account** — Gmail, Protonmail Bridge, generic IMAP, all in one directory
-- **Watch daemon** — poll IMAP on an interval with `corky watch`
+- **Social posting** — draft and publish to LinkedIn (and future platforms) via OAuth
+- **Scheduling** — schedule email and social drafts for timed publishing
+- **Topics** — organize conversations with shared topic context across mailboxes
+- **Watch daemon** — poll IMAP and run scheduled publishing with `corky watch`
 
 ## Usage
 
@@ -48,7 +51,11 @@ corky unanswered                # Threads awaiting a reply
 corky draft push FILE           # Save as email draft
 corky mailbox add NAME --label LABEL  # Share threads
 corky contact sync              # Sync contact CLAUDE.md between root and mailboxes
-corky watch                     # Poll and sync automatically
+corky social draft linkedin      # Create social media draft
+corky social publish FILE       # Publish to LinkedIn
+corky schedule run              # Publish due scheduled items
+corky topics list               # Show configured topics
+corky watch                     # Poll, sync, and publish scheduled
 corky --help                    # All commands
 ```
 
