@@ -30,17 +30,21 @@ fn resolve_credentials(platform: Platform) -> Result<ClientCredentials> {
             if let Some(cfg) = corky_config::try_load_config(None) {
                 if let Some(social) = &cfg.social {
                     if let Some(li) = &social.linkedin {
-                        let id = crate::util::resolve_secret(
-                            &li.client_id,
-                            &li.client_id_cmd,
-                            "LinkedIn client_id",
-                        );
-                        let secret = crate::util::resolve_secret(
-                            &li.client_secret,
-                            &li.client_secret_cmd,
-                            "LinkedIn client_secret",
-                        );
-                        if let (Ok(client_id), Ok(client_secret)) = (id, secret) {
+                        let has_config = !li.client_id.is_empty()
+                            || !li.client_id_cmd.is_empty()
+                            || !li.client_secret.is_empty()
+                            || !li.client_secret_cmd.is_empty();
+                        if has_config {
+                            let client_id = crate::util::resolve_secret(
+                                &li.client_id,
+                                &li.client_id_cmd,
+                                "LinkedIn client_id (check [social.linkedin] in .corky.toml)",
+                            )?;
+                            let client_secret = crate::util::resolve_secret(
+                                &li.client_secret,
+                                &li.client_secret_cmd,
+                                "LinkedIn client_secret (check [social.linkedin] in .corky.toml)",
+                            )?;
                             return Ok(ClientCredentials {
                                 client_id,
                                 client_secret,
