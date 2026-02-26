@@ -181,6 +181,10 @@ pub enum Commands {
     #[command(subcommand)]
     Topics(TopicCommands),
 
+    /// Label management commands
+    #[command(subcommand)]
+    Label(LabelCommands),
+
     /// Check for updates and upgrade to the latest version.
     Upgrade,
 }
@@ -525,5 +529,26 @@ pub enum SlackCommands {
         /// Account name for imported conversations
         #[arg(long, default_value = "slack")]
         account: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum LabelCommands {
+    /// Remove a label from all messages (or those matching a search query)
+    Clear {
+        /// Label/folder name to clear
+        label: String,
+
+        /// Account name from .corky.toml (default: all accounts)
+        #[arg(long)]
+        account: Option<String>,
+
+        /// IMAP search query to filter messages (default: ALL)
+        #[arg(long)]
+        search: Option<String>,
+
+        /// Show what would be done without making changes
+        #[arg(long)]
+        dry_run: bool,
     },
 }

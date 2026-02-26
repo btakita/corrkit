@@ -231,7 +231,18 @@ pub fn build_label_routes(account_name: &str) -> std::collections::HashMap<Strin
     routes
 }
 
-type ImapSession = Session<TlsStream<TcpStream>>;
+pub type ImapSession = Session<TlsStream<TcpStream>>;
+
+/// Connect to IMAP server (public API for other modules).
+pub fn connect_imap_pub(
+    host: &str,
+    port: u16,
+    starttls: bool,
+    user: &str,
+    password: &str,
+) -> Result<ImapSession> {
+    connect_imap(host, port, starttls, user, password)
+}
 
 /// Connect to IMAP server.
 fn connect_imap(

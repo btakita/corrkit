@@ -5,6 +5,7 @@ pub mod config;
 pub mod contact;
 pub mod draft;
 pub mod init;
+pub mod label;
 pub mod mailbox;
 pub mod resolve;
 pub mod skill;

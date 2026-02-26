@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, MailboxCommands, ScheduleCommands, SlackCommands, SocialCommands, SyncCommands, TopicCommands};
+use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, LabelCommands, MailboxCommands, ScheduleCommands, SlackCommands, SocialCommands, SyncCommands, TopicCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -179,6 +179,11 @@ fn main() -> Result<()> {
             SlackCommands::Import { path, label, account } => {
                 let out_dir = corky::resolve::conversations_dir();
                 corky::sync::slack_import::run(&path, &label, &out_dir, &account)
+            }
+        },
+        Commands::Label(cmd) => match cmd {
+            LabelCommands::Clear { label, account, search, dry_run } => {
+                corky::label::clear::run(&label, account.as_deref(), search.as_deref(), dry_run)
             }
         },
         Commands::Upgrade => corky::upgrade::run(),
