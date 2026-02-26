@@ -63,6 +63,8 @@ pub struct SocialDraftMeta {
     pub post_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub post_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<String>,
 }
 
 fn default_visibility() -> String {

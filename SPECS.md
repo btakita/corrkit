@@ -977,6 +977,9 @@ Social drafts live in `{data_dir}/social/` as Markdown files with YAML frontmatt
 | `published_at` | no | — | Set on publish |
 | `post_id` | no | — | Set on publish (platform post ID) |
 | `post_url` | no | — | Set on publish (permalink) |
+| `images` | no | `[]` | List of image paths (relative to draft file) |
+
+**Images:** The `images` field accepts a list of file paths relative to the draft file location. On publish, each image is uploaded to the platform and attached to the post. LinkedIn supports up to 20 images per post (1 image = single image post, 2+ = carousel).
 
 **Status transitions:** `draft` → `ready` → `published` (one-way).
 
@@ -1009,10 +1012,16 @@ Client credentials resolved from: `[social.linkedin]` in `.corky.toml` > `CORKY_
 2. Verify status is `ready` (not `draft` or `published`)
 3. Resolve author → URN via profiles.toml
 4. Lookup valid token for URN in token store
-5. Call platform API (LinkedIn: POST /rest/posts)
-6. Update draft frontmatter: status=published, post_id, post_url, published_at
+5. Upload images (if any): resolve paths relative to draft file, call platform image upload API
+6. Call platform API (LinkedIn: POST /rest/posts) with image URNs
+7. Update draft frontmatter: status=published, post_id, post_url, published_at
 
-**LinkedIn limits:** 3000 character post body, visibility: PUBLIC or CONNECTIONS.
+**LinkedIn image upload flow:**
+1. `POST /rest/images?action=initializeUpload` with `owner: urn:li:person:{id}` → returns upload URL + image URN
+2. `PUT` binary image data to the upload URL
+3. Include image URN(s) in post payload: single image → `content.media.id`, 2+ images → `content.multiImage.images[]`
+
+**LinkedIn limits:** 3000 character post body, 20 images max, visibility: PUBLIC or CONNECTIONS.
 
 ### 12.7 CLI Commands
 
@@ -1076,6 +1085,13 @@ corky social rename-author <old> <new>            # Rename across drafts + profi
 | PB8 | Network error during API call | Error propagated with context |
 | PB9 | API error response (403, etc.) | Error with HTTP status + body |
 | PB10 | Body exceeds 3000 char limit | Error with char count |
+| **Image Upload** | | |
+| IM1 | No images in draft | Text-only post (no content field) |
+| IM2 | Image file not found | Error with resolved path |
+| IM3 | Too many images (> 20) | Error with count and limit |
+| IM4 | Draft round-trip with images | Images preserved in YAML |
+| IM5 | Image path resolution | Resolved relative to draft file directory |
+| IM6 | Empty images list | Same as no images (omitted from YAML) |
 
 ## 13. Scheduling
 

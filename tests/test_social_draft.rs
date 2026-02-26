@@ -149,6 +149,7 @@ fn d8_render_parse_roundtrip() {
         published_at: None,
         post_id: None,
         post_url: None,
+        images: vec![],
     };
 
     let original = SocialDraft::new(meta, "Test body content.\n".to_string());
@@ -213,4 +214,83 @@ Body
 
     let draft = SocialDraft::parse(content).unwrap();
     assert_eq!(draft.meta.visibility, "public");
+}
+
+// IM1: No images → text-only (images field absent → empty vec)
+#[test]
+fn im1_no_images_field() {
+    let content = r#"---
+platform: linkedin
+author: btakita
+status: ready
+---
+Text-only post.
+"#;
+
+    let draft = SocialDraft::parse(content).unwrap();
+    assert!(draft.meta.images.is_empty());
+}
+
+// IM4: Draft round-trip with images
+#[test]
+fn im4_roundtrip_with_images() {
+    let meta = SocialDraftMeta {
+        platform: Platform::LinkedIn,
+        author: "btakita".to_string(),
+        visibility: "public".to_string(),
+        status: DraftStatus::Ready,
+        tags: vec![],
+        scheduled_at: None,
+        published_at: None,
+        post_id: None,
+        post_url: None,
+        images: vec!["assets/screenshot.png".to_string(), "assets/diagram.png".to_string()],
+    };
+
+    let original = SocialDraft::new(meta, "Post with images.\n".to_string());
+    let rendered = original.render().unwrap();
+    let parsed = SocialDraft::parse(&rendered).unwrap();
+
+    assert_eq!(parsed.meta.images.len(), 2);
+    assert_eq!(parsed.meta.images[0], "assets/screenshot.png");
+    assert_eq!(parsed.meta.images[1], "assets/diagram.png");
+}
+
+// IM6: Empty images list serialized same as no images
+#[test]
+fn im6_empty_images_omitted_in_yaml() {
+    let meta = SocialDraftMeta {
+        platform: Platform::LinkedIn,
+        author: "btakita".to_string(),
+        visibility: "public".to_string(),
+        status: DraftStatus::Draft,
+        tags: vec![],
+        scheduled_at: None,
+        published_at: None,
+        post_id: None,
+        post_url: None,
+        images: vec![],
+    };
+
+    let draft = SocialDraft::new(meta, "Body.\n".to_string());
+    let rendered = draft.render().unwrap();
+    // Empty images should be skipped in YAML (skip_serializing_if)
+    assert!(!rendered.contains("images"), "Empty images should not appear in YAML: {}", rendered);
+}
+
+// IM: Single image in frontmatter
+#[test]
+fn single_image_in_frontmatter() {
+    let content = r#"---
+platform: linkedin
+author: btakita
+images:
+  - assets/photo.png
+---
+Post with one image.
+"#;
+
+    let draft = SocialDraft::parse(content).unwrap();
+    assert_eq!(draft.meta.images.len(), 1);
+    assert_eq!(draft.meta.images[0], "assets/photo.png");
 }

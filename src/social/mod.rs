@@ -63,6 +63,7 @@ pub fn run_draft(
         published_at: None,
         post_id: None,
         post_url: None,
+        images: vec![],
     };
 
     let body_text = body.unwrap_or("").to_string();

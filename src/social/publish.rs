@@ -1,4 +1,4 @@
-//! Publish orchestration: draft → resolve author → get token → API → update draft.
+//! Publish orchestration: draft → resolve author → get token → upload images → API → update draft.
 
 use anyhow::{bail, Result};
 use chrono::Utc;
@@ -62,6 +62,9 @@ pub fn publish(path: &Path) -> Result<()> {
         }
     })?;
 
+    // Upload images if present
+    let image_urns = upload_images(path, &draft, &token.access_token, &urn, platform)?;
+
     // Call platform API
     let (post_id, post_url) = match platform {
         Platform::LinkedIn => {
@@ -70,6 +73,7 @@ pub fn publish(path: &Path) -> Result<()> {
                 &urn,
                 &draft.body,
                 &draft.meta.visibility,
+                &image_urns,
             )?
         }
         _ => bail!("Publishing not yet implemented for {}", platform),
@@ -86,4 +90,45 @@ pub fn publish(path: &Path) -> Result<()> {
 
     println!("Published to {}: {}", platform, post_url);
     Ok(())
+}
+
+/// Resolve image paths relative to the draft file and upload them.
+/// Returns a list of image URNs for the platform API.
+fn upload_images(
+    draft_path: &Path,
+    draft: &SocialDraft,
+    access_token: &str,
+    author_urn: &str,
+    platform: Platform,
+) -> Result<Vec<String>> {
+    if draft.meta.images.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let draft_dir = draft_path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Cannot determine parent directory of draft file"))?;
+
+    let mut urns = Vec::new();
+    for image_path_str in &draft.meta.images {
+        let image_path = draft_dir.join(image_path_str);
+        if !image_path.exists() {
+            bail!(
+                "Image file not found: {} (resolved from draft directory: {})",
+                image_path.display(),
+                draft_dir.display()
+            );
+        }
+
+        let image_bytes = std::fs::read(&image_path)?;
+
+        let urn = match platform {
+            Platform::LinkedIn => linkedin::upload_image(access_token, author_urn, &image_bytes)?,
+            _ => bail!("Image upload not yet implemented for {}", platform),
+        };
+
+        urns.push(urn);
+    }
+
+    Ok(urns)
 }
