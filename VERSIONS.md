@@ -4,6 +4,12 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.11.1
+
+- **`_cmd` fields for social OAuth credentials**: `client_id_cmd` and `client_secret_cmd` in `[social.linkedin]` for credential managers (pass, op, etc.). Resolution order: inline value > `_cmd` shell command > env var.
+- **Shared `resolve_secret()` utility**: Extracted from `resolve_password()` into `util.rs`. Both email password and social credential resolution use the same code path.
+- **Fix: credential resolution error propagation**: When `[social.linkedin]` is configured but the `_cmd` command fails, the error is now propagated instead of silently falling through to the env var check.
+
 ## 0.9.4
 
 - **`corky upgrade` self-update**: Downloads prebuilt binary from GitHub Releases as the primary upgrade strategy. Falls back to `cargo install`, then `pip install --upgrade`, then manual instructions including `curl | sh`.
