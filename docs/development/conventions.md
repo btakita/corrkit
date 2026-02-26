@@ -24,7 +24,7 @@
 - Never bump versions automatically — the user will bump versions explicitly.
 - Commits that include a version change should include the version number in the commit message.
 - Use `BREAKING CHANGE:` prefix in VERSIONS.md entries for incompatible changes.
-- Update `SPECS.md` when corky functionality changes (commands, formats, algorithms).
+- Update `SPEC.md` when corky functionality changes (commands, formats, algorithms).
 
 ## Workflow
 
