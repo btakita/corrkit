@@ -222,7 +222,7 @@ star = false                # Add STARRED label
 never_spam = false          # Remove SPAM label
 always_important = false    # Add IMPORTANT label
 
-[social.linkedin]
+[linkedin]
 client_id = ""              # Inline client ID
 client_id_cmd = ""          # Shell command (e.g. "pass corky/linkedin/client_id")
 client_secret = ""          # Inline client secret
@@ -232,7 +232,7 @@ client_secret_cmd = ""      # Shell command (e.g. "pass corky/linkedin/client_se
 Secret resolution order (shared `util::resolve_secret`):
 1. Inline field value
 2. `_cmd` field (shell command, capture stdout, strip trailing whitespace)
-3. Error if both empty (social credentials fall back to env vars before error — see §12.5)
+3. Error if both empty (LinkedIn credentials fall back to env vars before error — see §12.5)
 
 Label scoping syntax: `account:label` (e.g. `"proton-dev:INBOX"`) binds a label to a specific account.
 
