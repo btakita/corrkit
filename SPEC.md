@@ -1215,12 +1215,12 @@ Client credentials resolution order per field:
 ### 12.7 CLI Commands
 
 ```
-corky social auth <platform> [--profile NAME]    # OAuth flow, stores token
-corky social draft <platform> [BODY] [--author X] [--visibility public] [--tags X,Y]
-corky social publish <file>                       # Publish ready draft
-corky social check                                # Validate profiles.toml
-corky social list [--status X]                    # List social drafts
-corky social rename-author <old> <new>            # Rename across drafts + profiles
+corky linkedin auth [--profile NAME]              # OAuth flow, stores token
+corky linkedin draft [BODY] [--author X] [--visibility public] [--tags X,Y]
+corky linkedin publish <file>                     # Publish ready draft
+corky linkedin check                              # Validate profiles.toml
+corky linkedin list [--status X]                  # List LinkedIn drafts
+corky linkedin rename-author <old> <new>          # Rename across drafts + profiles
 ```
 
 ### 12.8 Edge Case Table
@@ -1235,7 +1235,7 @@ corky social rename-author <old> <new>            # Rename across drafts + profi
 | P5 | Cross-platform coherence (same profile, multiple platforms) | Info: verify same person |
 | P6 | Empty profiles.toml | OK: empty map, no errors |
 | P7 | Malformed TOML | Error with parse location |
-| P8 | Missing profiles.toml | Error with guidance to run `corky social check` |
+| P8 | Missing profiles.toml | Error with guidance to run `corky linkedin check` |
 | P9 | Collaborator merge introduces duplicate URN | Validation surfaces conflict |
 | **Draft Parsing** | | |
 | D1 | Valid draft with all fields | Parsed correctly |
@@ -1268,7 +1268,7 @@ corky social rename-author <old> <new>            # Rename across drafts + profi
 | PB2 | Already published | Error: already published |
 | PB3 | Author not in profiles.toml | Error with available profiles |
 | PB4 | Author has no entry for draft's platform | Error: no platform entry |
-| PB5 | No token for resolved URN | Error with `corky social auth` guidance |
+| PB5 | No token for resolved URN | Error with `corky linkedin auth` guidance |
 | PB6 | Expired token | Error with re-auth guidance |
 | PB7 | Successful publish | Updates post_id, post_url, published_at, status |
 | PB8 | Network error during API call | Error propagated with context |

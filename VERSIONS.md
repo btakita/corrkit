@@ -4,6 +4,10 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.12.2
+
+- **BREAKING CHANGE: `corky social` → `corky linkedin`**: All social media commands scoped under platform-specific subcommand. `corky social draft linkedin` becomes `corky linkedin draft`, etc. Internal `social/` module unchanged. Convention: each platform gets its own top-level subcommand when added.
+
 ## 0.12.1
 
 - **Email attachments**: `--attach` flag on `corky draft new` and `attachments:` YAML frontmatter field. Sends as `multipart/mixed` with auto-detected content types via `mime_guess`. Files validated at send time.

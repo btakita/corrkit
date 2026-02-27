@@ -169,9 +169,9 @@ pub enum Commands {
     #[command(subcommand)]
     Slack(SlackCommands),
 
-    /// Social media posting commands
+    /// LinkedIn posting commands
     #[command(subcommand)]
-    Social(SocialCommands),
+    Linkedin(LinkedinCommands),
 
     /// Scheduled publishing commands
     #[command(subcommand)]
@@ -436,22 +436,16 @@ pub enum MailboxCommands {
 }
 
 #[derive(Subcommand)]
-pub enum SocialCommands {
-    /// Authenticate with a social platform (OAuth)
+pub enum LinkedinCommands {
+    /// Authenticate with LinkedIn (OAuth)
     Auth {
-        /// Platform: linkedin, bluesky, mastodon, twitter
-        platform: String,
-
         /// Profile name in profiles.toml to update with URN
         #[arg(long)]
         profile: Option<String>,
     },
 
-    /// Create a new social media draft
+    /// Create a new LinkedIn draft
     Draft {
-        /// Platform: linkedin, bluesky, mastodon, twitter
-        platform: String,
-
         /// Post body text
         body: Option<String>,
 
@@ -468,7 +462,7 @@ pub enum SocialCommands {
         tags: Vec<String>,
     },
 
-    /// Publish a ready social draft
+    /// Publish a ready LinkedIn draft
     Publish {
         /// Path to the draft file
         file: PathBuf,
@@ -480,7 +474,7 @@ pub enum SocialCommands {
     /// Validate profiles.toml
     Check,
 
-    /// List social drafts
+    /// List LinkedIn drafts
     List {
         /// Filter by status: draft, ready, published
         #[arg(long)]

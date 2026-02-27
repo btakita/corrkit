@@ -56,8 +56,8 @@ corky filter push               # Push Gmail filters from .corky.toml
 corky filter push --dry-run     # Preview filter changes
 corky filter pull               # Show current Gmail filters
 corky filter auth               # Authenticate for Gmail filter API
-corky social draft linkedin      # Create social media draft
-corky social publish FILE       # Publish to LinkedIn
+corky linkedin draft              # Create LinkedIn draft
+corky linkedin publish FILE      # Publish to LinkedIn
 corky schedule run              # Publish due scheduled items
 corky topics list               # Show configured topics
 corky watch                     # Poll, sync, and publish scheduled

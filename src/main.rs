@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, FilterCommands, LabelCommands, MailboxCommands, ScheduleCommands, SlackCommands, SocialCommands, SyncCommands, TopicCommands};
+use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, FilterCommands, LabelCommands, LinkedinCommands, MailboxCommands, ScheduleCommands, SlackCommands, SyncCommands, TopicCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -137,27 +137,26 @@ fn main() -> Result<()> {
             }
             MailboxCommands::Draft(cmd) => run_draft_command(cmd),
         },
-        Commands::Social(cmd) => match cmd {
-            SocialCommands::Auth { platform, profile } => {
-                corky::social::run_auth(&platform, profile.as_deref())
+        Commands::Linkedin(cmd) => match cmd {
+            LinkedinCommands::Auth { profile } => {
+                corky::social::run_auth("linkedin", profile.as_deref())
             }
-            SocialCommands::Draft {
-                platform,
+            LinkedinCommands::Draft {
                 body,
                 author,
                 visibility,
                 tags,
             } => corky::social::run_draft(
-                &platform,
+                "linkedin",
                 body.as_deref(),
                 author.as_deref(),
                 &visibility,
                 &tags,
             ),
-            SocialCommands::Publish { file, dry_run } => corky::social::run_publish(&file, dry_run),
-            SocialCommands::Check => corky::social::run_check(),
-            SocialCommands::List { status } => corky::social::run_list(status.as_deref()),
-            SocialCommands::RenameAuthor { old, new } => {
+            LinkedinCommands::Publish { file, dry_run } => corky::social::run_publish(&file, dry_run),
+            LinkedinCommands::Check => corky::social::run_check(),
+            LinkedinCommands::List { status } => corky::social::run_list(status.as_deref()),
+            LinkedinCommands::RenameAuthor { old, new } => {
                 corky::social::run_rename_author(&old, &new)
             }
         },

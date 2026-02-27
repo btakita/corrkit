@@ -50,18 +50,16 @@ pub fn publish(path: &Path, dry_run: bool) -> Result<()> {
         if store.tokens.contains_key(&urn) {
             anyhow::anyhow!(
                 "Token for {} ({}) has expired.\n\
-                 Run `corky social auth {}` to re-authenticate.",
+                 Run `corky linkedin auth` to re-authenticate.",
                 author,
                 urn,
-                platform
             )
         } else {
             anyhow::anyhow!(
                 "No token found for {} ({}).\n\
-                 Run `corky social auth {} --profile {}` to authenticate.",
+                 Run `corky linkedin auth --profile {}` to authenticate.",
                 author,
                 urn,
-                platform,
                 author
             )
         }

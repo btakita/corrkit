@@ -94,7 +94,7 @@ impl ProfilesFile {
         if !path.exists() {
             bail!(
                 "profiles.toml not found at {}.\n\
-                 Create it or run `corky social check` for guidance.",
+                 Create it or run `corky linkedin check` for guidance.",
                 path.display()
             );
         }
@@ -242,9 +242,8 @@ impl ProfilesFile {
 
         entry.urn.clone().ok_or_else(|| {
             anyhow::anyhow!(
-                "Profile '{}' has no URN for {}. Run `corky social auth {}` to set it up.",
+                "Profile '{}' has no URN for {}. Run `corky linkedin auth` to set it up.",
                 profile_name,
-                platform,
                 platform
             )
         })
