@@ -185,6 +185,36 @@ pub enum Commands {
     #[command(subcommand)]
     Label(LabelCommands),
 
+    /// Gmail filter management commands
+    #[command(subcommand)]
+    Filter(FilterCommands),
+
+    /// Transcribe an audio file to text (requires --features transcribe)
+    Transcribe {
+        /// Path to audio file (WAV, MP3, FLAC, OGG, AMR, etc.)
+        file: PathBuf,
+
+        /// Whisper model name (default: from config or "large-v3-turbo")
+        #[arg(long)]
+        model: Option<String>,
+
+        /// Language code (e.g. "en"). Omit for auto-detect.
+        #[arg(long)]
+        language: Option<String>,
+
+        /// Output file (default: print to stdout)
+        #[arg(long, short)]
+        output: Option<String>,
+
+        /// Comma-separated speaker names for speaker turn labeling (e.g. "Brian,Alice")
+        #[arg(long, value_delimiter = ',')]
+        speakers: Vec<String>,
+
+        /// Use pyannote-rs for speaker diarization (requires --features diarize)
+        #[arg(long)]
+        diarize: bool,
+    },
+
     /// Check for updates and upgrade to the latest version.
     Upgrade,
 }
@@ -529,6 +559,45 @@ pub enum SlackCommands {
         /// Account name for imported conversations
         #[arg(long, default_value = "slack")]
         account: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum FilterCommands {
+    /// Build mailFilters.xml from filters.toml
+    Build {
+        /// Input TOML file (default: filters.toml in data dir)
+        #[arg(long)]
+        input: Option<String>,
+
+        /// Output XML file (default: mailFilters.xml next to input)
+        #[arg(long)]
+        output: Option<String>,
+    },
+
+    /// Authenticate with Gmail for filter management
+    Auth {
+        /// Account name (token storage key, default: "default")
+        #[arg(long)]
+        account: Option<String>,
+    },
+
+    /// Pull current Gmail filters (read-only)
+    Pull {
+        /// Account name (must match the one used for auth)
+        #[arg(long)]
+        account: Option<String>,
+    },
+
+    /// Push local filters to Gmail (replaces all existing filters)
+    Push {
+        /// Account name (must match the one used for auth)
+        #[arg(long)]
+        account: Option<String>,
+
+        /// Show what would be done without making changes
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 

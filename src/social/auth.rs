@@ -28,36 +28,34 @@ fn resolve_credentials(platform: Platform) -> Result<ClientCredentials> {
         Platform::LinkedIn => {
             // Try .corky.toml first (inline or _cmd)
             if let Some(cfg) = corky_config::try_load_config(None) {
-                if let Some(social) = &cfg.social {
-                    if let Some(li) = &social.linkedin {
-                        let has_config = !li.client_id.is_empty()
-                            || !li.client_id_cmd.is_empty()
-                            || !li.client_secret.is_empty()
-                            || !li.client_secret_cmd.is_empty();
-                        if has_config {
-                            let client_id = crate::util::resolve_secret(
-                                &li.client_id,
-                                &li.client_id_cmd,
-                                "LinkedIn client_id (check [social.linkedin] in .corky.toml)",
-                            )?;
-                            let client_secret = crate::util::resolve_secret(
-                                &li.client_secret,
-                                &li.client_secret_cmd,
-                                "LinkedIn client_secret (check [social.linkedin] in .corky.toml)",
-                            )?;
-                            return Ok(ClientCredentials {
-                                client_id,
-                                client_secret,
-                            });
-                        }
+                if let Some(li) = &cfg.linkedin {
+                    let has_config = !li.client_id.is_empty()
+                        || !li.client_id_cmd.is_empty()
+                        || !li.client_secret.is_empty()
+                        || !li.client_secret_cmd.is_empty();
+                    if has_config {
+                        let client_id = crate::util::resolve_secret(
+                            &li.client_id,
+                            &li.client_id_cmd,
+                            "LinkedIn client_id (check [linkedin] in .corky.toml)",
+                        )?;
+                        let client_secret = crate::util::resolve_secret(
+                            &li.client_secret,
+                            &li.client_secret_cmd,
+                            "LinkedIn client_secret (check [linkedin] in .corky.toml)",
+                        )?;
+                        return Ok(ClientCredentials {
+                            client_id,
+                            client_secret,
+                        });
                     }
                 }
             }
             // Fall back to env vars
             let client_id = std::env::var("CORKY_LINKEDIN_CLIENT_ID")
-                .context("LinkedIn client_id not found.\nSet [social.linkedin] in .corky.toml or CORKY_LINKEDIN_CLIENT_ID env var.")?;
+                .context("LinkedIn client_id not found.\nSet [linkedin] in .corky.toml or CORKY_LINKEDIN_CLIENT_ID env var.")?;
             let client_secret = std::env::var("CORKY_LINKEDIN_CLIENT_SECRET")
-                .context("LinkedIn client_secret not found.\nSet [social.linkedin] in .corky.toml or CORKY_LINKEDIN_CLIENT_SECRET env var.")?;
+                .context("LinkedIn client_secret not found.\nSet [linkedin] in .corky.toml or CORKY_LINKEDIN_CLIENT_SECRET env var.")?;
             Ok(ClientCredentials {
                 client_id,
                 client_secret,

@@ -57,6 +57,8 @@ pub struct WatchConfig {
     pub poll_interval: u64,
     #[serde(default)]
     pub notify: bool,
+    #[serde(default)]
+    pub auto_upgrade: bool,
 }
 
 fn default_poll_interval() -> u64 {
@@ -68,6 +70,7 @@ impl Default for WatchConfig {
         Self {
             poll_interval: 300,
             notify: false,
+            auto_upgrade: false,
         }
     }
 }

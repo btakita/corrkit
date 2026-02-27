@@ -116,6 +116,44 @@ fn schedule_tick() {
     }
 }
 
+/// Check for upgrade and self-restart if a newer version is available.
+/// Returns true if the process should restart (exec failed as fallback).
+fn try_auto_upgrade() -> bool {
+    let latest = match crate::upgrade::check_for_update() {
+        Some(v) => v,
+        None => return false,
+    };
+
+    eprintln!(
+        "\ncorky watch: upgrading {} → {}...",
+        env!("CARGO_PKG_VERSION"),
+        latest
+    );
+
+    if let Err(e) = crate::upgrade::run() {
+        eprintln!("Auto-upgrade failed: {}", e);
+        return false;
+    }
+
+    eprintln!("corky watch: restarting with new version...");
+
+    // Re-exec self with the same arguments
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        let exe = match std::env::current_exe() {
+            Ok(e) => e,
+            Err(_) => return false,
+        };
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        let err = std::process::Command::new(exe).args(&args).exec();
+        // exec() only returns on error
+        eprintln!("exec failed: {}", err);
+    }
+
+    false
+}
+
 /// One sync + mailbox sync cycle. Returns count of labels with new messages.
 fn poll_once(notify_enabled: bool) -> usize {
     let accounts = match load_accounts(None) {
@@ -196,7 +234,16 @@ pub async fn run(interval_override: Option<u64>) -> Result<()> {
         let _ = shutdown_tx.send(true);
     });
 
-    println!("corky watch: polling every {}s (Ctrl-C to stop)", interval);
+    let auto_upgrade = config.auto_upgrade;
+    println!(
+        "corky watch: polling every {}s{} (Ctrl-C to stop)",
+        interval,
+        if auto_upgrade { ", auto-upgrade on" } else { "" }
+    );
+
+    let mut cycles_since_upgrade_check: u64 = 0;
+    // Check for upgrades every N cycles (roughly once per hour)
+    let upgrade_check_every = (3600 / interval).max(1);
 
     loop {
         if shutdown.load(Ordering::Relaxed) {
@@ -216,6 +263,20 @@ pub async fn run(interval_override: Option<u64>) -> Result<()> {
 
         // Scheduled publishing
         tokio::task::spawn_blocking(schedule_tick).await?;
+
+        if shutdown.load(Ordering::Relaxed) {
+            break;
+        }
+
+        // Auto-upgrade check (once per hour)
+        if auto_upgrade {
+            cycles_since_upgrade_check += 1;
+            if cycles_since_upgrade_check >= upgrade_check_every {
+                cycles_since_upgrade_check = 0;
+                tokio::task::spawn_blocking(try_auto_upgrade).await?;
+                // If we get here, exec() didn't happen (no upgrade or failed)
+            }
+        }
 
         if shutdown.load(Ordering::Relaxed) {
             break;

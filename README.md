@@ -41,6 +41,7 @@ See the [getting started guide](https://btakita.github.io/corky/getting-started/
 - **Social posting** — draft and publish to LinkedIn (and future platforms) via OAuth
 - **Scheduling** — schedule email and social drafts for timed publishing
 - **Topics** — organize conversations with shared topic context across mailboxes
+- **Transcription** — whisper-rs audio transcription with speaker diarization via pyannote-rs
 - **Watch daemon** — poll IMAP and run scheduled publishing with `corky watch`
 
 ## Usage
@@ -51,13 +52,40 @@ corky unanswered                # Threads awaiting a reply
 corky draft push FILE           # Save as email draft
 corky mailbox add NAME --label LABEL  # Share threads
 corky contact sync              # Sync contact CLAUDE.md between root and mailboxes
+corky filter push               # Push Gmail filters from .corky.toml
+corky filter push --dry-run     # Preview filter changes
+corky filter pull               # Show current Gmail filters
+corky filter auth               # Authenticate for Gmail filter API
 corky social draft linkedin      # Create social media draft
 corky social publish FILE       # Publish to LinkedIn
 corky schedule run              # Publish due scheduled items
 corky topics list               # Show configured topics
 corky watch                     # Poll, sync, and publish scheduled
+corky transcribe FILE            # Transcribe audio to text
+corky transcribe FILE --diarize  # With speaker diarization
 corky --help                    # All commands
 ```
+
+### Transcription & speaker diarization
+
+Transcribe audio files with optional speaker diarization. Supports WAV, MP3, FLAC, OGG, M4A, AMR, and more.
+
+```sh
+# Basic transcription
+corky transcribe call.amr -o transcript.md
+
+# With speaker diarization (interactive labeling)
+corky transcribe call.amr --diarize -o transcript.md
+
+# With pre-assigned speaker names
+corky transcribe call.amr --diarize --speakers "Alice,Bob" -o transcript.md
+```
+
+Diarization uses [pyannote-rs](https://github.com/thewh1teagle/pyannote-rs) (ONNX Runtime) to detect and label speakers. When run without `--speakers`, corky shows text excerpts per speaker and prompts you to assign names interactively. ONNX models auto-download on first use — no gated HuggingFace access required.
+
+**Feature flags:** Install with `--features transcribe` (CPU) or `--features transcribe-cuda` (GPU). Diarization requires `--features diarize`.
+
+> This feature was designed collaboratively using [agent-doc](https://github.com/btakita/agent-doc) interactive document sessions.
 
 ### Telegram import
 

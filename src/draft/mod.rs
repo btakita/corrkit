@@ -31,6 +31,8 @@ fn default_draft_status() -> String {
 pub struct EmailDraftMeta {
     pub to: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cc: Option<String>,
     #[serde(default = "default_draft_status")]
     pub status: String,
@@ -68,10 +70,14 @@ fn parse_yaml_draft(text: &str) -> Result<(EmailDraftMeta, HashMap<String, Strin
 
     let meta: EmailDraftMeta = serde_yaml::from_str(yaml_str)?;
 
-    // Extract subject from first # heading in body
-    let subject = body_section
-        .lines()
-        .find_map(|line| line.strip_prefix("# ").map(|s| s.trim().to_string()))
+    // Prefer subject from YAML frontmatter, fall back to first # heading in body
+    let subject = meta.subject.clone()
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            body_section
+                .lines()
+                .find_map(|line| line.strip_prefix("# ").map(|s| s.trim().to_string()))
+        })
         .unwrap_or_default();
 
     // Body is everything after the subject heading line (if present)

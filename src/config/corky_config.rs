@@ -25,23 +25,52 @@ pub struct CorkyConfig {
     #[serde(default)]
     pub watch: Option<WatchConfig>,
     #[serde(default)]
-    pub social: Option<SocialConfig>,
+    pub gmail: Option<GmailConfig>,
+    #[serde(default)]
+    pub linkedin: Option<OAuthClientConfig>,
     #[serde(default)]
     pub topics: HashMap<String, TopicConfig>,
-}
-
-/// Social platform OAuth client config (lives in .corky.toml under [social]).
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SocialConfig {
     #[serde(default)]
-    pub linkedin: Option<SocialClientConfig>,
+    pub transcription: Option<TranscriptionConfig>,
 }
 
-/// OAuth client credentials for a single social platform.
+/// Gmail API config + filter rules (lives in .corky.toml under [gmail]).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GmailConfig {
+    #[serde(default)]
+    pub client_id: String,
+    #[serde(default)]
+    pub client_id_cmd: String,
+    #[serde(default)]
+    pub client_secret: String,
+    #[serde(default)]
+    pub client_secret_cmd: String,
+    #[serde(default)]
+    pub filters: Vec<GmailFilter>,
+}
+
+/// A Gmail filter rule definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GmailFilter {
+    pub label: Option<String>,
+    #[serde(rename = "match", default)]
+    pub match_fields: Vec<String>,
+    #[serde(default)]
+    pub addresses: Vec<String>,
+    pub forward_to: Option<String>,
+    #[serde(default)]
+    pub star: bool,
+    #[serde(default)]
+    pub never_spam: bool,
+    #[serde(default)]
+    pub always_important: bool,
+}
+
+/// OAuth client credentials for a platform.
 ///
 /// Resolution order per field: inline value > `_cmd` (shell command) > env var.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SocialClientConfig {
+pub struct OAuthClientConfig {
     #[serde(default)]
     pub client_id: String,
     #[serde(default)]
@@ -70,6 +99,24 @@ pub struct MailboxPermissions {
     pub sync: bool,
     #[serde(default)]
     pub send: bool,
+}
+
+/// Transcription config for `corky transcribe`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TranscriptionConfig {
+    /// Whisper model name: "tiny", "base", "small", "medium", "large-v3", "large-v3-turbo"
+    #[serde(default = "default_model")]
+    pub model: String,
+    /// Directory to cache downloaded models
+    #[serde(default)]
+    pub model_path: String,
+    /// Language code (e.g. "en"). Empty = auto-detect.
+    #[serde(default)]
+    pub language: String,
+}
+
+fn default_model() -> String {
+    "large-v3-turbo".to_string()
 }
 
 /// Load .corky.toml (or corky.toml) from a given path or resolved location.

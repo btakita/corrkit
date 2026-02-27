@@ -149,6 +149,7 @@ fn convert_legacy_to_yaml(content: &str) -> Result<String> {
 
     let meta = EmailDraftMeta {
         to,
+        subject: None, // Legacy format uses # heading in body
         cc,
         status,
         author,

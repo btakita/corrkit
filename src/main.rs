@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, LabelCommands, MailboxCommands, ScheduleCommands, SlackCommands, SocialCommands, SyncCommands, TopicCommands};
+use corky::cli::{Cli, Commands, ContactCommands, DraftCommands, FilterCommands, LabelCommands, MailboxCommands, ScheduleCommands, SlackCommands, SocialCommands, SyncCommands, TopicCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -186,6 +186,23 @@ fn main() -> Result<()> {
                 corky::label::clear::run(&label, account.as_deref(), search.as_deref(), dry_run)
             }
         },
+        Commands::Filter(cmd) => match cmd {
+            FilterCommands::Build { input, output } => {
+                corky::filter::build::run(input.as_deref(), output.as_deref())
+            }
+            FilterCommands::Auth { account } => {
+                corky::filter::gmail_auth::run_auth(account.as_deref())
+            }
+            FilterCommands::Pull { account } => {
+                corky::filter::pull::run(account.as_deref())
+            }
+            FilterCommands::Push { account, dry_run } => {
+                corky::filter::push::run(account.as_deref(), dry_run)
+            }
+        },
+        Commands::Transcribe { file, model, language, output, speakers, diarize } => {
+            corky::transcribe::run(&file, model.as_deref(), language.as_deref(), output.as_deref(), &speakers, diarize)
+        }
         Commands::Upgrade => corky::upgrade::run(),
     }
 }

@@ -109,6 +109,21 @@ corky draft new SUBJECT --to EMAIL [--cc EMAIL] [--account NAME]
 
 Scaffolds a new draft file with pre-filled metadata. Creates `drafts/YYYY-MM-DD-slug.md` and prints the path. Author resolved from `[owner] name` in `.corky.toml`.
 
+### Reply Threading Heuristics
+
+When drafting an email, determine whether to thread as a reply or start a new thread:
+
+| User intent | Action |
+|---|---|
+| Follow-up, correction, or reply to a recent email | **Threaded reply** — find the original in `mail/conversations/`, set `in_reply_to` to its Message-ID, derive subject as `Re: <original subject>` |
+| New topic to the same person | **New thread** — no `in_reply_to`, fresh subject |
+| Ambiguous | Default to reply if there's a recent conversation with the same contact; ask if unclear |
+
+**Gmail threading requirements:**
+- `In-Reply-To` and `References` headers must reference the original Message-ID
+- Subject must match (adding `Re:` prefix is fine; changing the subject entirely breaks threading)
+- Mismatched subjects cause Gmail to create a new thread even with correct headers
+
 ### draft push
 
 Default: creates a draft via IMAP APPEND to the drafts folder.

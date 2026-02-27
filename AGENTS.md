@@ -30,6 +30,13 @@ See `voice.md` (committed) for tone, style, and formatting guidelines.
 - **Never guess at intent.** If the right response is unclear, ask rather than assume.
 - **Never share conversation content** outside this local environment (no third-party APIs) unless explicitly instructed.
 
+## Drafting Emails
+
+- **Reply vs new thread:** Follow-ups, corrections, and replies to recent emails → threaded reply. New topics → new thread. When ambiguous, default to reply and ask.
+- **Threading a reply:** Find the original email in `mail/conversations/`, extract its Message-ID, set `in_reply_to` in the draft YAML, derive subject as `Re: <original subject>`.
+- **Verify facts:** Before sending, cross-check claims about a contact's platform, tools, or status against their `mail/contacts/<name>/CLAUDE.md`. Don't infer from ambiguous notes — confirm explicitly.
+- **Gmail threading:** Subject changes break threads. Always use `Re: <original>` for replies, never a new subject.
+
 ## Environment Setup
 
 **New user (quick install):**
@@ -155,7 +162,7 @@ Publish order when instruction-files changes: instruction-files → agent-doc �
 - Use `toml_edit` for format-preserving TOML edits (add-label)
 - Use `std::process::Command` for git operations (not `git2`)
 - Use `regex` + `once_cell::Lazy` for compiled regex patterns
-- Keep sync, draft, mailbox, contact, social, schedule, topics logic in separate modules
+- Keep sync, draft, mailbox, contact, social, schedule, topics, filter logic in separate modules
 - Do not commit `.env`, `.corky.toml`, `CLAUDE.local.md` / `AGENTS.local.md`, or `mail`
 - Never bump versions automatically — the user will bump versions explicitly
 - Commits that include a version change should include the version number in the commit message

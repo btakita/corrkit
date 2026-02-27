@@ -203,7 +203,7 @@ pub fn run() -> Result<()> {
 
 /// Check for an update using a 24h cache. Returns the latest version string
 /// if it is newer than the current version.
-fn check_for_update() -> Option<String> {
+pub fn check_for_update() -> Option<String> {
     // Try to read from cache first
     if let Some(cache) = read_cache() {
         let now = SystemTime::now()

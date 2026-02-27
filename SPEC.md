@@ -203,6 +203,21 @@ auto_send = false
 poll_interval = 300         # Seconds between polls
 notify = false              # Desktop notifications
 
+[gmail]
+client_id = ""              # OAuth2 client ID for Gmail API
+client_id_cmd = ""          # Shell command (e.g. "pass corky/gmail/client_id")
+client_secret = ""          # OAuth2 client secret
+client_secret_cmd = ""      # Shell command (e.g. "pass corky/gmail/client_secret")
+
+[[gmail.filters]]
+label = "for-lucas"         # Gmail label to apply (resolved to ID via API)
+match = ["from"]            # Match fields: "from", "to" (default: ["from"])
+addresses = ["alice@example.com", "bob@example.com"]
+forward_to = ""             # Optional forwarding address
+star = false                # Add STARRED label
+never_spam = false          # Remove SPAM label
+always_important = false    # Add IMPORTANT label
+
 [social.linkedin]
 client_id = ""              # Inline client ID
 client_id_cmd = ""          # Shell command (e.g. "pass corky/linkedin/client_id")
@@ -675,6 +690,156 @@ Syncs `contacts/{name}/CLAUDE.md` between root contacts/ and each mailbox contac
 3. First sync (no base hash) → mtime wins
 
 Only `CLAUDE.md` is synced; `CLAUDE.local.md` and other files are skipped.
+
+### 5.25 filter auth
+
+```
+corky filter auth [--account NAME]
+```
+
+Gmail OAuth2 authorization for filter management. Opens a browser for the authorization code flow, starts a local callback server on `127.0.0.1:8484`, and stores the token in the shared token store (keyed as `gmail:{account}` or `gmail:default`).
+
+Required scopes: `gmail.settings.basic` (read/write filters), `gmail.labels` (list labels for name-to-ID resolution).
+
+Client credentials resolved from `[gmail]` in `.corky.toml` (`client_id`/`client_id_cmd`, `client_secret`/`client_secret_cmd`) or env vars (`CORKY_GMAIL_CLIENT_ID`, `CORKY_GMAIL_CLIENT_SECRET`).
+
+### 5.26 filter build
+
+```
+corky filter build [--input FILE] [--output FILE]
+```
+
+Generates `mailFilters.xml` (Gmail importable format) from filter definitions.
+
+Without `--input`: reads `[[gmail.filters]]` from `.corky.toml`, writes `mailFilters.xml` to the data directory.
+With `--input`: reads a standalone TOML file, writes `mailFilters.xml` next to it (or to `--output`).
+
+### 5.27 filter pull
+
+```
+corky filter pull [--account NAME]
+```
+
+Fetches and displays all current Gmail filters via the Gmail Settings API (read-only). Shows criteria (from, to, subject, query) and actions (add/remove labels, forward) for each filter.
+
+Requires a valid token from `corky filter auth`.
+
+### 5.28 filter push
+
+```
+corky filter push [--account NAME] [--dry-run]
+```
+
+Pushes `[[gmail.filters]]` from `.corky.toml` to Gmail via the Settings API, replacing all existing filters.
+
+Flow:
+1. Load `[[gmail.filters]]` entries from `.corky.toml` (error if none defined)
+2. Authenticate via stored token (auto-refreshes if expired)
+3. Fetch Gmail label name-to-ID mapping (needed to resolve user label names to API IDs)
+4. Convert each config filter to Gmail API format (addresses joined with `OR`, match fields default to `from`)
+5. Fetch all existing Gmail filters
+6. Delete all existing filters, then create new ones from config
+
+With `--dry-run`: shows existing filters, what would be deleted, and what would be created — no changes made.
+
+**Label resolution:** System labels (INBOX, STARRED, IMPORTANT, SENT, DRAFT, SPAM, TRASH, UNREAD, CATEGORY_*) resolve by name. User labels resolve via case-insensitive lookup against the fetched label map.
+
+**Required OAuth scopes:** `gmail.settings.basic` + `gmail.labels`. If the token was issued before `gmail.labels` was added to the scope list, re-authenticate with `corky filter auth`.
+
+### 5.29 transcribe
+
+```
+corky transcribe FILE [--model NAME] [--language CODE]
+                      [--output FILE] [--speakers NAME,...]
+                      [--diarize]
+```
+
+Transcribe an audio file to timestamped text using whisper-rs. Requires the `transcribe` feature flag (`transcribe-cuda` for GPU acceleration).
+
+**Supported formats:** WAV, MP3, FLAC, OGG, M4A, AAC (via symphonia), AMR and others (via ffmpeg fallback).
+
+**Audio pipeline:** All formats are decoded to 16kHz mono f32 PCM. Multi-channel audio is averaged to mono. Resampling uses sinc interpolation via rubato.
+
+**Model resolution:**
+1. `--model` flag (e.g. `--model tiny.en`)
+2. `[transcription] model` in `.corky.toml`
+3. Default: `large-v3-turbo`
+
+Models auto-download from HuggingFace to `~/.cache/corky/models/` (or custom path from `[transcription] model_path`).
+
+**Output modes:**
+
+1. **Plain** (no flags): `[HH:MM:SS.mmm --> HH:MM:SS.mmm] text`
+2. **Speaker labels** (`--speakers "Ron,Brian"`): YAML frontmatter + bold speaker names with timestamps. Uses whisper's tdrz speaker turn detection.
+3. **Diarization** (`--diarize`): Uses pyannote-rs (ONNX Runtime) for speaker segmentation and embedding-based clustering. More accurate than tdrz for mono phone recordings where both speakers share the same audio channel.
+
+**Diarization pipeline** (requires `diarize` feature):
+
+1. Run whisper transcription → timestamped text segments
+2. Convert f32 audio to i16 for pyannote-rs
+3. Run segmentation model (`segmentation-3.0.onnx`) → speech segments with timestamps
+4. Extract speaker embeddings per segment (`wespeaker_en_voxceleb_CAM++.onnx`)
+5. Cluster embeddings via cosine similarity (threshold: 0.5) → speaker IDs
+6. Merge: for each whisper segment, find the diarized speaker with most temporal overlap
+7. Label output with speaker names
+
+**Interactive speaker labeling** (when `--diarize` without `--speakers`):
+
+The diarization pipeline detects speakers as numeric IDs. When no `--speakers` names are provided, corky shows representative text excerpts for each detected speaker and prompts interactively:
+
+```
+Speaker 1 excerpts:
+  1. "Manufacturing China is up and running..."
+  2. "the traditional model of payment processing..."
+  3. "crypto is just superior in so many ways"
+Who is Speaker 1? (name or enter to skip): Ron Berkes
+
+Speaker 2 excerpts:
+  1. "I want to plan for the future of people accepting..."
+  2. "let's catch up soon"
+Who is Speaker 2? (name or enter to skip): Brian Takita
+```
+
+When `--speakers` is provided with `--diarize`, names are mapped to speaker IDs in order of first appearance (no interactive prompt).
+
+**ONNX models:** Auto-downloaded from pyannote-rs GitHub releases to `~/.cache/corky/models/`. No gated HuggingFace access required.
+
+**Output format** (with speakers or diarize):
+
+```markdown
+---
+date: 2026-02-27
+type: phone-call
+participants:
+  - Brian Takita
+  - Ron Berkes
+duration: "3:16"
+---
+
+**Ron Berkes** [00:00:00.000 → 00:00:05.780]
+Good. That post went viral. Oh, yeah.
+
+**Brian Takita** [00:00:05.780 → 00:00:07.360]
+Yeah.
+```
+
+**Feature flags:**
+- `transcribe` — whisper-rs transcription + tdrz speaker turns
+- `transcribe-cuda` — GPU-accelerated transcription
+- `diarize` — pyannote-rs speaker diarization (implies `transcribe`)
+
+**Edge cases:**
+
+| # | Edge Case | Expected Behavior |
+|---|---|---|
+| T1 | File not found | Exit with error message |
+| T2 | Unknown model name | Exit with list of known models |
+| T3 | No ffmpeg installed | Error with install instructions per OS |
+| T4 | `--diarize` without feature | Error: "Diarization support not compiled" |
+| T5 | No speakers detected | Output with "Unknown" speaker labels |
+| T6 | Single speaker detected | All segments labeled as that speaker |
+| T7 | Interactive prompt, user skips | Label as "Speaker N" |
+| T8 | Very short segments | May fail embedding extraction; labeled "Unknown" |
 
 ## 6. Sync Algorithm
 
