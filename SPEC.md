@@ -1,3 +1,10 @@
+---
+session: c80f3e69-053d-4606-bc0f-ca11e7bb2950
+resume: null
+agent: null
+model: null
+branch: null
+---
 # Corky Functional Specification
 
 > Language-independent specification for the corky email sync and collaboration tool.
