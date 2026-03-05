@@ -1427,3 +1427,49 @@ Before conversion, `check_tool()` verifies that required tools (`pandoc`, `weasy
 | D8 | pandoc fails | Temp HTML cleaned up, error reported |
 | D9 | weasyprint fails | Temp HTML cleaned up, error reported |
 
+## 15. Google Calendar
+
+### 15.1 Overview
+
+Manage Google Calendar events via the Calendar API v3. Reuses Gmail OAuth credentials from `[gmail]` in `.corky.toml` with the `https://www.googleapis.com/auth/calendar` scope. Tokens stored under `calendar:*` keys in the shared token store.
+
+### 15.2 CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `corky cal auth [--account NAME]` | OAuth2 browser flow for Calendar scope |
+| `corky cal list [--limit N] [--query Q] [--account NAME]` | List upcoming events (default 10) |
+| `corky cal delete QUERY [--all] [--dry-run] [--account NAME]` | Delete events matching query |
+
+### 15.3 Delete Behavior
+
+- Without `--all`: deletes individual event instances (up to 25 matching)
+- With `--all`: deduplicates by `recurring_event_id` and deletes the series root event, removing all past and future instances
+- `--dry-run`: shows matching events without deleting
+
+### 15.4 Edge Cases
+
+| ID | Scenario | Behavior |
+|----|----------|----------|
+| C1 | Calendar API not enabled | 403 with activation URL |
+| C2 | Token expired | Auto-refresh via refresh token |
+| C3 | No events match query | "No events matching '...'" |
+| C4 | Recurring series delete | Deletes series root, not instances |
+| C5 | Event already deleted | 404/410 silently ignored |
+
+## 16. SMS Import
+
+### 16.1 Overview
+
+Import SMS messages from SMS Backup & Restore XML format into conversation markdown files.
+
+### 16.2 CLI Interface
+
+```
+corky sync sms-import PATH [--label LABEL] [--account ACCOUNT]
+```
+
+- `PATH`: Path to SMS backup XML file
+- `--label`: Label for imported conversations (default: "sms")
+- `--account`: Account name (default: "sms")
+

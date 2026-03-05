@@ -185,6 +185,10 @@ pub enum Commands {
     #[command(subcommand)]
     Label(LabelCommands),
 
+    /// Google Calendar management
+    #[command(subcommand)]
+    Cal(CalCommands),
+
     /// Gmail filter management commands
     #[command(subcommand)]
     Filter(FilterCommands),
@@ -278,6 +282,18 @@ pub enum SyncCommands {
         label: String,
         /// Account name for imported conversations
         #[arg(long, default_value = "telegram")]
+        account: String,
+    },
+
+    /// Import SMS Backup & Restore XML file
+    SmsImport {
+        /// Path to SMS backup XML file
+        path: PathBuf,
+        /// Label for imported conversations
+        #[arg(long, default_value = "sms")]
+        label: String,
+        /// Account name for imported conversations
+        #[arg(long, default_value = "sms")]
         account: String,
     },
 }
@@ -658,5 +674,48 @@ pub enum LabelCommands {
         /// Show what would be done without making changes
         #[arg(long)]
         dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CalCommands {
+    /// Authenticate with Google Calendar
+    Auth {
+        /// Account name (token storage key, default: "default")
+        #[arg(long)]
+        account: Option<String>,
+    },
+
+    /// List upcoming calendar events
+    List {
+        /// Maximum number of events to show
+        #[arg(long, default_value = "10")]
+        limit: usize,
+
+        /// Filter events by text query
+        #[arg(long)]
+        query: Option<String>,
+
+        /// Account name (must match the one used for auth)
+        #[arg(long)]
+        account: Option<String>,
+    },
+
+    /// Delete calendar event(s) matching a query
+    Delete {
+        /// Query to find event(s) (substring match on title)
+        query: String,
+
+        /// Delete entire recurring series (not just next instance)
+        #[arg(long)]
+        all: bool,
+
+        /// Show what would be done without making changes
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Account name (must match the one used for auth)
+        #[arg(long)]
+        account: Option<String>,
     },
 }

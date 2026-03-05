@@ -4,6 +4,11 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.13.1
+
+- **Google Calendar management**: `corky cal auth` (OAuth2), `corky cal list` (upcoming events with `--query`/`--limit`), `corky cal delete` (by search, `--all` deletes entire recurring series, `--dry-run`). Reuses Gmail OAuth credentials from `.corky.toml`.
+- **SMS import**: `corky sync sms-import` imports SMS Backup & Restore XML files into conversation markdown.
+
 ## 0.13.0
 
 - **Document building**: `corky doc build` converts markdown to PDF (pandoc + weasyprint) or DOCX (pandoc native). CSS template support via `--template` flag or `template:` YAML frontmatter field. Templates loaded from `{data_dir}/templates/{name}.css`.

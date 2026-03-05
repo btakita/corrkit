@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use corky::cli::{Cli, Commands, ContactCommands, DocCommands, DraftCommands, FilterCommands, LabelCommands, LinkedinCommands, MailboxCommands, ScheduleCommands, SlackCommands, SyncCommands, TopicCommands};
+use corky::cli::{CalCommands, Cli, Commands, ContactCommands, DocCommands, DraftCommands, FilterCommands, LabelCommands, LinkedinCommands, MailboxCommands, ScheduleCommands, SlackCommands, SyncCommands, TopicCommands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -57,6 +57,10 @@ fn main() -> Result<()> {
             Some(SyncCommands::TelegramImport { path, label, account }) => {
                 let out_dir = corky::resolve::conversations_dir();
                 corky::sync::telegram_import::run(&path, &label, &out_dir, &account)
+            }
+            Some(SyncCommands::SmsImport { path, label, account }) => {
+                let out_dir = corky::resolve::conversations_dir();
+                corky::sync::sms_import::run(&path, &label, &out_dir, &account)
             }
         },
         Commands::SyncAuth => corky::sync::auth::run(),
@@ -184,6 +188,17 @@ fn main() -> Result<()> {
         Commands::Label(cmd) => match cmd {
             LabelCommands::Clear { label, account, search, dry_run } => {
                 corky::label::clear::run(&label, account.as_deref(), search.as_deref(), dry_run)
+            }
+        },
+        Commands::Cal(cmd) => match cmd {
+            CalCommands::Auth { account } => {
+                corky::cal::auth::run_auth(account.as_deref())
+            }
+            CalCommands::List { limit, query, account } => {
+                corky::cal::list::run(limit, query.as_deref(), account.as_deref())
+            }
+            CalCommands::Delete { query, all, dry_run, account } => {
+                corky::cal::delete::run(&query, all, dry_run, account.as_deref())
             }
         },
         Commands::Filter(cmd) => match cmd {
