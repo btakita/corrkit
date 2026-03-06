@@ -7,7 +7,7 @@ use crate::config::corky_config;
 use crate::social::token_store::{StoredToken, TokenStore};
 
 const REDIRECT_URI: &str = "http://127.0.0.1:8484/callback";
-const CALLBACK_TIMEOUT_SECS: u64 = 120;
+const CALLBACK_TIMEOUT_SECS: u64 = 300;
 
 /// OAuth2 scopes for Gmail filter management.
 /// - gmail.settings.basic: read/write filter settings
@@ -126,6 +126,33 @@ pub fn get_access_token(account: Option<&str>) -> Result<String> {
     store.upsert(key, token);
     store.save()?;
     Ok(access)
+}
+
+/// Get a valid access token without interactive auth.
+///
+/// Returns the cached/refreshed token if available, or an error with
+/// an actionable message telling the user to run `corky filter auth`.
+/// Used by watch mode to avoid opening a browser unexpectedly.
+pub fn get_access_token_noninteractive(account: Option<&str>) -> Result<String> {
+    let key = token_key(account);
+    let mut store = TokenStore::load()?;
+
+    if let Some(token) = store.get_valid(&key) {
+        return Ok(token.access_token.clone());
+    }
+
+    if let Some(token) = store.tokens.get(&key).cloned() {
+        if let Some(ref refresh) = token.refresh_token {
+            if let Ok(new_token) = refresh_access_token(refresh) {
+                let access = new_token.access_token.clone();
+                store.upsert(key, new_token);
+                store.save()?;
+                return Ok(access);
+            }
+        }
+    }
+
+    bail!("Gmail token expired or missing. Run `corky filter auth` to re-authenticate.")
 }
 
 /// Run explicit Gmail OAuth2 authentication (stores token).

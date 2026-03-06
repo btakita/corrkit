@@ -4,6 +4,11 @@ Corky is alpha software. Expect breaking changes between minor versions.
 
 Use `BREAKING CHANGE:` prefix in version entries to flag incompatible changes.
 
+## 0.13.2
+
+- **Non-interactive OAuth in watch mode**: `check_filter_drift()` uses `get_access_token_noninteractive()` — never opens a browser. Logs actionable "Run `corky filter auth`" message when token is expired.
+- **OAuth callback timeout**: Increased from 120s to 300s (5 minutes) for manual `corky filter auth` flow.
+
 ## 0.13.1
 
 - **Google Calendar management**: `corky cal auth` (OAuth2), `corky cal list` (upcoming events with `--query`/`--limit`), `corky cal delete` (by search, `--all` deletes entire recurring series, `--dry-run`). Reuses Gmail OAuth credentials from `.corky.toml`.

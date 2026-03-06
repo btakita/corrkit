@@ -155,16 +155,18 @@ fn try_auto_upgrade() -> bool {
 }
 
 /// Check for Gmail filter drift (best-effort, never crashes the watch loop).
+/// Uses non-interactive auth — never opens a browser.
 fn check_filter_drift() {
-    match crate::filter::check::run(None) {
+    match crate::filter::check::run_noninteractive(None) {
         Ok(true) => {} // in sync, no output needed
         Ok(false) => {
             eprintln!("corky watch: filter drift detected — run `corky filter push` to sync");
         }
         Err(e) => {
-            // Silently ignore auth/config errors in watch mode
             let msg = e.to_string();
-            if !msg.contains("No [gmail] section") && !msg.contains("not found at") {
+            if msg.contains("Run `corky filter auth`") {
+                eprintln!("corky watch: {}", msg);
+            } else if !msg.contains("No [gmail] section") && !msg.contains("not found at") {
                 eprintln!("corky watch: filter check failed: {}", msg);
             }
         }

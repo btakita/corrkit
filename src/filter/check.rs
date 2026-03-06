@@ -72,6 +72,46 @@ pub fn run(account: Option<&str>) -> Result<bool> {
     Ok(false)
 }
 
+/// Non-interactive variant for watch mode — never opens a browser.
+/// Returns true if in sync, false if drift, Err if auth is missing/expired.
+pub fn run_noninteractive(account: Option<&str>) -> Result<bool> {
+    let config = corky_config::load_config(None)?;
+    let gmail = config
+        .gmail
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("No [gmail] section in .corky.toml"))?;
+
+    if gmail.filters.is_empty() {
+        return Ok(true);
+    }
+
+    let access_token = gmail_auth::get_access_token_noninteractive(account)?;
+    let label_map = fetch_label_map(&access_token)?;
+    let local_filters = convert_filters(&gmail.filters, &label_map)?;
+    let remote_filters = fetch_existing_filters(&access_token)?;
+
+    let local_sigs = normalize_local(&local_filters);
+    let remote_sigs = normalize_remote(&remote_filters);
+
+    let missing_remote: Vec<&str> = local_sigs
+        .iter()
+        .filter(|sig| !remote_sigs.contains(sig))
+        .map(|s| s.as_str())
+        .collect();
+
+    let extra_remote: Vec<&str> = remote_sigs
+        .iter()
+        .filter(|sig| !local_sigs.contains(sig))
+        .map(|s| s.as_str())
+        .collect();
+
+    if missing_remote.is_empty() && extra_remote.is_empty() {
+        return Ok(true);
+    }
+
+    Ok(false)
+}
+
 /// Normalize local filters to comparable signature strings.
 fn normalize_local(filters: &[FilterCreateRequest]) -> Vec<String> {
     filters.iter().map(|f| {
