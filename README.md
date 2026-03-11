@@ -87,7 +87,7 @@ corky transcribe call.amr --diarize --speakers "Alice,Bob" -o transcript.md
 
 Diarization uses [pyannote-rs](https://github.com/thewh1teagle/pyannote-rs) (ONNX Runtime) to detect and label speakers. When run without `--speakers`, corky shows text excerpts per speaker and prompts you to assign names interactively. ONNX models auto-download on first use — no gated HuggingFace access required.
 
-**Feature flags:** Install with `--features transcribe` (CPU) or `--features transcribe-cuda` (GPU). Diarization requires `--features diarize`.
+**Feature flags:** Transcription (CPU) is enabled by default. For GPU acceleration, install with `--features transcribe-cuda`. Diarization requires `--features diarize`.
 
 > This feature was designed collaboratively using [agent-doc](https://github.com/btakita/agent-doc) interactive document sessions.
 

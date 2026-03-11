@@ -785,7 +785,7 @@ corky transcribe FILE [--model NAME] [--language CODE]
                       [--diarize]
 ```
 
-Transcribe an audio file to timestamped text using whisper-rs. Requires the `transcribe` feature flag (`transcribe-cuda` for GPU acceleration).
+Transcribe an audio file to timestamped text using whisper-rs. Included by default (CPU). Use `transcribe-cuda` for GPU acceleration.
 
 **Supported formats:** WAV, MP3, FLAC, OGG, M4A, AAC (via symphonia), AMR and others (via ffmpeg fallback).
 
@@ -855,7 +855,7 @@ Yeah.
 ```
 
 **Feature flags:**
-- `transcribe` — whisper-rs transcription + tdrz speaker turns
+- `transcribe` — whisper-rs transcription + tdrz speaker turns (enabled by default)
 - `transcribe-cuda` — GPU-accelerated transcription
 - `diarize` — pyannote-rs speaker diarization (implies `transcribe`)
 
