@@ -303,3 +303,132 @@ Post with one image.
     assert_eq!(draft.meta.images.len(), 1);
     assert_eq!(draft.meta.images[0], "assets/photo.png");
 }
+
+// YT1: Draft round-trip with video/captions/title fields
+#[test]
+fn yt1_roundtrip_with_video_fields() {
+    let meta = SocialDraftMeta {
+        platform: Platform::Youtube,
+        author: "btakita".to_string(),
+        visibility: "public".to_string(),
+        status: DraftStatus::Ready,
+        tags: vec!["rust".to_string(), "tutorial".to_string()],
+        scheduled_at: None,
+        published_at: None,
+        post_id: None,
+        post_url: None,
+        images: vec![],
+        video: Some("assets/demo.mp4".to_string()),
+        captions: Some("assets/demo.srt".to_string()),
+        title: Some("Rust Tutorial: Getting Started".to_string()),
+    };
+
+    let original = SocialDraft::new(meta, "Video description goes here.\n".to_string());
+    let rendered = original.render().unwrap();
+    let parsed = SocialDraft::parse(&rendered).unwrap();
+
+    assert_eq!(parsed.meta.platform, Platform::Youtube);
+    assert_eq!(parsed.meta.video, Some("assets/demo.mp4".to_string()));
+    assert_eq!(parsed.meta.captions, Some("assets/demo.srt".to_string()));
+    assert_eq!(parsed.meta.title, Some("Rust Tutorial: Getting Started".to_string()));
+    assert_eq!(parsed.meta.author, "btakita");
+    assert_eq!(parsed.meta.status, DraftStatus::Ready);
+    assert_eq!(parsed.meta.tags, vec!["rust", "tutorial"]);
+    assert!(parsed.body.contains("Video description goes here."));
+}
+
+// YT2: YouTube platform parses from YAML frontmatter
+#[test]
+fn yt2_youtube_platform_parsing() {
+    let content = r#"---
+platform: youtube
+author: btakita
+title: My Video
+video: assets/video.mp4
+---
+Video description.
+"#;
+
+    let draft = SocialDraft::parse(content).unwrap();
+    assert_eq!(draft.meta.platform, Platform::Youtube);
+    assert_eq!(draft.meta.title, Some("My Video".to_string()));
+    assert_eq!(draft.meta.video, Some("assets/video.mp4".to_string()));
+}
+
+// LI1: Parse draft with post_id
+#[test]
+fn li1_parse_draft_with_post_id() {
+    let content = r#"---
+platform: linkedin
+author: btakita
+status: published
+post_id: "urn:li:share:12345"
+post_url: "https://www.linkedin.com/feed/update/urn:li:share:12345"
+---
+Published post content.
+"#;
+
+    let draft = SocialDraft::parse(content).unwrap();
+    assert_eq!(draft.meta.post_id, Some("urn:li:share:12345".to_string()));
+    assert_eq!(
+        draft.meta.post_url,
+        Some("https://www.linkedin.com/feed/update/urn:li:share:12345".to_string())
+    );
+    assert_eq!(draft.meta.status, DraftStatus::Published);
+}
+
+// LI2: Round-trip preserves post_id
+#[test]
+fn li2_roundtrip_with_post_id() {
+    let meta = SocialDraftMeta {
+        platform: Platform::LinkedIn,
+        author: "btakita".to_string(),
+        visibility: "public".to_string(),
+        status: DraftStatus::Published,
+        tags: vec![],
+        scheduled_at: None,
+        published_at: None,
+        post_id: Some("urn:li:share:98765".to_string()),
+        post_url: Some("https://www.linkedin.com/feed/update/urn:li:share:98765".to_string()),
+        images: vec![],
+        video: None,
+        captions: None,
+        title: None,
+    };
+
+    let original = SocialDraft::new(meta, "Edited content.\n".to_string());
+    let rendered = original.render().unwrap();
+    let parsed = SocialDraft::parse(&rendered).unwrap();
+
+    assert_eq!(parsed.meta.post_id, Some("urn:li:share:98765".to_string()));
+    assert_eq!(
+        parsed.meta.post_url,
+        Some("https://www.linkedin.com/feed/update/urn:li:share:98765".to_string())
+    );
+}
+
+// YT3: None video/captions/title omitted from rendered YAML
+#[test]
+fn yt3_none_video_fields_omitted() {
+    let meta = SocialDraftMeta {
+        platform: Platform::Youtube,
+        author: "btakita".to_string(),
+        visibility: "public".to_string(),
+        status: DraftStatus::Draft,
+        tags: vec![],
+        scheduled_at: None,
+        published_at: None,
+        post_id: None,
+        post_url: None,
+        images: vec![],
+        video: None,
+        captions: None,
+        title: None,
+    };
+
+    let draft = SocialDraft::new(meta, "Body.\n".to_string());
+    let rendered = draft.render().unwrap();
+    assert!(!rendered.contains("video"), "None video should not appear in YAML: {}", rendered);
+    assert!(!rendered.contains("captions"), "None captions should not appear in YAML: {}", rendered);
+    assert!(!rendered.contains("title"), "None title should not appear in YAML: {}", rendered);
+}
